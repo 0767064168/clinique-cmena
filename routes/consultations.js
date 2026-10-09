@@ -47,6 +47,8 @@ router.get('/create', async (req, res) => {
     }
 });
 
+router.get(['/nouveau', '/nouvelle'], (req, res) => res.redirect('/consultations/create'));
+
 router.post('/', async (req, res) => {
     try {
         const { patient_id, praticien_id, date_consultation, heure_debut, heure_fin, motif, observations } = req.body;

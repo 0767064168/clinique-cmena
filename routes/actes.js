@@ -5,7 +5,7 @@ const { supabase } = require('../config/supabase');
 router.get('/', async (req, res) => {
     try {
         const { data: actes, error } = await supabase
-            .from('actes')
+            .from('actes_medicaux')
             .select('*')
             .eq('actif', true)
             .order('categorie')
@@ -30,11 +30,12 @@ router.get('/create', (req, res) => {
 
 router.post('/', async (req, res) => {
     try {
-        const { code, libelle, categorie, prix_de_base } = req.body;
+        const { code, libelle, categorie, prix_unitaire } = req.body;
+        const cat = categorie ? categorie.toLowerCase() : 'consultation';
         
         const { error } = await supabase
-            .from('actes')
-            .insert([{ code, libelle, categorie, prix_de_base }]);
+            .from('actes_medicaux')
+            .insert([{ code, libelle, categorie: cat, prix_unitaire: parseFloat(prix_unitaire || 0) }]);
 
         if (error) throw error;
 
@@ -43,14 +44,14 @@ router.post('/', async (req, res) => {
     } catch (error) {
         console.error(error);
         req.flash('error', 'Erreur lors de la création de l\'acte');
-        res.redirect('/actes/create');
+        res.redirect('/actes');
     }
 });
 
 router.get('/:id/edit', async (req, res) => {
     try {
         const { data: acte, error } = await supabase
-            .from('actes')
+            .from('actes_medicaux')
             .select('*')
             .eq('id', req.params.id)
             .single();
@@ -67,11 +68,12 @@ router.get('/:id/edit', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
     try {
-        const { code, libelle, categorie, prix_de_base } = req.body;
+        const { code, libelle, categorie, prix_unitaire } = req.body;
+        const cat = categorie ? categorie.toLowerCase() : 'consultation';
         
         const { error } = await supabase
-            .from('actes')
-            .update({ code, libelle, categorie, prix_de_base })
+            .from('actes_medicaux')
+            .update({ code, libelle, categorie: cat, prix_unitaire: parseFloat(prix_unitaire || 0) })
             .eq('id', req.params.id);
 
         if (error) throw error;
@@ -88,7 +90,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const { error } = await supabase
-            .from('actes')
+            .from('actes_medicaux')
             .update({ actif: false })
             .eq('id', req.params.id);
 

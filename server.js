@@ -130,6 +130,7 @@ app.use((req, res, next) => {
 
 // Enregistrement des routes de l'application
 app.use('/', dashboardRoutes);
+app.use('/dashboard', dashboardRoutes);
 app.use('/patients', patientsRoutes);
 app.use('/praticiens', praticiensRoutes);
 app.use('/factures', facturesRoutes);

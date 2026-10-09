@@ -44,7 +44,7 @@ router.get('/create', async (req, res) => {
             selectedConsultation = data;
         }
 
-        const { data: actes } = await supabase.from('actes').select('*').eq('actif', true).order('libelle');
+        const { data: actes } = await supabase.from('actes_medicaux').select('*').eq('actif', true).order('libelle');
         const { data: consultations } = await supabase.from('consultations').select('*, patients(nom, prenom)').eq('statut', 'terminee').order('date_consultation', { ascending: false }).limit(50);
 
         res.render('factures/create', { 
@@ -58,6 +58,8 @@ router.get('/create', async (req, res) => {
         res.redirect('/factures');
     }
 });
+
+router.get(['/nouveau', '/nouvelle'], (req, res) => res.redirect('/factures/create'));
 
 router.post('/', async (req, res) => {
     try {

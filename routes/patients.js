@@ -47,6 +47,8 @@ router.get('/create', async (req, res) => {
     }
 });
 
+router.get('/nouveau', (req, res) => res.redirect('/patients/create'));
+
 router.post('/', async (req, res) => {
     try {
         const { nom, prenom, sexe, date_naissance, telephone, email, adresse, assurance_id, numero_assure } = req.body;

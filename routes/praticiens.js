@@ -30,6 +30,8 @@ router.get('/create', (req, res) => {
     res.render('praticiens/create', { title: 'Nouveau Praticien' });
 });
 
+router.get('/nouveau', (req, res) => res.redirect('/praticiens/create'));
+
 router.post('/', async (req, res) => {
     try {
         const { nom, prenom, specialite, telephone, email } = req.body;
