@@ -11,25 +11,25 @@
         <form action="/factures" method="GET" class="flex flex-wrap gap-4 items-end">
             <div class="flex-grow max-w-sm">
                 <label class="block text-sm text-gray-600 mb-1">Rechercher</label>
-                <input type="text" name="search" placeholder="N° facture, patient..." class="w-full border rounded-md px-3 py-2" value="<%= typeof query !== 'undefined' ? query.search : '' %>">
+                <input type="text" name="search" placeholder="Patient..." class="w-full border rounded-md px-3 py-2" value="<%= filters && filters.search ? filters.search : '' %>">
             </div>
             <div>
                 <label class="block text-sm text-gray-600 mb-1">Du</label>
-                <input type="date" name="date_from" class="border rounded-md px-3 py-2" value="<%= typeof query !== 'undefined' ? query.date_from : '' %>">
+                <input type="date" name="date_from" class="border rounded-md px-3 py-2" value="<%= filters && filters.date_from ? filters.date_from : '' %>">
             </div>
             <div>
                 <label class="block text-sm text-gray-600 mb-1">Au</label>
-                <input type="date" name="date_to" class="border rounded-md px-3 py-2" value="<%= typeof query !== 'undefined' ? query.date_to : '' %>">
+                <input type="date" name="date_to" class="border rounded-md px-3 py-2" value="<%= filters && filters.date_to ? filters.date_to : '' %>">
             </div>
             <div>
                 <label class="block text-sm text-gray-600 mb-1">Statut</label>
                 <select name="statut" class="border rounded-md px-3 py-2 min-w-[150px]">
                     <option value="">Tous</option>
-                    <option value="brouillon" <%= typeof query !== 'undefined' && query.statut === 'brouillon' ? 'selected' : '' %>>Brouillon</option>
-                    <option value="validee" <%= typeof query !== 'undefined' && query.statut === 'validee' ? 'selected' : '' %>>Validée</option>
-                    <option value="payee" <%= typeof query !== 'undefined' && query.statut === 'payee' ? 'selected' : '' %>>Payée</option>
-                    <option value="partiellement_payee" <%= typeof query !== 'undefined' && query.statut === 'partiellement_payee' ? 'selected' : '' %>>Partiellement payée</option>
-                    <option value="annulee" <%= typeof query !== 'undefined' && query.statut === 'annulee' ? 'selected' : '' %>>Annulée</option>
+                    <option value="brouillon" <%= filters && filters.statut === 'brouillon' ? 'selected' : '' %>>Brouillon</option>
+                    <option value="validee" <%= filters && filters.statut === 'validee' ? 'selected' : '' %>>Validée</option>
+                    <option value="payee" <%= filters && filters.statut === 'payee' ? 'selected' : '' %>>Payée</option>
+                    <option value="partiellement_payee" <%= filters && filters.statut === 'partiellement_payee' ? 'selected' : '' %>>Partiellement payée</option>
+                    <option value="annulee" <%= filters && filters.statut === 'annulee' ? 'selected' : '' %>>Annulée</option>
                 </select>
             </div>
             <button type="submit" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Filtrer</button>
@@ -54,10 +54,10 @@
                 <% if (typeof factures !== 'undefined' && factures.length > 0) { %>
                     <% factures.forEach(facture => { %>
                         <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= facture.numero %></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= facture.numero_facture || '-' %></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= new Date(facture.date_facture).toLocaleDateString('fr-FR') %></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= facture.patient_nom %></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold"><%= facture.total_net.toLocaleString('fr-FR') %> FCFA</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= facture.patients ? facture.patients.nom + ' ' + facture.patients.prenom : '-' %></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold"><%= (facture.total_net || 0).toLocaleString('fr-FR') %> FCFA</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <% 
                                     let badgeClass = '';

@@ -95,7 +95,7 @@ router.delete('/:id', async (req, res) => {
         // Revert facture
         const nouveau_montant_paye = parseFloat(facture.montant_paye || 0) - parseFloat(paiement.montant);
         const nouveau_reste_a_payer = facture.total_net - nouveau_montant_paye;
-        let statut = 'impayee';
+        let statut = 'validee';
         if (nouveau_montant_paye > 0) statut = 'partiellement_payee';
 
         await supabase

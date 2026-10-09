@@ -1,76 +1,209 @@
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Facture #<%= facture.numero %></h1>
+        <h1 class="text-3xl font-bold text-gray-800">Facture N°<%= facture.numero_facture %></h1>
         <div class="flex gap-2">
             <% if (facture.statut === 'brouillon') { %>
-                <form action="/factures/<%= facture.id %>/valider" method="POST" class="inline">
+                <form action="/factures/<%= facture.id %>/valider?_method=PUT" method="POST" class="inline">
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Valider</button>
                 </form>
             <% } %>
-            <% if (facture.statut !== 'brouillon' && facture.reste_a_payer > 0) { %>
+            <% if (facture.statut !== 'brouillon' && facture.statut !== 'annulee' && (facture.reste_a_payer || 0) > 0) { %>
                 <button type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onclick="document.getElementById('payment-modal').classList.remove('hidden')">Enregistrer Paiement</button>
             <% } %>
             <a href="/factures/<%= facture.id %>/print" target="_blank" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded">Imprimer</a>
+            <a href="/factures" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Retour</a>
         </div>
     </div>
 
-    <!-- Alert status -->
+    <!-- Statut alert -->
     <% 
         let alertClass = 'bg-gray-50 border-gray-200 text-gray-800';
         let statutMsg = 'Brouillon';
         if (facture.statut === 'validee') { alertClass = 'bg-blue-50 border-blue-200 text-blue-800'; statutMsg = 'Validée (En attente de paiement)'; }
         if (facture.statut === 'payee') { alertClass = 'bg-green-50 border-green-200 text-green-800'; statutMsg = 'Payée intégralement'; }
-        if (facture.statut === 'partiellement_payee') { alertClass = 'bg-yellow-50 border-yellow-200 text-yellow-800'; statutMsg = 'Partiellement payée (Reste: ' + facture.reste_a_payer.toLocaleString('fr-FR') + ' FCFA)'; }
+        if (facture.statut === 'partiellement_payee') { alertClass = 'bg-yellow-50 border-yellow-200 text-yellow-800'; statutMsg = 'Partiellement payée (Reste: ' + (facture.reste_a_payer || 0).toLocaleString('fr-FR') + ' FCFA)'; }
+        if (facture.statut === 'annulee') { alertClass = 'bg-red-50 border-red-200 text-red-800'; statutMsg = 'Annulée'; }
     %>
     <div class="border rounded-md p-4 mb-6 <%= alertClass %> flex justify-between items-center">
         <div>
             <span class="font-bold">Statut :</span> <%= statutMsg %>
         </div>
         <div class="font-bold text-lg">
-            Total : <%= facture.total_net.toLocaleString('fr-FR') %> FCFA
+            Total : <%= (facture.total_net || 0).toLocaleString('fr-FR') %> FCFA
         </div>
     </div>
 
-    <!-- Content -->
-    <!-- (Summary implementation of the show view, more details would mirror the print layout) -->
-    
-    <!-- Payment Modal (Hidden by default) -->
+    <!-- Infos patient et consultation -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-700 mb-3">Patient</h2>
+            <% if (facture.patients) { %>
+                <p class="text-gray-900 font-medium"><%= facture.patients.nom %> <%= facture.patients.prenom %></p>
+                <% if (facture.patients.matricule) { %><p class="text-gray-500 text-sm">Matricule : <%= facture.patients.matricule %></p><% } %>
+                <% if (facture.patients.telephone) { %><p class="text-gray-500 text-sm">Tél : <%= facture.patients.telephone %></p><% } %>
+            <% } else { %>
+                <p class="text-gray-400">—</p>
+            <% } %>
+        </div>
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-700 mb-3">Consultation</h2>
+            <% if (facture.consultations) { %>
+                <p class="text-gray-500 text-sm">Date entrée : <%= new Date(facture.consultations.date_entree).toLocaleDateString('fr-FR') %></p>
+                <% if (facture.consultations.motif) { %><p class="text-gray-500 text-sm">Motif : <%= facture.consultations.motif %></p><% } %>
+            <% } else { %>
+                <p class="text-gray-400">Aucune consultation liée</p>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Lignes de facturation -->
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
+        <div class="flex justify-between items-center px-6 py-4 border-b">
+            <h2 class="text-lg font-semibold text-gray-700">Lignes de facturation</h2>
+            <% if (facture.statut === 'brouillon') { %>
+                <button type="button" class="text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-1 px-3 rounded" onclick="document.getElementById('add-ligne-modal').classList.remove('hidden')">+ Ajouter</button>
+            <% } %>
+        </div>
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Libellé</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">P.U.</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qté</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">%</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant</th>
+                    <% if (facture.statut === 'brouillon') { %><th class="px-6 py-3"></th><% } %>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                <% if (lignes && lignes.length > 0) { %>
+                    <% lignes.forEach(ligne => { %>
+                        <tr>
+                            <td class="px-6 py-4 text-sm text-gray-900"><%= ligne.libelle %></td>
+                            <td class="px-6 py-4 text-sm text-gray-600"><%= (ligne.prix_unitaire || 0).toLocaleString('fr-FR') %></td>
+                            <td class="px-6 py-4 text-sm text-gray-600"><%= ligne.quantite %></td>
+                            <td class="px-6 py-4 text-sm text-gray-600"><%= ligne.pourcentage %>%</td>
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900"><%= (ligne.montant || 0).toLocaleString('fr-FR') %> FCFA</td>
+                            <% if (facture.statut === 'brouillon') { %>
+                                <td class="px-6 py-4 text-sm">
+                                    <form action="/factures/<%= facture.id %>/lignes/<%= ligne.id %>?_method=DELETE" method="POST">
+                                        <button type="submit" class="text-red-600 hover:text-red-900">Supprimer</button>
+                                    </form>
+                                </td>
+                            <% } %>
+                        </tr>
+                    <% }); %>
+                <% } else { %>
+                    <tr><td colspan="6" class="px-6 py-4 text-center text-gray-400">Aucune ligne</td></tr>
+                <% } %>
+            </tbody>
+            <tfoot class="bg-gray-50">
+                <tr>
+                    <td colspan="4" class="px-6 py-3 text-right text-sm font-medium text-gray-700">Sous-total</td>
+                    <td class="px-6 py-3 text-sm font-medium text-gray-900"><%= (facture.total || 0).toLocaleString('fr-FR') %> FCFA</td>
+                    <% if (facture.statut === 'brouillon') { %><td></td><% } %>
+                </tr>
+                <tr>
+                    <td colspan="4" class="px-6 py-3 text-right text-sm font-medium text-gray-700">Remise</td>
+                    <td class="px-6 py-3 text-sm font-medium text-red-600">- <%= (facture.remise || 0).toLocaleString('fr-FR') %> FCFA</td>
+                    <% if (facture.statut === 'brouillon') { %><td></td><% } %>
+                </tr>
+                <tr class="border-t-2 border-gray-300">
+                    <td colspan="4" class="px-6 py-3 text-right text-base font-bold text-gray-800">Total TTC</td>
+                    <td class="px-6 py-3 text-base font-bold text-gray-900"><%= (facture.total_net || 0).toLocaleString('fr-FR') %> FCFA</td>
+                    <% if (facture.statut === 'brouillon') { %><td></td><% } %>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- Paiements -->
+    <% if (paiements && paiements.length > 0) { %>
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
+        <h2 class="text-lg font-semibold text-gray-700 px-6 py-4 border-b">Paiements enregistrés</h2>
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mode</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Référence</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                <% paiements.forEach(p => { %>
+                    <tr>
+                        <td class="px-6 py-4 text-sm text-gray-600"><%= new Date(p.date_paiement).toLocaleDateString('fr-FR') %></td>
+                        <td class="px-6 py-4 text-sm text-gray-600"><%= p.mode_paiement %></td>
+                        <td class="px-6 py-4 text-sm text-gray-500"><%= p.reference || '—' %></td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900"><%= (p.montant || 0).toLocaleString('fr-FR') %> FCFA</td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+    <% } %>
+
+    <!-- Modal ajout ligne -->
+    <div id="add-ligne-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Ajouter une ligne</h3>
+            <form action="/factures/<%= facture.id %>/lignes" method="POST" class="space-y-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Libellé</label>
+                    <input type="text" name="libelle" required class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">P.U.</label>
+                        <input type="number" name="prix_unitaire" value="0" min="0" required class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Qté</label>
+                        <input type="number" name="quantite" value="1" min="1" required class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">% pris en charge</label>
+                        <input type="number" name="pourcentage" value="100" min="0" max="100" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-4">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white font-medium py-2 px-4 rounded hover:bg-blue-700">Ajouter</button>
+                    <button type="button" onclick="document.getElementById('add-ligne-modal').classList.add('hidden')" class="flex-1 bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded hover:bg-gray-50">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal paiement -->
     <div id="payment-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3">
-                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Nouveau Paiement</h3>
-                <form action="/paiements" method="POST">
-                    <input type="hidden" name="facture_id" value="<%= facture.id %>">
-                    <div class="mt-2 space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Montant (FCFA)</label>
-                            <input type="number" name="montant" value="<%= facture.reste_a_payer %>" max="<%= facture.reste_a_payer %>" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Mode de paiement</label>
-                            <select name="mode_paiement" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                                <option value="ESPECES">Espèces</option>
-                                <option value="CARTE_BANCAIRE">Carte Bancaire</option>
-                                <option value="CHEQUE">Chèque</option>
-                                <option value="VIREMENT">Virement</option>
-                                <option value="MOBILE_MONEY">Mobile Money</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Référence (Optionnel)</label>
-                            <input type="text" name="reference" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                        </div>
-                    </div>
-                    <div class="mt-5 flex gap-3">
-                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:text-sm">
-                            Enregistrer
-                        </button>
-                        <button type="button" onclick="document.getElementById('payment-modal').classList.add('hidden')" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:text-sm">
-                            Annuler
-                        </button>
-                    </div>
-                </form>
-            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Nouveau Paiement</h3>
+            <form action="/paiements" method="POST" class="space-y-4">
+                <input type="hidden" name="facture_id" value="<%= facture.id %>">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Montant (FCFA)</label>
+                    <input type="number" name="montant" value="<%= facture.reste_a_payer || 0 %>" max="<%= facture.reste_a_payer || 0 %>" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Mode de paiement</label>
+                    <select name="mode_paiement" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
+                        <option value="especes">Espèces</option>
+                        <option value="carte">Carte Bancaire</option>
+                        <option value="cheque">Chèque</option>
+                        <option value="virement">Virement</option>
+                        <option value="mobile_money">Mobile Money</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Référence (Optionnel)</label>
+                    <input type="text" name="reference" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
+                </div>
+                <div class="flex gap-3 mt-5">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white font-medium py-2 px-4 rounded hover:bg-blue-700">Enregistrer</button>
+                    <button type="button" onclick="document.getElementById('payment-modal').classList.add('hidden')" class="flex-1 bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded hover:bg-gray-50">Annuler</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
