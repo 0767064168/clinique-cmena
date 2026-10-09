@@ -51,8 +51,6 @@ clinique-cmena/
 │   ├── partials/               # En-tête, barre latérale, pagination
 │   ├── patients/               # Vues des patients
 │   └── praticiens/             # Vues des praticiens
-├── .env                        # Variables d'environnement
-├── .env.example                # Modèle de variables
 ├── package.json
 └── server.js                   # Point d'entrée de l'application
 ```
