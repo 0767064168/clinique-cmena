@@ -1,0 +1,133 @@
+<div class="container mx-auto px-4 py-8" x-data="{ tab: 'informations' }">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Dossier Patient : <%= patient.nom %> <%= patient.prenom %></h1>
+        <div class="flex gap-2">
+            <a href="/consultations/create?patient_id=<%= patient.id %>" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Nouvelle Consultation</a>
+            <a href="/factures/create?patient_id=<%= patient.id %>" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Nouvelle Facture</a>
+            <a href="/patients/<%= patient.id %>/edit" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Modifier</a>
+        </div>
+    </div>
+
+    <!-- Tabs Header -->
+    <div class="border-b border-gray-200 mb-6">
+        <nav class="-mb-px flex gap-8">
+            <button @click="tab = 'informations'" :class="{'border-blue-500 text-blue-600': tab === 'informations', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'informations'}" class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm">Informations</button>
+            <button @click="tab = 'consultations'" :class="{'border-blue-500 text-blue-600': tab === 'consultations', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'consultations'}" class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm">Consultations</button>
+            <button @click="tab = 'factures'" :class="{'border-blue-500 text-blue-600': tab === 'factures', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'factures'}" class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm">Factures</button>
+        </nav>
+    </div>
+
+    <!-- Tab Contents -->
+    <div>
+        <!-- Informations Tab -->
+        <div x-show="tab === 'informations'" class="bg-white shadow rounded-lg p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Profil</h3>
+                    <dl class="space-y-3">
+                        <div class="flex justify-between"><dt class="text-gray-500">N° Dossier:</dt> <dd class="font-medium"><%= patient.numero_dossier %></dd></div>
+                        <div class="flex justify-between"><dt class="text-gray-500">Sexe:</dt> <dd class="font-medium"><%= patient.sexe === 'M' ? 'Masculin' : (patient.sexe === 'F' ? 'Féminin' : '-') %></dd></div>
+                        <div class="flex justify-between"><dt class="text-gray-500">Date de naissance:</dt> <dd class="font-medium"><%= patient.date_naissance ? new Date(patient.date_naissance).toLocaleDateString('fr-FR') : '-' %></dd></div>
+                        <div class="flex justify-between"><dt class="text-gray-500">Téléphone:</dt> <dd class="font-medium"><%= patient.telephone || '-' %></dd></div>
+                        <div class="flex justify-between"><dt class="text-gray-500">Ville:</dt> <dd class="font-medium"><%= patient.ville || '-' %></dd></div>
+                        <div class="flex justify-between"><dt class="text-gray-500">Adresse:</dt> <dd class="font-medium"><%= patient.adresse || '-' %></dd></div>
+                    </dl>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Médical & Assurance</h3>
+                    <dl class="space-y-3">
+                        <div class="flex justify-between"><dt class="text-gray-500">Groupe Sanguin:</dt> <dd class="font-medium"><%= patient.groupe_sanguin || '-' %></dd></div>
+                        <div class="flex justify-between"><dt class="text-gray-500">Allergies:</dt> <dd class="font-medium"><%= patient.allergies || '-' %></dd></div>
+                        <div class="flex justify-between"><dt class="text-gray-500">Antécédents:</dt> <dd class="font-medium"><%= patient.antecedents || '-' %></dd></div>
+                        <hr class="my-2">
+                        <div class="flex justify-between"><dt class="text-gray-500">Assurance:</dt> <dd class="font-medium"><%= patient.type_assurance %> <%= patient.assureur ? '- ' + patient.assureur : '' %></dd></div>
+                        <div class="flex justify-between"><dt class="text-gray-500">Souscripteur:</dt> <dd class="font-medium"><%= patient.souscripteur || '-' %></dd></div>
+                        <div class="flex justify-between"><dt class="text-gray-500">N° Police:</dt> <dd class="font-medium"><%= patient.numero_police || '-' %></dd></div>
+                        <hr class="my-2">
+                        <div class="flex justify-between"><dt class="text-gray-500">Urgence:</dt> <dd class="font-medium"><%= patient.contact_urgence_nom || '-' %> (<%= patient.contact_urgence_telephone || '-' %>)</dd></div>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Consultations Tab -->
+        <div x-show="tab === 'consultations'" style="display: none;">
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Praticien</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motif</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <% if (typeof consultations !== 'undefined' && consultations.length > 0) { %>
+                            <% consultations.forEach(consultation => { %>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= new Date(consultation.date_entree).toLocaleString('fr-FR') %></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= consultation.praticien_nom %></td>
+                                    <td class="px-6 py-4 text-sm text-gray-500"><%= consultation.motif %></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= consultation.statut %></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <a href="/consultations/<%= consultation.id %>" class="text-blue-600 hover:text-blue-900">Voir</a>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Aucune consultation</td></tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Factures Tab -->
+        <div x-show="tab === 'factures'" style="display: none;">
+            <div class="bg-white shadow rounded-lg overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">N° Facture</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant TTC</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reste à payer</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <% if (typeof factures !== 'undefined' && factures.length > 0) { %>
+                            <% factures.forEach(facture => { %>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= facture.numero %></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= new Date(facture.date_facture).toLocaleDateString('fr-FR') %></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= facture.total_net.toLocaleString('fr-FR') %> FCFA</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= facture.reste_a_payer.toLocaleString('fr-FR') %> FCFA</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                            <%= facture.statut === 'payee' ? 'bg-green-100 text-green-800' : 
+                                               (facture.statut === 'brouillon' ? 'bg-gray-100 text-gray-800' : 
+                                               (facture.statut === 'validee' ? 'bg-blue-100 text-blue-800' : 
+                                               (facture.statut === 'partiellement_payee' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'))) %>">
+                                            <%= facture.statut %>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
+                                        <a href="/factures/<%= facture.id %>" class="text-blue-600 hover:text-blue-900">Détails</a>
+                                        <a href="/factures/<%= facture.id %>/print" target="_blank" class="text-gray-600 hover:text-gray-900">Imprimer</a>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Aucune facture</td></tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Make sure to include AlpineJS in the layout -->

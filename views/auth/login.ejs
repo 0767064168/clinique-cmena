@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'Connexion | Clinique CMENA' %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="h-full flex items-center justify-center p-4">
+  <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-lg border border-slate-100">
+    <div class="text-center">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl mb-4">
+        <i class="fa-solid fa-hospital-user text-3xl"></i>
+      </div>
+      <h2 class="text-2xl font-extrabold text-slate-800">Clinique CMENA</h2>
+      <p class="text-sm text-slate-500 mt-1">Clinique Médico-Chirurgicale NANAN</p>
+      <p class="text-xs text-slate-400 mt-0.5">Côte d'Ivoire</p>
+    </div>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="bg-rose-50 border-l-4 border-rose-500 p-3 rounded text-rose-700 text-sm">
+        <i class="fa-solid fa-circle-exclamation mr-2"></i><%= error %>
+      </div>
+    <% } %>
+
+    <form class="mt-8 space-y-5" action="/auth/login" method="POST">
+      <div>
+        <label for="email" class="block text-sm font-medium text-slate-700 mb-1">Adresse Email ou Identifiant</label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-envelope"></i></span>
+          <input id="email" name="email" type="text" required class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="admin@cmena.ci">
+        </div>
+      </div>
+
+      <div>
+        <label for="password" class="block text-sm font-medium text-slate-700 mb-1">Mot de passe</label>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-lock"></i></span>
+          <input id="password" name="password" type="password" required class="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="••••••••">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between text-sm">
+        <label class="flex items-center text-slate-600">
+          <input type="checkbox" name="remember" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 mr-2">
+          Se souvenir de moi
+        </label>
+      </div>
+
+      <div>
+        <button type="submit" class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition">
+          Se connecter
+        </button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

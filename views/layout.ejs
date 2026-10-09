@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr" class="bg-gray-50 h-full antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%- typeof pageTitle !== 'undefined' ? pageTitle + ' - ' : '' %>CMENA Clinique</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            DEFAULT: '#1e40af', // blue-800
+                            light: '#3b82f6', // blue-500
+                            dark: '#1e3a5f', // darker blue for sidebar
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Styles personnalisés CMENA -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Script principal CMENA -->
+    <script defer src="/js/main.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="h-full font-sans text-gray-900" x-data="{ sidebarOpen: false }">
+
+    <!-- Sidebar -->
+    <%- include('partials/sidebar') %>
+
+    <!-- Main Content -->
+    <div class="flex flex-col flex-1 h-full md:pl-64 transition-all duration-300">
+        <!-- Header -->
+        <%- include('partials/header') %>
+
+        <!-- Main Area -->
+        <main class="flex-1 pb-8">
+            <div class="px-4 sm:px-6 lg:px-8 mt-8">
+                <!-- Flash Messages -->
+                <% if (typeof messages !== 'undefined') { %>
+                    <% if (messages.success && messages.success.length > 0) { %>
+                        <div class="mb-4 bg-green-50 border-l-4 border-green-500 p-4 rounded-md shadow-sm">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-check-circle text-green-400"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-green-700"><%= messages.success %></p>
+                                </div>
+                            </div>
+                        </div>
+                    <% } %>
+                    <% if (messages.error && messages.error.length > 0) { %>
+                        <div class="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md shadow-sm">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-exclamation-circle text-red-400"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-red-700"><%= messages.error %></p>
+                                </div>
+                            </div>
+                        </div>
+                    <% } %>
+                <% } %>
+
+                <%- body %>
+            </div>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="bg-white border-t border-gray-200 mt-auto py-4">
+            <div class="px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">
+                &copy; <%= new Date().getFullYear() %> Clinique Médico-Chirurgicale NANAN (CMENA) - Bouaké. Tous droits réservés.
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facture <%= facture.numero %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Arial', sans-serif; font-size: 12px; }
+        .invoice-box { max-width: 800px; margin: auto; padding: 30px; background: white; }
+        .table-borders th, .table-borders td { border: 1px solid #000; padding: 4px 8px; }
+        @media print {
+            body { background: white; }
+            .invoice-box { padding: 0; box-shadow: none; max-width: 100%; }
+            .no-print { display: none !important; }
+            .table-borders th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 py-8">
+    
+    <div class="text-center mb-4 no-print">
+        <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded shadow font-bold">Imprimer la facture</button>
+    </div>
+
+    <div class="invoice-box shadow-lg">
+        <!-- Header -->
+        <div class="flex justify-between items-start mb-6 border-b pb-4 border-black">
+            <div class="w-1/3">
+                <!-- Placeholder for logo cross -->
+                <div class="w-12 h-12 bg-green-600 flex items-center justify-center text-white font-bold text-2xl mb-2">+</div>
+                <div class="text-[10px] leading-tight">
+                    <p>BP1339 Bouaké 01</p>
+                    <p>Tel(+225) 2731633563</p>
+                    <p>Mob:0505022777</p>
+                    <p>cmenabke@hotmail.fr</p>
+                </div>
+            </div>
+            <div class="w-1/3 text-center">
+                <h1 class="font-bold text-lg leading-tight uppercase">CLINIQUE MEDICO-CHIRURGICALE NANAN (CMENA)</h1>
+            </div>
+            <div class="w-1/3 text-right text-[10px]">
+                <p>Edité le: <%= new Date().toLocaleDateString('fr-FR') %> à <%= new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'}) %></p>
+            </div>
+        </div>
+
+        <div class="text-center font-bold text-xl uppercase mb-6 underline">
+            Facture client
+        </div>
+
+        <!-- Patient Info -->
+        <div class="mb-4 text-sm font-bold">
+            <p>Patient : <%= facture.patient_nom %></p>
+            <p>N° Dossier : <%= facture.numero_dossier %></p>
+        </div>
+
+        <!-- Meta Box -->
+        <div class="border border-black flex mb-4 text-xs">
+            <div class="w-1/3 border-r border-black p-2 space-y-1">
+                <p><span class="font-bold">Assurance :</span> <%= facture.type_assurance || 'PARTICULIER' %></p>
+                <p><span class="font-bold">Assureur :</span> <%= facture.assureur || '' %></p>
+                <p><span class="font-bold">Souscripteur :</span> <%= facture.souscripteur || '' %></p>
+            </div>
+            <div class="w-1/3 border-r border-black p-2 space-y-1 text-center">
+                <p><span class="font-bold">N° facture :</span> <%= facture.numero %></p>
+                <p><span class="font-bold">Nbre jour(s) :</span> -</p>
+                <p><span class="font-bold">Date accueil :</span> <%= new Date(facture.date_facture).toLocaleDateString('fr-FR') %></p>
+            </div>
+            <div class="w-1/3 p-2 space-y-1 text-right">
+                <p><span class="font-bold">Date entrée :</span> <%= facture.date_entree ? new Date(facture.date_entree).toLocaleDateString('fr-FR') : '' %></p>
+                <p><span class="font-bold">Date sortie :</span> <%= facture.date_sortie ? new Date(facture.date_sortie).toLocaleDateString('fr-FR') : '' %></p>
+            </div>
+        </div>
+
+        <!-- Extra Info -->
+        <div class="text-xs space-y-1 mb-4">
+            <p><span class="font-bold">Praticien :</span> <%= facture.praticien || '' %></p>
+            <p><span class="font-bold">Matricule :</span> </p>
+            <p><span class="font-bold">Editer par :</span> Admin</p>
+            <p><span class="font-bold">Motif :</span> <%= facture.motif || '' %></p>
+        </div>
+
+        <!-- Table -->
+        <table class="w-full text-xs table-borders mb-2" style="border-collapse: collapse;">
+            <thead class="bg-gray-100 font-bold">
+                <tr>
+                    <th class="text-left">Libellé</th>
+                    <th class="text-left">Nom praticien</th>
+                    <th class="text-right">PU</th>
+                    <th class="text-right">Qté</th>
+                    <th class="text-right">%</th>
+                    <th class="text-right">Montant</th>
+                    <th class="text-right">Assureur</th>
+                    <th class="text-right">Assuré</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (typeof lignes !== 'undefined') { %>
+                    <% lignes.forEach(ligne => { %>
+                        <tr>
+                            <td><%= ligne.libelle %></td>
+                            <td><%= ligne.nom_praticien || '' %></td>
+                            <td class="text-right"><%= ligne.pu.toLocaleString('fr-FR') %></td>
+                            <td class="text-right"><%= ligne.qte %></td>
+                            <td class="text-right"><%= ligne.pourcentage %>%</td>
+                            <td class="text-right"><%= (ligne.pu * ligne.qte * ligne.pourcentage/100).toLocaleString('fr-FR') %></td>
+                            <td class="text-right"><%= (ligne.part_assureur || 0).toLocaleString('fr-FR') %></td>
+                            <td class="text-right"><%= (ligne.part_assure || 0).toLocaleString('fr-FR') %></td>
+                        </tr>
+                    <% }); %>
+                <% } else { %>
+                    <!-- Fallback row for preview -->
+                    <tr>
+                        <td>Consultation</td>
+                        <td></td>
+                        <td class="text-right"><%= facture.total.toLocaleString('fr-FR') %></td>
+                        <td class="text-right">1</td>
+                        <td class="text-right">100%</td>
+                        <td class="text-right"><%= facture.total.toLocaleString('fr-FR') %></td>
+                        <td class="text-right">0</td>
+                        <td class="text-right"><%= facture.total.toLocaleString('fr-FR') %></td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+        
+        <div class="text-xs mb-6">
+            Nbre de ligne(s): <%= typeof lignes !== 'undefined' ? lignes.length : 1 %>
+        </div>
+
+        <!-- Totals -->
+        <div class="flex justify-end mb-6 text-sm">
+            <div class="w-1/2">
+                <div class="flex justify-between font-bold">
+                    <span>Total :</span>
+                    <span><%= facture.total.toLocaleString('fr-FR') %></span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Remise :</span>
+                    <span><%= facture.remise.toLocaleString('fr-FR') %></span>
+                </div>
+                <div class="flex justify-between font-bold border-t border-black pt-1 mt-1">
+                    <span>Total net :</span>
+                    <span><%= facture.total_net.toLocaleString('fr-FR') %></span>
+                </div>
+                <div class="flex justify-between text-xs mt-1">
+                    <span>Soit € :</span>
+                    <span><%= (facture.total_net / 655.957).toFixed(2).replace('.', ',') %></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-sm space-y-2 mb-8 font-bold">
+            <p>Total règlement effectuée par le patient : <span class="float-right"><%= (facture.total_net - facture.reste_a_payer).toLocaleString('fr-FR') %> FCFA</span></p>
+            <p>Reste à regler TTC par le patient : <span class="float-right"><%= facture.reste_a_payer.toLocaleString('fr-FR') %> FCFA</span></p>
+        </div>
+
+        <div class="text-sm font-bold text-center mb-12 uppercase italic">
+            Arrêté la présente facture à la somme de: <%= facture.total_net.toLocaleString('fr-FR') %> FRANCS CFA
+        </div>
+
+        <!-- Footer signatures -->
+        <div class="flex justify-between text-sm font-bold px-8">
+            <div class="underline">Visa client</div>
+            <div class="underline">La Facturation</div>
+        </div>
+    </div>
+
+    <script>
+        // Auto print
+        window.onload = function() {
+            // window.print();
+        }
+    </script>
+</body>
+</html>

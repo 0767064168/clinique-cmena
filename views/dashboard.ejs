@@ -1,0 +1,199 @@
+<!-- Dashboard Quick Actions -->
+<div class="mb-6 flex flex-wrap gap-3">
+    <a href="/patients/nouveau" class="inline-flex items-center gap-x-2 rounded-md bg-primary px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+        <i class="fas fa-plus-circle"></i>
+        Nouveau Patient
+    </a>
+    <a href="/consultations/nouvelle" class="inline-flex items-center gap-x-2 rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+        <i class="fas fa-stethoscope text-green-600"></i>
+        Nouvelle Consultation
+    </a>
+    <a href="/factures/nouvelle" class="inline-flex items-center gap-x-2 rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+        <i class="fas fa-file-invoice text-red-500"></i>
+        Nouvelle Facture
+    </a>
+</div>
+
+<!-- Stats Grid -->
+<dl class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+    <!-- Stat 1 -->
+    <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6 border-t-4 border-blue-500">
+        <dt>
+            <div class="absolute rounded-md bg-blue-50 p-3">
+                <i class="fas fa-users text-blue-500 text-xl w-6 text-center"></i>
+            </div>
+            <p class="ml-16 truncate text-sm font-medium text-gray-500">Total Patients</p>
+        </dt>
+        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
+            <p class="text-2xl font-semibold text-gray-900">
+                <%= typeof stats !== 'undefined' ? stats.totalPatients : '1 245' %>
+            </p>
+            <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
+                <div class="text-sm">
+                    <a href="/patients" class="font-medium text-primary hover:text-primary-light">Voir tous<span class="sr-only"> les patients</span></a>
+                </div>
+            </div>
+        </dd>
+    </div>
+
+    <!-- Stat 2 -->
+    <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6 border-t-4 border-green-500">
+        <dt>
+            <div class="absolute rounded-md bg-green-50 p-3">
+                <i class="fas fa-stethoscope text-green-500 text-xl w-6 text-center"></i>
+            </div>
+            <p class="ml-16 truncate text-sm font-medium text-gray-500">Consultations Aujourd'hui</p>
+        </dt>
+        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
+            <p class="text-2xl font-semibold text-gray-900">
+                <%= typeof stats !== 'undefined' ? stats.consultationsToday : '12' %>
+            </p>
+            <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
+                <div class="text-sm">
+                    <a href="/consultations" class="font-medium text-primary hover:text-primary-light">Gérer l'agenda</a>
+                </div>
+            </div>
+        </dd>
+    </div>
+
+    <!-- Stat 3 -->
+    <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6 border-t-4 border-red-500">
+        <dt>
+            <div class="absolute rounded-md bg-red-50 p-3">
+                <i class="fas fa-file-invoice text-red-500 text-xl w-6 text-center"></i>
+            </div>
+            <p class="ml-16 truncate text-sm font-medium text-gray-500">Factures Impayées</p>
+        </dt>
+        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
+            <p class="text-2xl font-semibold text-gray-900">
+                <%= typeof stats !== 'undefined' ? stats.facturesImpayees : '8' %>
+            </p>
+            <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
+                <div class="text-sm">
+                    <a href="/factures?status=impayee" class="font-medium text-primary hover:text-primary-light">Traiter les factures</a>
+                </div>
+            </div>
+        </dd>
+    </div>
+
+    <!-- Stat 4 -->
+    <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6 border-t-4 border-yellow-500">
+        <dt>
+            <div class="absolute rounded-md bg-yellow-50 p-3">
+                <i class="fas fa-coins text-yellow-500 text-xl w-6 text-center"></i>
+            </div>
+            <p class="ml-16 truncate text-sm font-medium text-gray-500">Revenus du Mois</p>
+        </dt>
+        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
+            <p class="text-2xl font-semibold text-gray-900">
+                <%= typeof stats !== 'undefined' ? new Intl.NumberFormat('fr-FR').format(stats.revenusMois) : '2 450 000' %> FCFA
+            </p>
+            <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
+                <div class="text-sm">
+                    <a href="/rapports" class="font-medium text-primary hover:text-primary-light">Voir les rapports</a>
+                </div>
+            </div>
+        </dd>
+    </div>
+</dl>
+
+<!-- Tables Grid -->
+<div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+    <!-- Recent Patients -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-4 py-5 border-b border-gray-200 sm:px-6 flex justify-between items-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Patients Récents</h3>
+            <a href="/patients" class="text-sm text-primary hover:text-primary-light">Tout voir</a>
+        </div>
+        <div class="overflow-hidden">
+            <ul role="list" class="divide-y divide-gray-200">
+                <% if (typeof recentPatients !== 'undefined' && recentPatients.length > 0) { %>
+                    <% recentPatients.forEach(patient => { %>
+                        <li>
+                            <a href="/patients/<%= patient.id %>" class="block hover:bg-gray-50">
+                                <div class="px-4 py-4 sm:px-6">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-sm font-medium text-primary truncate"><%= patient.nom %> <%= patient.prenom %></p>
+                                        <div class="ml-2 flex-shrink-0 flex">
+                                            <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                <%= patient.dossier_numero %>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 sm:flex sm:justify-between">
+                                        <div class="sm:flex">
+                                            <p class="flex items-center text-sm text-gray-500">
+                                                <i class="fas fa-phone mr-1.5 text-gray-400"></i>
+                                                <%= patient.telephone %>
+                                            </p>
+                                        </div>
+                                        <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                                            <i class="fas fa-calendar mr-1.5 text-gray-400"></i>
+                                            <p>Ajouté le <time datetime="<%= patient.created_at %>"><%= new Date(patient.created_at).toLocaleDateString('fr-FR') %></time></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                    <% }) %>
+                <% } else { %>
+                    <li class="px-4 py-8 text-center text-gray-500 text-sm">
+                        Aucun patient récent
+                    </li>
+                <% } %>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Recent Factures -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-4 py-5 border-b border-gray-200 sm:px-6 flex justify-between items-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Dernières Factures</h3>
+            <a href="/factures" class="text-sm text-primary hover:text-primary-light">Tout voir</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">N° Facture</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <% if (typeof recentFactures !== 'undefined' && recentFactures.length > 0) { %>
+                        <% recentFactures.forEach(facture => { %>
+                            <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location.href='/factures/<%= facture.id %>'">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    <%= facture.numero %>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <%= facture.patient_nom %>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                    <%= new Intl.NumberFormat('fr-FR').format(facture.montant_total) %> FCFA
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <% if (facture.statut === 'payée') { %>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Payée</span>
+                                    <% } else if (facture.statut === 'impayée') { %>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Impayée</span>
+                                    <% } else { %>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Partielle</span>
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="4" class="px-6 py-8 text-center text-gray-500 text-sm">
+                                Aucune facture récente
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
