@@ -51,41 +51,54 @@ router.get('/nouveau', (req, res) => res.redirect('/patients/create'));
 
 router.post('/', async (req, res) => {
     try {
-        const { nom, prenom, sexe, date_naissance, telephone, email, adresse, assurance_id, numero_assure } = req.body;
-        
-        // Generate matricule
-        const prefix = (nom || 'XX').substring(0, 2).toUpperCase();
-        const now = new Date();
-        const timestamp = now.getFullYear().toString() +
-            String(now.getMonth() + 1).padStart(2, '0') +
-            String(now.getDate()).padStart(2, '0') +
-            String(now.getHours()).padStart(2, '0') +
-            String(now.getMinutes()).padStart(2, '0') +
-            String(now.getSeconds()).padStart(2, '0');
-        const randomDigits = Math.floor(10 + Math.random() * 90).toString();
-        const matricule = `${prefix}An${timestamp}${randomDigits}`;
+        const {
+            nom, prenom, sexe, date_naissance, telephone, email, adresse, ville,
+            groupe_sanguin, allergies, antecedents,
+            contact_urgence_nom, contact_urgence_telephone,
+            type_assurance, assureur, souscripteur, numero_police
+        } = req.body;
+
+        const patientData = {
+            nom,
+            prenom,
+            sexe: sexe || 'M',
+            date_naissance: date_naissance || null,
+            telephone: telephone || null,
+            adresse: adresse || null,
+            ville: ville || null,
+            groupe_sanguin: groupe_sanguin || null,
+            allergies: allergies || null,
+            antecedents: antecedents || null,
+            contact_urgence_nom: contact_urgence_nom || null,
+            contact_urgence_tel: contact_urgence_telephone || null
+        };
 
         const { data: patient, error } = await supabase
             .from('patients')
-            .insert([{ 
-                nom, prenom, sexe, 
-                date_naissance: date_naissance || null, 
-                telephone, email, adresse, 
-                assurance_id: assurance_id || null, 
-                numero_assure, 
-                matricule, 
-                numero_dossier: matricule 
-            }])
+            .insert([patientData])
             .select()
             .single();
 
         if (error) throw error;
 
+        // Si des informations d'assurance ont été saisies
+        if (assureur || numero_police || souscripteur) {
+            await supabase
+                .from('patient_assurances')
+                .insert([{
+                    patient_id: patient.id,
+                    type_assurance: type_assurance || 'PARTICULIER',
+                    assureur: assureur || null,
+                    souscripteur: souscripteur || null,
+                    numero_police: numero_police || null
+                }]);
+        }
+
         req.flash('success', 'Patient créé avec succès');
         res.redirect(`/patients/${patient.id}`);
     } catch (error) {
-        console.error(error);
-        req.flash('error', 'Erreur lors de la création du patient');
+        console.error('Erreur création patient:', error);
+        req.flash('error', error.message || 'Erreur lors de la création du patient');
         res.redirect('/patients/create');
     }
 });
@@ -96,17 +109,26 @@ router.get('/:id', async (req, res) => {
 
         const { data: patient, error: errPatient } = await supabase
             .from('patients')
-            .select('*, assurances (nom)')
+            .select('*, patient_assurances(*)')
             .eq('id', id)
             .single();
 
         if (errPatient) throw errPatient;
 
+        // Aplatir l'assurance principale sur l'objet patient pour la vue
+        if (patient.patient_assurances && patient.patient_assurances.length > 0) {
+            const ass = patient.patient_assurances[0];
+            patient.type_assurance = ass.type_assurance;
+            patient.assureur = ass.assureur;
+            patient.souscripteur = ass.souscripteur;
+            patient.numero_police = ass.numero_police;
+        }
+
         const { data: consultations } = await supabase
             .from('consultations')
             .select('*, praticiens(nom, prenom)')
             .eq('patient_id', id)
-            .order('date_consultation', { ascending: false });
+            .order('date_entree', { ascending: false });
 
         const { data: factures } = await supabase
             .from('factures')
@@ -131,11 +153,19 @@ router.get('/:id/edit', async (req, res) => {
     try {
         const { data: patient, error } = await supabase
             .from('patients')
-            .select('*')
+            .select('*, patient_assurances(*)')
             .eq('id', req.params.id)
             .single();
 
         if (error) throw error;
+
+        if (patient.patient_assurances && patient.patient_assurances.length > 0) {
+            const ass = patient.patient_assurances[0];
+            patient.type_assurance = ass.type_assurance;
+            patient.assureur = ass.assureur;
+            patient.souscripteur = ass.souscripteur;
+            patient.numero_police = ass.numero_police;
+        }
 
         const { data: assurances } = await supabase.from('assurances').select('*').order('nom');
 
@@ -149,20 +179,62 @@ router.get('/:id/edit', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
     try {
-        const { nom, prenom, sexe, date_naissance, telephone, email, adresse, assurance_id, numero_assure } = req.body;
+        const {
+            nom, prenom, sexe, date_naissance, telephone, email, adresse, ville,
+            groupe_sanguin, allergies, antecedents,
+            contact_urgence_nom, contact_urgence_telephone,
+            type_assurance, assureur, souscripteur, numero_police
+        } = req.body;
         
         const { error } = await supabase
             .from('patients')
             .update({ 
                 nom, prenom, sexe, 
                 date_naissance: date_naissance || null, 
-                telephone, email, adresse, 
-                assurance_id: assurance_id || null, 
-                numero_assure 
+                telephone: telephone || null,
+                adresse: adresse || null,
+                ville: ville || null,
+                groupe_sanguin: groupe_sanguin || null,
+                allergies: allergies || null,
+                antecedents: antecedents || null,
+                contact_urgence_nom: contact_urgence_nom || null,
+                contact_urgence_tel: contact_urgence_telephone || null,
+                updated_at: new Date()
             })
             .eq('id', req.params.id);
 
         if (error) throw error;
+
+        // Mise à jour ou insertion de l'assurance patient
+        if (assureur || numero_police || souscripteur) {
+            const { data: existingAss } = await supabase
+                .from('patient_assurances')
+                .select('id')
+                .eq('patient_id', req.params.id)
+                .limit(1);
+
+            if (existingAss && existingAss.length > 0) {
+                await supabase
+                    .from('patient_assurances')
+                    .update({
+                        type_assurance: type_assurance || 'PARTICULIER',
+                        assureur: assureur || null,
+                        souscripteur: souscripteur || null,
+                        numero_police: numero_police || null
+                    })
+                    .eq('id', existingAss[0].id);
+            } else {
+                await supabase
+                    .from('patient_assurances')
+                    .insert([{
+                        patient_id: req.params.id,
+                        type_assurance: type_assurance || 'PARTICULIER',
+                        assureur: assureur || null,
+                        souscripteur: souscripteur || null,
+                        numero_police: numero_police || null
+                    }]);
+            }
+        }
 
         req.flash('success', 'Patient mis à jour avec succès');
         res.redirect(`/patients/${req.params.id}`);
