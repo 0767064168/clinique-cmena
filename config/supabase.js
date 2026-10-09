@@ -6,9 +6,17 @@
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
-const supabaseUrl = process.env.SUPABASE_URL;
+let supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Si l'URL fournie est une chaîne de connexion PostgreSQL, extraire l'URL d'API HTTPS Supabase
+if (supabaseUrl && (supabaseUrl.startsWith('postgres://') || supabaseUrl.startsWith('postgresql://'))) {
+  const match = supabaseUrl.match(/@db\.([a-z0-9_-]+)\.supabase\.co/i);
+  if (match) {
+    supabaseUrl = `https://${match[1]}.supabase.co`;
+  }
+}
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('⚠️ Avertissement : Les variables d\'environnement SUPABASE_URL ou SUPABASE_ANON_KEY ne sont pas configurées.');
