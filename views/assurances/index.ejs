@@ -23,7 +23,7 @@
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= assurance.nom %></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= assurance.type || '-' %></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= assurance.contact || '-' %></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= assurance.telephone || '-' %></td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <a href="/assurances/<%= assurance.id %>/edit" class="text-indigo-600 hover:text-indigo-900 mr-3">Modifier</a>
                                 <form action="/assurances/<%= assurance.id %>?_method=DELETE" method="POST" class="inline" onsubmit="return confirm('Supprimer cette assurance ?');">
@@ -59,8 +59,8 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Contact / Téléphone</label>
-                            <input type="text" name="contact" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <label class="block text-sm font-medium text-gray-700">Téléphone</label>
+                            <input type="text" name="telephone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                         </div>
                     </div>
                     <div class="mt-5 flex gap-3">

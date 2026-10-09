@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
 
+// GET /assurances — liste
 router.get('/', async (req, res) => {
     try {
         const { data: assurances, error } = await supabase
@@ -23,13 +24,21 @@ router.get('/', async (req, res) => {
     }
 });
 
+// POST /assurances — création
 router.post('/', async (req, res) => {
     try {
-        const { nom, contact, email, adresse, taux_couverture_defaut } = req.body;
-        
+        const { nom, type, telephone, email, adresse, taux_couverture } = req.body;
+
         const { error } = await supabase
             .from('assurances')
-            .insert([{ nom, contact, email, adresse, taux_couverture_defaut: taux_couverture_defaut || 80 }]);
+            .insert([{
+                nom,
+                type: type || null,
+                telephone: telephone || null,
+                email: email || null,
+                adresse: adresse || null,
+                taux_couverture: taux_couverture ? parseFloat(taux_couverture) : 80
+            }]);
 
         if (error) throw error;
 
@@ -42,13 +51,21 @@ router.post('/', async (req, res) => {
     }
 });
 
+// PUT /assurances/:id — mise à jour
 router.put('/:id', async (req, res) => {
     try {
-        const { nom, contact, email, adresse, taux_couverture_defaut } = req.body;
-        
+        const { nom, type, telephone, email, adresse, taux_couverture } = req.body;
+
         const { error } = await supabase
             .from('assurances')
-            .update({ nom, contact, email, adresse, taux_couverture_defaut })
+            .update({
+                nom,
+                type: type || null,
+                telephone: telephone || null,
+                email: email || null,
+                adresse: adresse || null,
+                taux_couverture: taux_couverture ? parseFloat(taux_couverture) : 80
+            })
             .eq('id', req.params.id);
 
         if (error) throw error;
@@ -62,6 +79,7 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+// DELETE /assurances/:id — désactivation (soft delete)
 router.delete('/:id', async (req, res) => {
     try {
         const { error } = await supabase
