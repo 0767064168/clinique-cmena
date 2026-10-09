@@ -21,6 +21,7 @@ clinique-cmena/
 │   └── supabase.js             # Client Supabase (public & admin)
 ├── database/
 │   └── schema.sql              # Schéma PostgreSQL complet (Tables, RLS, Triggers)
+├── .env.example                # Modèle de variables d'environnement
 ├── middleware/
 │   └── auth.js                 # Authentification & contrôle d'accès
 ├── public/
@@ -56,6 +57,8 @@ clinique-cmena/
 └── server.js                   # Point d'entrée de l'application
 ```
 
+Le fichier `.env` et le dossier `node_modules/` sont locaux et exclus de Git.
+
 ---
 
 ## ⚙️ Installation & Démarrage
@@ -72,11 +75,11 @@ clinique-cmena/
    - `service_role secret key`
 
 ### 2. Configuration du fichier `.env`
-Remplissez le fichier `.env` à la racine :
+Copiez `.env.example` vers `.env` à la racine, puis remplacez les valeurs d'exemple par votre configuration :
 ```env
 PORT=3000
 NODE_ENV=development
-SESSION_SECRET=cmena_secret_cle_securisee_2026
+SESSION_SECRET=remplacez-par-une-cle-aleatoire-longue
 
 # Supabase
 SUPABASE_URL=https://votre-projet.supabase.co
