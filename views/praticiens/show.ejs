@@ -1,0 +1,73 @@
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Dr. <%= praticien.nom %> <%= praticien.prenom %></h1>
+            <p class="text-blue-600 font-medium"><%= praticien.specialite %></p>
+        </div>
+        <div class="flex gap-2">
+            <a href="/praticiens/<%= praticien.id %>/edit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">Modifier</a>
+            <a href="/praticiens" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Retour</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Coordonnées</h2>
+            <div class="space-y-3 text-sm">
+                <div>
+                    <span class="text-gray-500">Téléphone:</span>
+                    <span class="font-medium text-gray-800 block"><%= praticien.telephone || 'Non renseigné' %></span>
+                </div>
+                <div>
+                    <span class="text-gray-500">Email:</span>
+                    <span class="font-medium text-gray-800 block"><%= praticien.email || 'Non renseigné' %></span>
+                </div>
+                <div>
+                    <span class="text-gray-500">Statut:</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= praticien.actif !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">
+                        <%= praticien.actif !== false ? 'Actif' : 'Inactif' %>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="md:col-span-2 bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-6 py-4 border-b flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-700">Dernières consultations</h2>
+                <a href="/consultations/create" class="text-sm text-blue-600 hover:underline">+ Nouvelle consultation</a>
+            </div>
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Motif</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200 text-sm">
+                    <% if (consultations && consultations.length > 0) { %>
+                        <% consultations.forEach(c => { %>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-600"><%= new Date(c.date_entree).toLocaleDateString('fr-FR') %></td>
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                                    <a href="/patients/<%= c.patient_id %>" class="hover:underline">
+                                        <%= c.patients ? c.patients.nom + ' ' + c.patients.prenom : '-' %>
+                                    </a>
+                                </td>
+                                <td class="px-6 py-4 text-gray-500 max-w-xs truncate"><%= c.motif || '-' %></td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-0.5 text-xs rounded-full <%= c.statut === 'termine' ? 'bg-green-100 text-green-800' : (c.statut === 'en_cours' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800') %>">
+                                        <%= c.statut === 'en_cours' ? 'En cours' : (c.statut === 'termine' ? 'Terminé' : 'Annulé') %>
+                                    </span>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Aucune consultation enregistrée</td></tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -139,6 +139,8 @@ app.use('/actes', actesRoutes);
 app.use('/assurances', assurancesRoutes);
 app.use('/paiements', paiementsRoutes);
 app.use('/auth', authRoutes);
+app.get('/login', (req, res) => res.redirect('/auth/login'));
+app.get('/logout', (req, res) => res.redirect('/auth/logout'));
 
 // Middleware pour la gestion de la route 404 (Ressource non trouvée)
 app.use((req, res) => {

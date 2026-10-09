@@ -12,9 +12,15 @@ router.get('/', async (req, res) => {
 
         if (error) throw error;
 
+        const formattedPaiements = (paiements || []).map(p => ({
+            ...p,
+            facture_numero: p.factures ? p.factures.numero_facture : '-',
+            patient_nom: p.factures && p.factures.patients ? `${p.factures.patients.nom} ${p.factures.patients.prenom}` : '-'
+        }));
+
         res.render('paiements/index', {
             title: 'Historique des Paiements',
-            paiements: paiements || []
+            paiements: formattedPaiements
         });
     } catch (error) {
         console.error(error);

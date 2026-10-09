@@ -13,9 +13,9 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
                 <select name="categorie" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                    <% const categories = ['Consultation', 'Laboratoire', 'Imagerie', 'Chirurgie', 'Soins', 'Autre']; %>
+                    <% const categories = ['consultation', 'laboratoire', 'imagerie', 'chirurgie', 'soins', 'pharmacie', 'hospitalisation']; %>
                     <% categories.forEach(cat => { %>
-                        <option value="<%= cat %>" <%= acte.categorie === cat ? 'selected' : '' %>><%= cat %></option>
+                        <option value="<%= cat %>" <%= (acte.categorie || '').toLowerCase() === cat ? 'selected' : '' %>><%= cat.charAt(0).toUpperCase() + cat.slice(1) %></option>
                     <% }); %>
                 </select>
             </div>

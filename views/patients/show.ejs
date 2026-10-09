@@ -44,7 +44,7 @@
                         <div class="flex justify-between"><dt class="text-gray-500">Souscripteur:</dt> <dd class="font-medium"><%= patient.souscripteur || '-' %></dd></div>
                         <div class="flex justify-between"><dt class="text-gray-500">N° Police:</dt> <dd class="font-medium"><%= patient.numero_police || '-' %></dd></div>
                         <hr class="my-2">
-                        <div class="flex justify-between"><dt class="text-gray-500">Urgence:</dt> <dd class="font-medium"><%= patient.contact_urgence_nom || '-' %> (<%= patient.contact_urgence_telephone || '-' %>)</dd></div>
+                        <div class="flex justify-between"><dt class="text-gray-500">Urgence:</dt> <dd class="font-medium"><%= patient.contact_urgence_nom || '-' %> (<%= patient.contact_urgence_tel || '-' %>)</dd></div>
                     </dl>
                 </div>
             </div>
@@ -68,8 +68,8 @@
                             <% consultations.forEach(consultation => { %>
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= new Date(consultation.date_entree).toLocaleString('fr-FR') %></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= consultation.praticien_nom %></td>
-                                    <td class="px-6 py-4 text-sm text-gray-500"><%= consultation.motif %></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= consultation.praticiens ? consultation.praticiens.nom + ' ' + consultation.praticiens.prenom : (consultation.praticien_nom || '-') %></td>
+                                    <td class="px-6 py-4 text-sm text-gray-500"><%= consultation.motif || '-' %></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= consultation.statut %></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <a href="/consultations/<%= consultation.id %>" class="text-blue-600 hover:text-blue-900">Voir</a>
@@ -102,10 +102,10 @@
                         <% if (typeof factures !== 'undefined' && factures.length > 0) { %>
                             <% factures.forEach(facture => { %>
                                 <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= facture.numero %></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= facture.numero_facture || '-' %></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= new Date(facture.date_facture).toLocaleDateString('fr-FR') %></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= facture.total_net.toLocaleString('fr-FR') %> FCFA</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= facture.reste_a_payer.toLocaleString('fr-FR') %> FCFA</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= (facture.total_net || 0).toLocaleString('fr-FR') %> FCFA</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= (facture.reste_a_payer || 0).toLocaleString('fr-FR') %> FCFA</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                             <%= facture.statut === 'payee' ? 'bg-green-100 text-green-800' : 

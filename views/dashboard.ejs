@@ -70,7 +70,7 @@
             </p>
             <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
                 <div class="text-sm">
-                    <a href="/factures?status=impayee" class="font-medium text-primary hover:text-primary-light">Traiter les factures</a>
+                    <a href="/factures?statut=validee" class="font-medium text-primary hover:text-primary-light">Traiter les factures</a>
                 </div>
             </div>
         </dd>
@@ -116,7 +116,7 @@
                                         <p class="text-sm font-medium text-primary truncate"><%= patient.nom %> <%= patient.prenom %></p>
                                         <div class="ml-2 flex-shrink-0 flex">
                                             <p class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                <%= patient.dossier_numero %>
+                                                N° <%= patient.numero_dossier || patient.matricule || '-' %>
                                             </p>
                                         </div>
                                     </div>
@@ -166,21 +166,25 @@
                         <% recentFactures.forEach(facture => { %>
                             <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location.href='/factures/<%= facture.id %>'">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    <%= facture.numero %>
+                                    <%= facture.numero_facture || '-' %>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <%= facture.patient_nom %>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                                    <%= new Intl.NumberFormat('fr-FR').format(facture.montant_total) %> FCFA
+                                    <%= new Intl.NumberFormat('fr-FR').format(facture.total_net || 0) %> FCFA
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <% if (facture.statut === 'payée') { %>
+                                    <% if (facture.statut === 'payee') { %>
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Payée</span>
-                                    <% } else if (facture.statut === 'impayée') { %>
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Impayée</span>
-                                    <% } else { %>
+                                    <% } else if (facture.statut === 'validee') { %>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Validée</span>
+                                    <% } else if (facture.statut === 'partiellement_payee') { %>
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Partielle</span>
+                                    <% } else if (facture.statut === 'brouillon') { %>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Brouillon</span>
+                                    <% } else { %>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Annulée</span>
                                     <% } %>
                                 </td>
                             </tr>

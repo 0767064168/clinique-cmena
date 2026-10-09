@@ -23,7 +23,7 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= new Date(paiement.created_at || paiement.date_paiement).toLocaleString('fr-FR') %></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600"><a href="/factures/<%= paiement.facture_id %>"><%= paiement.facture_numero %></a></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= paiement.patient_nom %></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right"><%= paiement.montant.toLocaleString('fr-FR') %> FCFA</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right"><%= (paiement.montant || 0).toLocaleString('fr-FR') %> FCFA</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= paiement.mode_paiement %></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= paiement.reference || '-' %></td>
                         </tr>

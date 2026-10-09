@@ -65,7 +65,7 @@ router.get('/:id', async (req, res) => {
             .from('consultations')
             .select('*, patients(nom, prenom, matricule)')
             .eq('praticien_id', req.params.id)
-            .order('date_consultation', { ascending: false })
+            .order('date_entree', { ascending: false })
             .limit(50);
 
         res.render('praticiens/show', {

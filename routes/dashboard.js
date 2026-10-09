@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
             .neq('statut', 'annulee');
         if (errFactures) throw errFactures;
 
-        // Revenue du mois (simplified for now)
+        // Revenue du mois
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         const { data: monthFactures, error: errRevenue } = await supabase
@@ -36,7 +36,26 @@ router.get('/', async (req, res) => {
             .gte('date_facture', startOfMonth.toISOString().split('T')[0]);
         if (errRevenue) throw errRevenue;
 
-        const revenueMois = monthFactures.reduce((acc, curr) => acc + (curr.montant_paye || 0), 0);
+        const revenueMois = (monthFactures || []).reduce((acc, curr) => acc + (parseFloat(curr.montant_paye) || 0), 0);
+
+        // Patients récents (5 derniers)
+        const { data: recentPatients } = await supabase
+            .from('patients')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+        // Dernières factures (5 dernières)
+        const { data: rawRecentFactures } = await supabase
+            .from('factures')
+            .select('*, patients(nom, prenom)')
+            .order('date_facture', { ascending: false })
+            .limit(5);
+
+        const recentFactures = (rawRecentFactures || []).map(f => ({
+            ...f,
+            patient_nom: f.patients ? `${f.patients.nom} ${f.patients.prenom}` : '-'
+        }));
 
         res.render('dashboard', {
             title: 'Tableau de Bord',
@@ -44,13 +63,21 @@ router.get('/', async (req, res) => {
                 totalPatients: totalPatients || 0,
                 consultationsToday: consultationsToday || 0,
                 facturesImpayees: facturesImpayees || 0,
-                revenueMois: revenueMois
-            }
+                revenueMois: revenueMois,
+                revenusMois: revenueMois
+            },
+            recentPatients: recentPatients || [],
+            recentFactures: recentFactures || []
         });
     } catch (error) {
         console.error('Dashboard Error:', error);
         req.flash('error', 'Erreur lors du chargement du tableau de bord');
-        res.render('dashboard', { title: 'Tableau de Bord', stats: { totalPatients: 0, consultationsToday: 0, facturesImpayees: 0, revenueMois: 0 } });
+        res.render('dashboard', {
+            title: 'Tableau de Bord',
+            stats: { totalPatients: 0, consultationsToday: 0, facturesImpayees: 0, revenueMois: 0, revenusMois: 0 },
+            recentPatients: [],
+            recentFactures: []
+        });
     }
 });
 

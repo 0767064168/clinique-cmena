@@ -58,8 +58,8 @@
             <div class="bg-white shadow rounded-lg p-6">
                 <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Praticien</h3>
                 <div class="text-sm">
-                    <p class="font-medium text-gray-900 mb-1"><%= consultation.praticien_nom %> <%= consultation.praticien_prenom %></p>
-                    <p class="text-gray-600"><%= consultation.specialite %></p>
+                    <p class="font-medium text-gray-900 mb-1"><%= consultation.praticien_nom %></p>
+                    <p class="text-gray-600"><%= consultation.praticien_specialite || '-' %></p>
                 </div>
             </div>
             
@@ -70,8 +70,8 @@
                     <% factures.forEach(facture => { %>
                         <li>
                             <a href="/factures/<%= facture.id %>" class="text-blue-600 hover:underline flex justify-between">
-                                <span><%= facture.numero %></span>
-                                <span><%= facture.total_net.toLocaleString('fr-FR') %> FCFA</span>
+                                <span>N°<%= facture.numero_facture %></span>
+                                <span><%= (facture.total_net || 0).toLocaleString('fr-FR') %> FCFA</span>
                             </a>
                         </li>
                     <% }); %>
