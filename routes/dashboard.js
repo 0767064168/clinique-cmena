@@ -9,22 +9,22 @@ router.get('/', async (req, res) => {
         // Total patients
         const { count: totalPatients, error: errPatients } = await supabase
             .from('patients')
-            .select('*', { count: 'exact', head: true })
-            .eq('actif', true);
+            .select('*', { count: 'exact', head: true });
         if (errPatients) throw errPatients;
 
         // Consultations today
         const { count: consultationsToday, error: errConsultations } = await supabase
             .from('consultations')
             .select('*', { count: 'exact', head: true })
-            .gte('date_consultation', today);
+            .gte('date_entree', today);
         if (errConsultations) throw errConsultations;
 
-        // Factures impayées
+        // Factures en attente / non totalement réglées
         const { count: facturesImpayees, error: errFactures } = await supabase
             .from('factures')
             .select('*', { count: 'exact', head: true })
-            .eq('statut', 'impayee');
+            .neq('statut', 'payee')
+            .neq('statut', 'annulee');
         if (errFactures) throw errFactures;
 
         // Revenue du mois (simplified for now)

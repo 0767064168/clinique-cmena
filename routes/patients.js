@@ -9,10 +9,10 @@ router.get('/', async (req, res) => {
         const offset = (page - 1) * limit;
         const search = req.query.search || '';
 
-        let query = supabase.from('patients').select('*', { count: 'exact' }).eq('actif', true);
+        let query = supabase.from('patients').select('*', { count: 'exact' });
 
         if (search) {
-            query = query.or(`nom.ilike.%${search}%,prenom.ilike.%${search}%,numero_dossier.ilike.%${search}%`);
+            query = query.or(`nom.ilike.%${search}%,prenom.ilike.%${search}%,matricule.ilike.%${search}%`);
         }
 
         const { data: patients, count, error } = await query
@@ -249,7 +249,7 @@ router.delete('/:id', async (req, res) => {
     try {
         const { error } = await supabase
             .from('patients')
-            .update({ actif: false })
+            .delete()
             .eq('id', req.params.id);
 
         if (error) throw error;
