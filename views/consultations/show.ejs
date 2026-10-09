@@ -1,0 +1,83 @@
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Détail Consultation</h1>
+        <div class="flex gap-2">
+            <a href="/consultations/<%= consultation.id %>/edit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">Modifier</a>
+            <a href="/factures/create?consultation_id=<%= consultation.id %>" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Facturer</a>
+            <a href="/consultations" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Retour</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Main details -->
+        <div class="md:col-span-2 space-y-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <div class="flex justify-between items-start mb-4 pb-4 border-b">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">Informations Cliniques</h2>
+                        <p class="text-sm text-gray-500 mt-1">Date d'entrée: <%= new Date(consultation.date_entree).toLocaleString('fr-FR') %></p>
+                        <% if (consultation.date_sortie) { %>
+                            <p class="text-sm text-gray-500">Date de sortie: <%= new Date(consultation.date_sortie).toLocaleString('fr-FR') %></p>
+                        <% } %>
+                    </div>
+                    <span class="px-3 py-1 inline-flex text-sm font-semibold rounded-full 
+                        <%= consultation.statut === 'termine' ? 'bg-green-100 text-green-800' : 
+                           (consultation.statut === 'en_cours' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800') %>">
+                        <%= consultation.statut === 'en_cours' ? 'En cours' : (consultation.statut === 'termine' ? 'Terminé' : 'Annulé') %>
+                    </span>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500 uppercase">Motif</h3>
+                        <p class="mt-1 text-gray-900 bg-gray-50 p-3 rounded-md"><%= consultation.motif || 'Non renseigné' %></p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500 uppercase">Observations</h3>
+                        <p class="mt-1 text-gray-900 bg-gray-50 p-3 rounded-md whitespace-pre-wrap"><%= consultation.observations || 'Aucune observation' %></p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-500 uppercase">Diagnostic</h3>
+                        <p class="mt-1 text-gray-900 bg-gray-50 p-3 rounded-md whitespace-pre-wrap"><%= consultation.diagnostic || 'Aucun diagnostic' %></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar (Patient, Praticien) -->
+        <div class="space-y-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Patient</h3>
+                <div class="text-sm">
+                    <p class="font-medium text-lg text-blue-600 mb-1"><a href="/patients/<%= consultation.patient_id %>"><%= consultation.patient_nom %> <%= consultation.patient_prenom %></a></p>
+                    <p class="text-gray-600 mb-1">N° Dossier: <%= consultation.numero_dossier %></p>
+                    <p class="text-gray-600">Assurance: <%= consultation.type_assurance %></p>
+                </div>
+            </div>
+
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Praticien</h3>
+                <div class="text-sm">
+                    <p class="font-medium text-gray-900 mb-1"><%= consultation.praticien_nom %> <%= consultation.praticien_prenom %></p>
+                    <p class="text-gray-600"><%= consultation.specialite %></p>
+                </div>
+            </div>
+            
+            <% if (typeof factures !== 'undefined' && factures.length > 0) { %>
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Factures liées</h3>
+                <ul class="space-y-2">
+                    <% factures.forEach(facture => { %>
+                        <li>
+                            <a href="/factures/<%= facture.id %>" class="text-blue-600 hover:underline flex justify-between">
+                                <span><%= facture.numero %></span>
+                                <span><%= facture.total_net.toLocaleString('fr-FR') %> FCFA</span>
+                            </a>
+                        </li>
+                    <% }); %>
+                </ul>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</div>

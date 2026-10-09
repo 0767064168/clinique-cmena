@@ -1,0 +1,458 @@
+/**
+ * ==============================================================================
+ * Clinique Médico-Chirurgicale NANAN (CMENA) - Styles CSS Personnalisés
+ * ==============================================================================
+ * Complément stylistique à Tailwind CSS.
+ * Conçu pour une clinique médicale moderne en Côte d'Ivoire.
+ */
+
+/* ==============================================================================
+   1. POLICES ET VARIABLES GLOBALES
+   ============================================================================== */
+:root {
+  --cmena-primary: #0d9488;      /* Teal-600 */
+  --cmena-primary-dark: #0f766e; /* Teal-700 */
+  --cmena-primary-light: #ccfbf1;/* Teal-100 */
+  --cmena-accent: #2563eb;       /* Blue-600 */
+  --cmena-danger: #dc2626;       /* Red-600 */
+  --cmena-success: #16a34a;      /* Green-600 */
+  --cmena-warning: #d97706;      /* Amber-600 */
+}
+
+/* ==============================================================================
+   2. BARRE DE DÉFILEMENT PERSONNALISÉE (CUSTOM SCROLLBAR)
+   ============================================================================== */
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+}
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Scrollbar discrète pour conteneurs déroulants internes */
+.slim-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.slim-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+/* ==============================================================================
+   3. ANIMATIONS ET TRANSITIONS
+   ============================================================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spinLoader {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Classes d'animation */
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 2s infinite ease-in-out;
+}
+
+/* Spinner de chargement (Loading spinner) */
+.loading-spinner {
+  display: inline-block;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 3px solid rgba(13, 148, 136, 0.2);
+  border-radius: 50%;
+  border-top-color: var(--cmena-primary);
+  animation: spinLoader 0.75s linear infinite;
+}
+
+.loading-spinner-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 2px;
+}
+
+.loading-spinner-lg {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-width: 4px;
+}
+
+.loading-spinner-white {
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+}
+
+/* ==============================================================================
+   4. ÉLÉMENTS DE FORMULAIRE (FORM FOCUS STYLES)
+   ============================================================================== */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="tel"]:focus,
+input[type="date"]:focus,
+input[type="datetime-local"]:focus,
+input[type="time"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--cmena-primary);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+  transition: all 0.15s ease-in-out;
+}
+
+/* Suppression des flèches sur les champs de nombres */
+input[type="number"].no-spin::-webkit-inner-spin-button,
+input[type="number"].no-spin::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"].no-spin {
+  -moz-appearance: textfield;
+}
+
+/* ==============================================================================
+   5. TABLEAUX RÉACTIFS (TABLE RESPONSIVE STYLES)
+   ============================================================================== */
+.table-responsive-wrapper {
+  position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 0.5rem;
+}
+
+.table-cmena {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-cmena thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.table-cmena tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.table-cmena tbody tr:hover {
+  background-color: #f0fdfa; /* Fond vert menthe très léger */
+}
+
+.table-cmena tbody td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  font-size: 0.875rem;
+}
+
+/* ==============================================================================
+   6. BADGES DE STATUT (CUSTOM BADGE STYLES)
+   ============================================================================== */
+.badge-cmena {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Statuts de Paiement & Facturation */
+.badge-paye,
+.badge-regle {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-impaye,
+.badge-non-paye {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.badge-partiel {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.badge-annule {
+  background-color: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+/* Statuts Médicaux et Rendez-vous */
+.badge-en-attente {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.badge-en-cours {
+  background-color: #e0e7ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+.badge-termine {
+  background-color: #ccfbf1;
+  color: #0f766e;
+  border: 1px solid #99f6e4;
+}
+
+.badge-hospitalise {
+  background-color: #fae8ff;
+  color: #86198f;
+  border: 1px solid #f5d0fe;
+}
+
+.badge-urgent {
+  background-color: #ffe4e6;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+  animation: pulseSubtle 1.8s infinite ease-in-out;
+}
+
+/* ==============================================================================
+   7. BARRE LATÉRALE (SIDEBAR ACTIVE STATE STYLES)
+   ============================================================================== */
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.5rem;
+  color: #64748b;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+}
+
+.sidebar-link:hover {
+  background-color: #f0fdfa;
+  color: var(--cmena-primary);
+}
+
+.sidebar-link.active {
+  background-color: #0d9488;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.2), 0 2px 4px -2px rgba(13, 148, 136, 0.2);
+}
+
+.sidebar-link.active svg {
+  color: #ffffff;
+}
+
+/* ==============================================================================
+   8. MODALES ET ARRIÈRE-PLANS (MODAL BACKDROP STYLES)
+   ============================================================================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background-color: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.modal-dialog {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 100%;
+  width: 100%;
+  overflow: hidden;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* ==============================================================================
+   9. MESSAGES FLASH (ALERTS / NOTIFICATIONS)
+   ============================================================================== */
+.flash-message {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.flash-message.hiding {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+/* ==============================================================================
+   10. STYLES D'IMPRESSION (@media print)
+   ============================================================================== */
+@media print {
+  /* Masquer tous les composants de navigation et d'interface utilisateur */
+  header,
+  nav,
+  aside,
+  footer,
+  .no-print,
+  .sidebar,
+  .top-navbar,
+  .btn-action,
+  .btn-print,
+  .flash-container,
+  .modal-backdrop,
+  #sidebar,
+  #mobile-menu-button {
+    display: none !important;
+  }
+
+  /* Réinitialisation de la mise en page pour l'impression A4 */
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.35 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Conteneur principal prend toute la largeur */
+  main,
+  .main-content,
+  .print-area {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Amélioration de la lisibilité des tableaux imprimés */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  th, td {
+    border: 1px solid #cbd5e1 !important;
+    padding: 6px 8px !important;
+    font-size: 10pt !important;
+    color: #000000 !important;
+  }
+
+  /* Éviter les coupures de page inopportunes */
+  .page-break-inside-avoid,
+  .invoice-card,
+  .signature-box,
+  .prescription-box {
+    page-break-inside: avoid !important;
+  }
+
+  .page-break-after-always {
+    page-break-after: always !important;
+  }
+
+  /* Liens : ne pas souligner ni afficher les URL */
+  a {
+    text-decoration: none !important;
+    color: inherit !important;
+  }
+
+  /* En-tête officiel imprimable pour CMENA */
+  .print-header {
+    display: block !important;
+    border-bottom: 2px solid #0d9488 !important;
+    padding-bottom: 12px !important;
+    margin-bottom: 16px !important;
+  }
+}

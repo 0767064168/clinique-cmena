@@ -1,0 +1,76 @@
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Nouvelle Consultation</h1>
+            <a href="/consultations" class="text-gray-600 hover:text-gray-900 font-medium">Retour</a>
+        </div>
+
+        <form action="/consultations" method="POST" class="bg-white shadow rounded-lg p-6 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Patient *</label>
+                    <select name="patient_id" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Sélectionner un patient...</option>
+                        <% if (typeof patients !== 'undefined') { %>
+                            <% patients.forEach(p => { %>
+                                <option value="<%= p.id %>" <%= typeof query !== 'undefined' && query.patient_id == p.id ? 'selected' : '' %>><%= p.numero_dossier %> - <%= p.nom %> <%= p.prenom %></option>
+                            <% }); %>
+                        <% } %>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Praticien *</label>
+                    <select name="praticien_id" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Sélectionner un praticien...</option>
+                        <% if (typeof praticiens !== 'undefined') { %>
+                            <% praticiens.forEach(p => { %>
+                                <option value="<%= p.id %>"><%= p.nom %> <%= p.prenom %> (<%= p.specialite %>)</option>
+                            <% }); %>
+                        <% } %>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Statut</label>
+                    <select name="statut" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="en_cours">En cours</option>
+                        <option value="termine">Terminé</option>
+                        <option value="annule">Annulé</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date d'entrée *</label>
+                    <input type="datetime-local" name="date_entree" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500" value="<%= new Date().toISOString().slice(0, 16) %>">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date de sortie</label>
+                    <input type="datetime-local" name="date_sortie" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Motif</label>
+                    <textarea name="motif" rows="2" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Observations</label>
+                    <textarea name="observations" rows="3" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Diagnostic</label>
+                    <textarea name="diagnostic" rows="3" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-end gap-4 border-t pt-4">
+                <a href="/consultations" class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50">Annuler</a>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-bold">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>

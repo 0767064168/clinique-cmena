@@ -1,0 +1,125 @@
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Modifier Patient</h1>
+        <a href="/patients/<%= patient.id %>" class="text-gray-600 hover:text-gray-900 font-medium">Retour au dossier</a>
+    </div>
+
+    <form action="/patients/<%= patient.id %>?_method=PUT" method="POST" class="bg-white shadow rounded-lg p-6 space-y-8">
+        
+        <!-- Informations personnelles -->
+        <section>
+            <h2 class="text-xl font-semibold border-b pb-2 mb-4">Informations Personnelles</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+                    <input type="text" name="nom" value="<%= patient.nom %>" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
+                    <input type="text" name="prenom" value="<%= patient.prenom %>" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date de naissance</label>
+                    <input type="date" name="date_naissance" value="<%= patient.date_naissance ? new Date(patient.date_naissance).toISOString().split('T')[0] : '' %>" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sexe</label>
+                    <select name="sexe" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="M" <%= patient.sexe === 'M' ? 'selected' : '' %>>Masculin</option>
+                        <option value="F" <%= patient.sexe === 'F' ? 'selected' : '' %>>Féminin</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                    <input type="text" name="telephone" value="<%= patient.telephone || '' %>" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ville</label>
+                    <input type="text" name="ville" value="<%= patient.ville || '' %>" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+                    <input type="text" name="adresse" value="<%= patient.adresse || '' %>" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+        </section>
+
+        <!-- Informations Médicales -->
+        <section>
+            <h2 class="text-xl font-semibold border-b pb-2 mb-4">Informations Médicales</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Groupe Sanguin</label>
+                    <select name="groupe_sanguin" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Non spécifié</option>
+                        <option value="A+" <%= patient.groupe_sanguin === 'A+' ? 'selected' : '' %>>A+</option>
+                        <option value="A-" <%= patient.groupe_sanguin === 'A-' ? 'selected' : '' %>>A-</option>
+                        <option value="B+" <%= patient.groupe_sanguin === 'B+' ? 'selected' : '' %>>B+</option>
+                        <option value="B-" <%= patient.groupe_sanguin === 'B-' ? 'selected' : '' %>>B-</option>
+                        <option value="AB+" <%= patient.groupe_sanguin === 'AB+' ? 'selected' : '' %>>AB+</option>
+                        <option value="AB-" <%= patient.groupe_sanguin === 'AB-' ? 'selected' : '' %>>AB-</option>
+                        <option value="O+" <%= patient.groupe_sanguin === 'O+' ? 'selected' : '' %>>O+</option>
+                        <option value="O-" <%= patient.groupe_sanguin === 'O-' ? 'selected' : '' %>>O-</option>
+                    </select>
+                </div>
+                <div></div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Allergies</label>
+                    <textarea name="allergies" rows="3" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"><%= patient.allergies || '' %></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Antécédents médicaux</label>
+                    <textarea name="antecedents" rows="3" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"><%= patient.antecedents || '' %></textarea>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact d'urgence -->
+        <section>
+            <h2 class="text-xl font-semibold border-b pb-2 mb-4">Contact d'urgence</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nom du contact</label>
+                    <input type="text" name="contact_urgence_nom" value="<%= patient.contact_urgence_nom || '' %>" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone du contact</label>
+                    <input type="text" name="contact_urgence_telephone" value="<%= patient.contact_urgence_telephone || '' %>" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+        </section>
+
+        <!-- Assurance -->
+        <section>
+            <h2 class="text-xl font-semibold border-b pb-2 mb-4">Informations d'Assurance</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Type d'assurance</label>
+                    <select name="type_assurance" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="PARTICULIER" <%= patient.type_assurance === 'PARTICULIER' ? 'selected' : '' %>>PARTICULIER</option>
+                        <option value="ENTREPRISE" <%= patient.type_assurance === 'ENTREPRISE' ? 'selected' : '' %>>ENTREPRISE</option>
+                        <option value="MUTUELLE" <%= patient.type_assurance === 'MUTUELLE' ? 'selected' : '' %>>MUTUELLE</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Assureur</label>
+                    <input type="text" name="assureur" value="<%= patient.assureur || '' %>" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Souscripteur</label>
+                    <input type="text" name="souscripteur" value="<%= patient.souscripteur || '' %>" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">N° Police</label>
+                    <input type="text" name="numero_police" value="<%= patient.numero_police || '' %>" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+        </section>
+
+        <!-- Buttons -->
+        <div class="flex justify-end gap-4 border-t pt-4">
+            <a href="/patients/<%= patient.id %>" class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50">Annuler</a>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-bold">Mettre à jour</button>
+        </div>
+    </form>
+</div>

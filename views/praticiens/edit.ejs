@@ -1,0 +1,50 @@
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">Modifier Praticien</h1>
+            <a href="/praticiens" class="text-gray-600 hover:text-gray-900 font-medium">Retour à la liste</a>
+        </div>
+
+        <form action="/praticiens/<%= praticien.id %>?_method=PUT" method="POST" class="bg-white shadow rounded-lg p-6 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+                    <input type="text" name="nom" value="<%= praticien.nom %>" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
+                    <input type="text" name="prenom" value="<%= praticien.prenom %>" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Spécialité *</label>
+                    <select name="specialite" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                        <% const specialties = ['Généraliste', 'Cardiologue', 'Dermatologue', 'Gynécologue', 'Pédiatre', 'Chirurgien', 'Ophtalmologue', 'ORL', 'Autre']; %>
+                        <% specialties.forEach(spec => { %>
+                            <option value="<%= spec %>" <%= praticien.specialite === spec ? 'selected' : '' %>><%= spec %></option>
+                        <% }); %>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                    <input type="text" name="telephone" value="<%= praticien.telephone || '' %>" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" name="email" value="<%= praticien.email || '' %>" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="flex items-center space-x-2 mt-6">
+                        <input type="checkbox" name="actif" value="true" <%= praticien.actif !== false ? 'checked' : '' %> class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Praticien actif</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-end gap-4 border-t pt-4 mt-6">
+                <a href="/praticiens" class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50">Annuler</a>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-bold">Mettre à jour</button>
+            </div>
+        </form>
+    </div>
+</div>

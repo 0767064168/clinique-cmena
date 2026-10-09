@@ -1,0 +1,32 @@
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">Modifier l'acte</h1>
+        <form action="/actes/<%= acte.id %>?_method=PUT" method="POST" class="bg-white p-6 rounded-lg shadow-md space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Code</label>
+                <input type="text" name="code" value="<%= acte.code %>" class="border rounded-md px-3 py-2 w-full focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Libellé *</label>
+                <input type="text" name="libelle" value="<%= acte.libelle %>" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
+                <select name="categorie" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                    <% const categories = ['Consultation', 'Laboratoire', 'Imagerie', 'Chirurgie', 'Soins', 'Autre']; %>
+                    <% categories.forEach(cat => { %>
+                        <option value="<%= cat %>" <%= acte.categorie === cat ? 'selected' : '' %>><%= cat %></option>
+                    <% }); %>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Prix Unitaire (FCFA) *</label>
+                <input type="number" name="prix_unitaire" value="<%= acte.prix_unitaire %>" required min="0" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="flex justify-end gap-2 pt-4">
+                <a href="/actes" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">Annuler</a>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Mettre à jour</button>
+            </div>
+        </form>
+    </div>
+</div>

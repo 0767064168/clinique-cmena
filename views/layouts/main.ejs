@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'Clinique Médico-Chirurgicale NANAN (CMENA)' %></title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome pour les icônes -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="h-full flex flex-col text-slate-800 antialiased">
+  <div class="min-h-full flex flex-col">
+    <!-- En-tête de navigation -->
+    <header class="bg-emerald-700 text-white shadow-md sticky top-0 z-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center space-x-3">
+            <a href="/" class="flex items-center space-x-2">
+              <span class="bg-white text-emerald-700 p-2 rounded-lg font-bold text-xl"><i class="fa-solid fa-hospital-user"></i></span>
+              <div>
+                <span class="font-extrabold text-xl tracking-tight">CMENA</span>
+                <span class="hidden sm:inline-block text-xs text-emerald-200 ml-2">Clinique Médico-Chirurgicale NANAN</span>
+              </div>
+            </a>
+          </div>
+
+          <!-- Navigation principale -->
+          <nav class="hidden md:flex space-x-1">
+            <a href="/" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-emerald-600 transition <%= currentPath === '/' ? 'bg-emerald-800' : '' %>">Tableau de bord</a>
+            <a href="/patients" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-emerald-600 transition <%= currentPath.startsWith('/patients') ? 'bg-emerald-800' : '' %>">Patients</a>
+            <a href="/consultations" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-emerald-600 transition <%= currentPath.startsWith('/consultations') ? 'bg-emerald-800' : '' %>">Consultations</a>
+            <a href="/praticiens" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-emerald-600 transition <%= currentPath.startsWith('/praticiens') ? 'bg-emerald-800' : '' %>">Praticiens</a>
+            <a href="/factures" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-emerald-600 transition <%= currentPath.startsWith('/factures') ? 'bg-emerald-800' : '' %>">Factures</a>
+            <a href="/paiements" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-emerald-600 transition <%= currentPath.startsWith('/paiements') ? 'bg-emerald-800' : '' %>">Paiements</a>
+            <a href="/assurances" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-emerald-600 transition <%= currentPath.startsWith('/assurances') ? 'bg-emerald-800' : '' %>">Assurances</a>
+            <a href="/actes" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-emerald-600 transition <%= currentPath.startsWith('/actes') ? 'bg-emerald-800' : '' %>">Actes</a>
+          </nav>
+
+          <!-- Profil / Connexion -->
+          <div class="flex items-center space-x-3">
+            <% if (user) { %>
+              <span class="text-sm font-medium text-emerald-100 hidden sm:inline"><%= user.nom || user.email %></span>
+              <a href="/auth/logout" class="bg-emerald-800 hover:bg-emerald-900 text-xs px-3 py-1.5 rounded transition">Déconnexion</a>
+            <% } else { %>
+              <a href="/auth/login" class="bg-emerald-600 hover:bg-emerald-500 text-xs px-3 py-1.5 rounded font-semibold transition">Connexion</a>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Contenu de la page -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <%- body %>
+    </main>
+
+    <!-- Pied de page -->
+    <footer class="bg-white border-t border-slate-200 mt-auto">
+      <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500">
+        <div>&copy; <%= new Date().getFullYear() %> Clinique Médico-Chirurgicale NANAN (CMENA) - Côte d'Ivoire. Tous droits réservés.</div>
+        <div class="mt-2 sm:mt-0 font-medium text-slate-600">Devise : FCFA</div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

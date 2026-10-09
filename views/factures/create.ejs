@@ -1,0 +1,167 @@
+<div class="container mx-auto px-4 py-8" x-data="invoiceForm()">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Nouvelle Facture</h1>
+        <a href="/factures" class="text-gray-600 hover:text-gray-900 font-medium">Retour</a>
+    </div>
+
+    <form action="/factures" method="POST" class="bg-white shadow rounded-lg p-6 space-y-8">
+        
+        <!-- Informations Générales -->
+        <section>
+            <h2 class="text-xl font-semibold border-b pb-2 mb-4">Informations Générales</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Consultation liée</label>
+                    <select name="consultation_id" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Sélectionner (Optionnel)</option>
+                        <!-- Options would be populated by backend -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Patient *</label>
+                    <select name="patient_id" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Sélectionner un patient...</option>
+                        <!-- Options populated by backend -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Praticien / Édité par</label>
+                    <input type="text" name="praticien" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date Facture *</label>
+                    <input type="date" name="date_facture" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500" x-model="date_facture">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Motif</label>
+                    <input type="text" name="motif" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+        </section>
+
+        <!-- Lignes de facturation -->
+        <section>
+            <div class="flex justify-between items-center border-b pb-2 mb-4">
+                <h2 class="text-xl font-semibold">Détails des prestations</h2>
+                <button type="button" @click="addRow" class="text-sm bg-green-50 text-green-600 border border-green-200 px-3 py-1 rounded hover:bg-green-100">+ Ajouter une ligne</button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Libellé</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-32">Nom praticien</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-24">P.U.</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-20">Qté</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-20">%</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-24">Montant</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-24">Part Assureur</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase w-24">Part Assuré</th>
+                            <th class="px-2 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <template x-for="(row, index) in rows" :key="index">
+                            <tr>
+                                <td class="px-2 py-2">
+                                    <input type="text" x-model="row.libelle" :name="`lignes[${index}][libelle]`" required class="w-full border rounded px-2 py-1 text-sm">
+                                </td>
+                                <td class="px-2 py-2">
+                                    <input type="text" x-model="row.nom_praticien" :name="`lignes[${index}][nom_praticien]`" class="w-full border rounded px-2 py-1 text-sm">
+                                </td>
+                                <td class="px-2 py-2">
+                                    <input type="number" x-model.number="row.pu" :name="`lignes[${index}][pu]`" min="0" required class="w-full border rounded px-2 py-1 text-sm text-right" @input="calculateTotals()">
+                                </td>
+                                <td class="px-2 py-2">
+                                    <input type="number" x-model.number="row.qte" :name="`lignes[${index}][qte]`" min="1" required class="w-full border rounded px-2 py-1 text-sm text-right" @input="calculateTotals()">
+                                </td>
+                                <td class="px-2 py-2">
+                                    <input type="number" x-model.number="row.pourcentage" :name="`lignes[${index}][pourcentage]`" min="0" max="100" class="w-full border rounded px-2 py-1 text-sm text-right" @input="calculateTotals()">
+                                </td>
+                                <td class="px-2 py-2 text-right text-sm font-medium bg-gray-50" x-text="rowMontant(row)"></td>
+                                <td class="px-2 py-2">
+                                    <input type="number" x-model.number="row.part_assureur" :name="`lignes[${index}][part_assureur]`" min="0" class="w-full border rounded px-2 py-1 text-sm text-right">
+                                </td>
+                                <td class="px-2 py-2">
+                                    <input type="number" x-model.number="row.part_assure" :name="`lignes[${index}][part_assure]`" min="0" class="w-full border rounded px-2 py-1 text-sm text-right">
+                                </td>
+                                <td class="px-2 py-2 text-center">
+                                    <button type="button" @click="removeRow(index)" class="text-red-500 hover:text-red-700" x-show="rows.length > 1">
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Totaux -->
+        <section class="flex justify-end">
+            <div class="w-full md:w-1/3 bg-gray-50 p-4 rounded-lg space-y-3">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-600 font-medium">Total brut:</span>
+                    <span class="text-gray-900" x-text="total_brut + ' FCFA'"></span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-600 font-medium">Remise:</span>
+                    <div class="flex items-center gap-1 w-32">
+                        <input type="number" name="remise" x-model.number="remise" min="0" class="w-full border rounded px-2 py-1 text-right text-sm" @input="calculateTotals()">
+                    </div>
+                </div>
+                <div class="flex justify-between items-center text-lg font-bold border-t pt-2">
+                    <span>Total Net à payer:</span>
+                    <span class="text-blue-600" x-text="total_net + ' FCFA'"></span>
+                    <input type="hidden" name="total" :value="total_brut">
+                    <input type="hidden" name="total_net" :value="total_net">
+                </div>
+            </div>
+        </section>
+
+        <!-- Buttons -->
+        <div class="flex justify-end gap-4 border-t pt-4">
+            <button type="submit" name="action" value="brouillon" class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50">Enregistrer comme brouillon</button>
+            <button type="submit" name="action" value="valider" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-bold">Valider la facture</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function invoiceForm() {
+        return {
+            date_facture: new Date().toISOString().split('T')[0],
+            rows: [
+                { libelle: '', nom_praticien: '', pu: 0, qte: 1, pourcentage: 100, part_assureur: 0, part_assure: 0 }
+            ],
+            remise: 0,
+            total_brut: 0,
+            total_net: 0,
+            
+            addRow() {
+                this.rows.push({ libelle: '', nom_praticien: '', pu: 0, qte: 1, pourcentage: 100, part_assureur: 0, part_assure: 0 });
+            },
+            
+            removeRow(index) {
+                this.rows.splice(index, 1);
+                this.calculateTotals();
+            },
+            
+            rowMontant(row) {
+                let m = (row.pu * row.qte * (row.pourcentage / 100));
+                // default logic, update part assureur and assure if they are empty
+                return Math.round(m);
+            },
+            
+            calculateTotals() {
+                let brut = 0;
+                this.rows.forEach(r => {
+                    brut += (r.pu * r.qte * (r.pourcentage / 100));
+                });
+                this.total_brut = Math.round(brut);
+                this.total_net = this.total_brut - this.remise;
+            }
+        }
+    }
+</script>

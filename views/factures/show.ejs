@@ -1,0 +1,76 @@
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Facture #<%= facture.numero %></h1>
+        <div class="flex gap-2">
+            <% if (facture.statut === 'brouillon') { %>
+                <form action="/factures/<%= facture.id %>/valider" method="POST" class="inline">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Valider</button>
+                </form>
+            <% } %>
+            <% if (facture.statut !== 'brouillon' && facture.reste_a_payer > 0) { %>
+                <button type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onclick="document.getElementById('payment-modal').classList.remove('hidden')">Enregistrer Paiement</button>
+            <% } %>
+            <a href="/factures/<%= facture.id %>/print" target="_blank" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded">Imprimer</a>
+        </div>
+    </div>
+
+    <!-- Alert status -->
+    <% 
+        let alertClass = 'bg-gray-50 border-gray-200 text-gray-800';
+        let statutMsg = 'Brouillon';
+        if (facture.statut === 'validee') { alertClass = 'bg-blue-50 border-blue-200 text-blue-800'; statutMsg = 'Validée (En attente de paiement)'; }
+        if (facture.statut === 'payee') { alertClass = 'bg-green-50 border-green-200 text-green-800'; statutMsg = 'Payée intégralement'; }
+        if (facture.statut === 'partiellement_payee') { alertClass = 'bg-yellow-50 border-yellow-200 text-yellow-800'; statutMsg = 'Partiellement payée (Reste: ' + facture.reste_a_payer.toLocaleString('fr-FR') + ' FCFA)'; }
+    %>
+    <div class="border rounded-md p-4 mb-6 <%= alertClass %> flex justify-between items-center">
+        <div>
+            <span class="font-bold">Statut :</span> <%= statutMsg %>
+        </div>
+        <div class="font-bold text-lg">
+            Total : <%= facture.total_net.toLocaleString('fr-FR') %> FCFA
+        </div>
+    </div>
+
+    <!-- Content -->
+    <!-- (Summary implementation of the show view, more details would mirror the print layout) -->
+    
+    <!-- Payment Modal (Hidden by default) -->
+    <div id="payment-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Nouveau Paiement</h3>
+                <form action="/paiements" method="POST">
+                    <input type="hidden" name="facture_id" value="<%= facture.id %>">
+                    <div class="mt-2 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Montant (FCFA)</label>
+                            <input type="number" name="montant" value="<%= facture.reste_a_payer %>" max="<%= facture.reste_a_payer %>" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Mode de paiement</label>
+                            <select name="mode_paiement" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                <option value="ESPECES">Espèces</option>
+                                <option value="CARTE_BANCAIRE">Carte Bancaire</option>
+                                <option value="CHEQUE">Chèque</option>
+                                <option value="VIREMENT">Virement</option>
+                                <option value="MOBILE_MONEY">Mobile Money</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Référence (Optionnel)</label>
+                            <input type="text" name="reference" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        </div>
+                    </div>
+                    <div class="mt-5 flex gap-3">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:text-sm">
+                            Enregistrer
+                        </button>
+                        <button type="button" onclick="document.getElementById('payment-modal').classList.add('hidden')" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:text-sm">
+                            Annuler
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

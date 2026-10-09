@@ -1,0 +1,93 @@
+<!-- Mobile sidebar backdrop -->
+<div x-show="sidebarOpen" x-cloak 
+     class="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 md:hidden"
+     @click="sidebarOpen = false"
+     x-transition:enter="transition-opacity ease-linear duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition-opacity ease-linear duration-300"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0">
+</div>
+
+<!-- Sidebar -->
+<div :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'" 
+     class="fixed inset-y-0 left-0 z-50 w-64 bg-primary-dark text-white transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-auto md:flex md:w-64 md:flex-col md:fixed">
+    
+    <!-- Sidebar Header -->
+    <div class="flex h-16 shrink-0 items-center justify-between px-6 bg-primary">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-plus-square text-3xl text-white"></i>
+            <div>
+                <h1 class="text-xl font-bold tracking-wider">CMENA</h1>
+                <p class="text-[0.65rem] uppercase text-blue-200 tracking-wide">Clinique Médico-Chirurgicale</p>
+            </div>
+        </div>
+        <!-- Close button for mobile -->
+        <button @click="sidebarOpen = false" class="md:hidden text-gray-300 hover:text-white">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex flex-1 flex-col overflow-y-auto px-4 py-4 mt-2">
+        <ul role="list" class="flex flex-1 flex-col gap-y-2">
+            <li>
+                <a href="/" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath === '/' ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-chart-pie w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath === '/' ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Tableau de bord
+                </a>
+            </li>
+            <li>
+                <a href="/patients" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/patients') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-users w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/patients') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Patients
+                </a>
+            </li>
+            <li>
+                <a href="/praticiens" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/praticiens') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-user-md w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/praticiens') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Praticiens
+                </a>
+            </li>
+            <li>
+                <a href="/consultations" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/consultations') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-stethoscope w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/consultations') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Consultations
+                </a>
+            </li>
+            <li>
+                <a href="/factures" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/factures') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-file-invoice w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/factures') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Factures
+                </a>
+            </li>
+            <li>
+                <a href="/actes" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/actes') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-pills w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/actes') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Actes Médicaux
+                </a>
+            </li>
+            <li>
+                <a href="/assurances" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/assurances') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-building w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/assurances') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Assurances
+                </a>
+            </li>
+            <li>
+                <a href="/paiements" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/paiements') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-money-bill-wave w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/paiements') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Paiements
+                </a>
+            </li>
+        </ul>
+    </nav>
+    
+    <!-- User / Logout -->
+    <div class="p-4 bg-black bg-opacity-20 mt-auto">
+        <a href="/logout" class="group flex items-center gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-300 hover:bg-red-600 hover:text-white transition-colors">
+            <i class="fas fa-sign-out-alt w-6 text-center text-lg text-gray-400 group-hover:text-white"></i>
+            Déconnexion
+        </a>
+    </div>
+</div>
