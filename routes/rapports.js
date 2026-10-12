@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
         // 1. Factures sur la période
         const { data: factures, error: errFactures } = await supabase
             .from('factures')
-            .select('*, patients(nom, prenom)')
+            .select('*, patients(nom, prenom, numero_dossier)')
             .gte('date_facture', `${date_from}T00:00:00`)
             .lte('date_facture', `${date_to}T23:59:59`)
             .neq('statut', 'annulee')
