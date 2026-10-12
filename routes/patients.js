@@ -13,7 +13,12 @@ router.get('/', async (req, res) => {
         let query = supabase.from('patients').select('*', { count: 'exact' });
 
         if (search) {
-            query = query.or(`nom.ilike.%${search}%,prenom.ilike.%${search}%,matricule.ilike.%${search}%`);
+            const isNum = !isNaN(parseInt(search, 10));
+            if (isNum) {
+                query = query.or(`nom.ilike.%${search}%,prenom.ilike.%${search}%,telephone.ilike.%${search}%,numero_dossier.eq.${parseInt(search, 10)}`);
+            } else {
+                query = query.or(`nom.ilike.%${search}%,prenom.ilike.%${search}%,telephone.ilike.%${search}%,ville.ilike.%${search}%`);
+            }
         }
 
         const { data: patients, count, error } = await query

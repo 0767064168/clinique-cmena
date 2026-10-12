@@ -93,6 +93,12 @@
                     Utilisateurs
                 </a>
             </li>
+            <li>
+                <a href="/settings" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/settings') ? 'bg-primary text-white border-l-4 border-red-500' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-cog w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/settings') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Paramètres
+                </a>
+            </li>
             <% } %>
         </ul>
     </nav>

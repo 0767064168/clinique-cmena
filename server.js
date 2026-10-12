@@ -22,6 +22,7 @@ const assurancesRoutes = require('./routes/assurances');
 const paiementsRoutes = require('./routes/paiements');
 const rapportsRoutes = require('./routes/rapports');
 const utilisateursRoutes = require('./routes/utilisateurs');
+const settingsRoutes = require('./routes/settings');
 const authRoutes = require('./routes/auth');
 const { requireAuth } = require('./middleware/auth');
 
@@ -151,6 +152,7 @@ app.use('/assurances', requireAuth, assurancesRoutes);
 app.use('/paiements', requireAuth, paiementsRoutes);
 app.use('/rapports', requireAuth, rapportsRoutes);
 app.use('/utilisateurs', requireAuth, utilisateursRoutes);
+app.use('/settings', requireAuth, settingsRoutes);
 
 // Middleware pour la gestion de la route 404 (Ressource non trouvée)
 app.use((req, res) => {
