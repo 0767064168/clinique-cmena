@@ -11,29 +11,52 @@ router.get('/login', (req, res) => {
 
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        
+        let { email, password } = req.body;
+        email = (email || '').trim();
+
+        // Si l'utilisateur saisit un identifiant sans '@' (ex: 'admin' ou 'ADMIN'), convertir automatiquement
+        if (email && !email.includes('@')) {
+            email = `${email.toLowerCase()}@gspm.ci`;
+        }
+
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password
         });
 
-        if (error) throw error;
+        if (error) {
+            req.flash('error', 'Identifiant ou mot de passe incorrect');
+            return res.redirect('/auth/login');
+        }
 
-        if (data.session) {
+        if (data.session && data.user) {
+            // Récupérer les informations du profil utilisateur
+            const { data: profil } = await supabase
+                .from('utilisateurs')
+                .select('nom, prenom, role')
+                .eq('id', data.user.id)
+                .single();
+
             req.session.user = {
                 id: data.user.id,
-                email: data.user.email
+                email: data.user.email,
+                nom: profil ? profil.nom : 'Utilisateur',
+                prenom: profil ? profil.prenom : 'GSPM',
+                role: profil ? profil.role : 'agent'
             };
-            req.flash('success', 'Connexion réussie');
-            return res.redirect('/dashboard');
+
+            const returnTo = req.session.returnTo || '/dashboard';
+            delete req.session.returnTo;
+
+            req.flash('success', `Bienvenue ${req.session.user.prenom} ${req.session.user.nom}`);
+            return res.redirect(returnTo);
         } else {
             req.flash('error', 'Identifiants invalides');
-            res.redirect('/auth/login');
+            return res.redirect('/auth/login');
         }
     } catch (error) {
-        console.error(error);
-        req.flash('error', error.message || 'Erreur de connexion');
+        console.error('Erreur login:', error);
+        req.flash('error', 'Erreur de connexion. Veuillez réessayer.');
         res.redirect('/auth/login');
     }
 });

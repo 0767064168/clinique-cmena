@@ -86,6 +86,14 @@
                     Rapports
                 </a>
             </li>
+            <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
+            <li>
+                <a href="/utilisateurs" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/utilisateurs') ? 'bg-primary text-white border-l-4 border-red-500' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-user-shield w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/utilisateurs') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Utilisateurs
+                </a>
+            </li>
+            <% } %>
         </ul>
     </nav>
     

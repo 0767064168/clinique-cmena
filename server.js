@@ -21,7 +21,9 @@ const actesRoutes = require('./routes/actes');
 const assurancesRoutes = require('./routes/assurances');
 const paiementsRoutes = require('./routes/paiements');
 const rapportsRoutes = require('./routes/rapports');
+const utilisateursRoutes = require('./routes/utilisateurs');
 const authRoutes = require('./routes/auth');
+const { requireAuth } = require('./middleware/auth');
 
 // Initialisation de l'application Express
 const app = express();
@@ -133,19 +135,22 @@ app.use((req, res, next) => {
 });
 
 // Enregistrement des routes de l'application
-app.use('/', dashboardRoutes);
-app.use('/dashboard', dashboardRoutes);
-app.use('/patients', patientsRoutes);
-app.use('/praticiens', praticiensRoutes);
-app.use('/factures', facturesRoutes);
-app.use('/consultations', consultationsRoutes);
-app.use('/actes', actesRoutes);
-app.use('/assurances', assurancesRoutes);
-app.use('/paiements', paiementsRoutes);
-app.use('/rapports', rapportsRoutes);
 app.use('/auth', authRoutes);
 app.get('/login', (req, res) => res.redirect('/auth/login'));
 app.get('/logout', (req, res) => res.redirect('/auth/logout'));
+
+// Routes protégées par authentification obligatoire
+app.use('/', requireAuth, dashboardRoutes);
+app.use('/dashboard', requireAuth, dashboardRoutes);
+app.use('/patients', requireAuth, patientsRoutes);
+app.use('/praticiens', requireAuth, praticiensRoutes);
+app.use('/factures', requireAuth, facturesRoutes);
+app.use('/consultations', requireAuth, consultationsRoutes);
+app.use('/actes', requireAuth, actesRoutes);
+app.use('/assurances', requireAuth, assurancesRoutes);
+app.use('/paiements', requireAuth, paiementsRoutes);
+app.use('/rapports', requireAuth, rapportsRoutes);
+app.use('/utilisateurs', requireAuth, utilisateursRoutes);
 
 // Middleware pour la gestion de la route 404 (Ressource non trouvée)
 app.use((req, res) => {
