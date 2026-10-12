@@ -20,6 +20,7 @@ const consultationsRoutes = require('./routes/consultations');
 const actesRoutes = require('./routes/actes');
 const assurancesRoutes = require('./routes/assurances');
 const paiementsRoutes = require('./routes/paiements');
+const rapportsRoutes = require('./routes/rapports');
 const authRoutes = require('./routes/auth');
 
 // Initialisation de l'application Express
@@ -141,6 +142,7 @@ app.use('/consultations', consultationsRoutes);
 app.use('/actes', actesRoutes);
 app.use('/assurances', assurancesRoutes);
 app.use('/paiements', paiementsRoutes);
+app.use('/rapports', rapportsRoutes);
 app.use('/auth', authRoutes);
 app.get('/login', (req, res) => res.redirect('/auth/login'));
 app.get('/logout', (req, res) => res.redirect('/auth/logout'));
