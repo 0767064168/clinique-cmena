@@ -50,7 +50,7 @@ router.get('/', async (req, res) => {
 router.get('/create', async (req, res) => {
     try {
         const { data: patients } = await supabase.from('patients').select('id, nom, prenom, numero_dossier').order('nom');
-        const { data: praticiens } = await supabase.from('praticiens').select('id, nom, prenom, specialite').eq('actif', true).order('nom');
+        const { data: praticiens } = await supabase.from('praticiens').select('id, nom, prenom, specialite, matricule').eq('actif', true).order('nom');
         
         res.render('consultations/create', { 
             title: 'Nouvelle Consultation',
@@ -185,7 +185,7 @@ router.get('/:id/edit', async (req, res) => {
             consultation.observations_clean = unpacked.cleanObservations;
         }
 
-        const { data: praticiens } = await supabase.from('praticiens').select('id, nom, prenom, specialite').eq('actif', true).order('nom');
+        const { data: praticiens } = await supabase.from('praticiens').select('id, nom, prenom, specialite, matricule').eq('actif', true).order('nom');
 
         res.render('consultations/edit', { 
             title: 'Modifier Consultation', 

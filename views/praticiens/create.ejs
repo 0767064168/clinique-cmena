@@ -19,9 +19,9 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Matricule *</label>
                     <input type="text" name="matricule" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ex: 12345-A">
                 </div>
-                <div class="md:col-span-2">
+                <div class="md:col-span-2" x-data="{ spec: '' }">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Spécialité *</label>
-                    <select name="specialite" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                    <select name="specialite" id="specialite_select" x-model="spec" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Sélectionner une spécialité...</option>
                         <option value="Généraliste">Généraliste</option>
                         <option value="Cardiologue">Cardiologue</option>
@@ -33,6 +33,12 @@
                         <option value="ORL">ORL</option>
                         <option value="Autre">Autre</option>
                     </select>
+
+                    <!-- Champ dynamique si 'Autre' est sélectionné -->
+                    <div x-show="spec === 'Autre'" x-cloak class="mt-3 bg-blue-50 p-3 rounded-md border border-blue-200">
+                        <label class="block text-xs font-bold text-blue-900 mb-1 uppercase">Préciser la spécialité *</label>
+                        <input type="text" name="specialite_autre" :required="spec === 'Autre'" placeholder="Ex: Kinésithérapeute, Radiologue, Neurologue..." class="w-full border border-blue-300 rounded-md px-3 py-2 text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>

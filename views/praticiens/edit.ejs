@@ -19,14 +19,26 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Matricule *</label>
                     <input type="text" name="matricule" value="<%= praticien.matricule || '' %>" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ex: 12345-A">
                 </div>
-                <div class="md:col-span-2">
+                <% 
+                    const standardSpecs = ['Généraliste', 'Cardiologue', 'Dermatologue', 'Gynécologue', 'Pédiatre', 'Chirurgien', 'Ophtalmologue', 'ORL'];
+                    const isCustom = praticien.specialite && !standardSpecs.includes(praticien.specialite);
+                    const initialSpec = isCustom ? 'Autre' : (praticien.specialite || '');
+                    const initialAutre = isCustom ? praticien.specialite : '';
+                %>
+                <div class="md:col-span-2" x-data="{ spec: '<%= initialSpec %>' }">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Spécialité *</label>
-                    <select name="specialite" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                        <% const specialties = ['Généraliste', 'Cardiologue', 'Dermatologue', 'Gynécologue', 'Pédiatre', 'Chirurgien', 'Ophtalmologue', 'ORL', 'Autre']; %>
-                        <% specialties.forEach(spec => { %>
-                            <option value="<%= spec %>" <%= praticien.specialite === spec ? 'selected' : '' %>><%= spec %></option>
+                    <select name="specialite" x-model="spec" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                        <% standardSpecs.forEach(specItem => { %>
+                            <option value="<%= specItem %>" <%= initialSpec === specItem ? 'selected' : '' %>><%= specItem %></option>
                         <% }); %>
+                        <option value="Autre" <%= initialSpec === 'Autre' ? 'selected' : '' %>>Autre</option>
                     </select>
+
+                    <!-- Champ dynamique si 'Autre' est sélectionné -->
+                    <div x-show="spec === 'Autre'" x-cloak class="mt-3 bg-blue-50 p-3 rounded-md border border-blue-200">
+                        <label class="block text-xs font-bold text-blue-900 mb-1 uppercase">Préciser la spécialité *</label>
+                        <input type="text" name="specialite_autre" value="<%= initialAutre %>" :required="spec === 'Autre'" placeholder="Ex: Kinésithérapeute, Radiologue, Neurologue..." class="w-full border border-blue-300 rounded-md px-3 py-2 text-sm bg-white focus:ring-blue-500 focus:border-blue-500">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
