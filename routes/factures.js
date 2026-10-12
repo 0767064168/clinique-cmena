@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
+const { numberToFrenchWords } = require('../utils/helpers');
 
 // GET /factures — liste
 router.get('/', async (req, res) => {
@@ -229,7 +230,8 @@ router.get('/:id/print', async (req, res) => {
             layout: false,
             facture,
             lignes: lignes || [],
-            clinique: params || {}
+            clinique: params || {},
+            numberToFrenchWords
         });
     } catch (error) {
         console.error(error);

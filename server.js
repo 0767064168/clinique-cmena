@@ -9,6 +9,7 @@ const express = require('express');
 const expressLayouts = require('express-ejs-layouts');
 const session = require('express-session');
 const methodOverride = require('method-override');
+const { numberToFrenchWords } = require('./utils/helpers');
 
 // Importation des routes de l'application
 const dashboardRoutes = require('./routes/dashboard');
@@ -61,6 +62,7 @@ app.use((req, res, next) => {
   // Utilisateur connecté
   res.locals.user = req.session ? req.session.user : null;
   res.locals.currentPath = req.path;
+  res.locals.numberToFrenchWords = numberToFrenchWords;
 
   // Formatage des montants financiers en Francs CFA (XOF)
   res.locals.formatMoney = (amount) => {

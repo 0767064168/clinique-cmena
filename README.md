@@ -1,6 +1,6 @@
-# 🏥 CMENA - Système de Gestion Médicale & Facturation
+# 🚒 CSA 3e COMPAGNIE GSPM BOUAKE - Système de Gestion Médicale & Facturation
 
-Application complète de gestion pour la **Clinique Médico-Chirurgicale NANAN (CMENA)** à Bouaké, Côte d'Ivoire.
+Application de gestion médicale et de facturation pour le **Centre de Santé (CSA) de la 3e Compagnie du Groupement de Sapeurs Pompiers Militaires (GSPM)** à Bouaké, République de Côte d'Ivoire (Ministère de la Défense).
 
 ---
 

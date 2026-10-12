@@ -183,7 +183,8 @@
         </div>
 
         <div class="text-xs font-bold text-center mb-8 uppercase italic border-y border-gray-300 py-2">
-            Arrêté la présente facture à la somme de : <%= (facture.total_net || 0).toLocaleString('fr-FR') %> FRANCS CFA
+            <% const montantEnLettres = typeof numberToFrenchWords === 'function' ? numberToFrenchWords(facture.total_net || 0) : '' %>
+            Arrêté la présente facture à la somme de : <%= montantEnLettres ? (montantEnLettres + ' FRANCS CFA (' + (facture.total_net || 0).toLocaleString('fr-FR') + ' FCFA)') : ((facture.total_net || 0).toLocaleString('fr-FR') + ' FRANCS CFA') %>
         </div>
 
         <!-- Signatures -->
