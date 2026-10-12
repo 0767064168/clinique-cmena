@@ -48,7 +48,7 @@ router.get('/', async (req, res) => {
 
 router.get('/create', async (req, res) => {
     try {
-        const { data: patients } = await supabase.from('patients').select('id, nom, prenom, numero_dossier, matricule').order('nom');
+        const { data: patients } = await supabase.from('patients').select('id, nom, prenom, numero_dossier').order('nom');
         const { data: praticiens } = await supabase.from('praticiens').select('id, nom, prenom, specialite').eq('actif', true).order('nom');
         
         res.render('consultations/create', { 
@@ -126,6 +126,7 @@ router.get('/:id', async (req, res) => {
             if (consultation.praticiens) {
                 consultation.praticien_nom = `${consultation.praticiens.nom} ${consultation.praticiens.prenom}`;
                 consultation.praticien_specialite = consultation.praticiens.specialite || '-';
+                consultation.praticien_matricule = consultation.praticiens.matricule || null;
             }
         }
 

@@ -15,6 +15,7 @@
                             <div>
                                 <h2 class="text-xl font-bold text-gray-800"><%= praticien.nom %> <%= praticien.prenom %></h2>
                                 <p class="text-sm font-medium text-blue-600 mt-1"><%= praticien.specialite %></p>
+                                <p class="text-xs text-gray-500 mt-0.5">Matricule : <strong class="text-gray-700"><%= praticien.matricule || 'Non renseigné' %></strong></p>
                             </div>
                             <!-- Status badge - Assuming 'actif' is a boolean or string -->
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <%= praticien.actif !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>">

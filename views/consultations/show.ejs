@@ -60,6 +60,9 @@
                 <div class="text-sm">
                     <p class="font-medium text-gray-900 mb-1"><%= consultation.praticien_nom %></p>
                     <p class="text-gray-600"><%= consultation.praticien_specialite || '-' %></p>
+                    <% if (consultation.praticien_matricule) { %>
+                        <p class="text-xs text-gray-500 mt-1">Matricule : <strong class="text-gray-700"><%= consultation.praticien_matricule %></strong></p>
+                    <% } %>
                 </div>
             </div>
             

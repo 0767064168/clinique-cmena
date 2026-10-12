@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
 const { numberToFrenchWords } = require('../utils/helpers');
+const PDFDocument = require('pdfkit');
+const path = require('path');
 
 // GET /factures — liste
 router.get('/', async (req, res) => {
@@ -87,6 +89,130 @@ router.get('/create', async (req, res) => {
 
 router.get(['/nouveau', '/nouvelle'], (req, res) => res.redirect('/factures/create'));
 
+// GET /factures/export/pdf — export PDF de la liste des factures
+router.get('/export/pdf', async (req, res) => {
+    try {
+        const { statut, date_from, date_to, search } = req.query;
+        let query = supabase.from('factures').select('*, patients!inner(nom, prenom, matricule)');
+
+        if (statut) query = query.eq('statut', statut);
+        if (date_from) query = query.gte('date_facture', date_from);
+        if (date_to) query = query.lte('date_facture', date_to);
+        if (search) {
+            query = query.or(`nom.ilike.%${search}%,prenom.ilike.%${search}%`, { foreignTable: 'patients' });
+        }
+
+        const { data: factures, error } = await query.order('date_facture', { ascending: false });
+        if (error) throw error;
+
+        // Création du document PDF
+        const doc = new PDFDocument({ margin: 50, size: 'A4' });
+        const filename = `factures_${new Date().toISOString().slice(0,10)}.pdf`;
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        doc.pipe(res);
+
+        // ---- EN-TÊTE ----
+        const logoGSPM = path.join(__dirname, '../public/images/logo_gspm.jpg');
+        const logoDefense = path.join(__dirname, '../public/images/logo_defense.jpg');
+
+        try { doc.image(logoGSPM, 50, 30, { width: 60 }); } catch(e) { /* logo absent */ }
+        try { doc.image(logoDefense, 490, 30, { width: 60 }); } catch(e) { /* logo absent */ }
+
+        doc.fontSize(11).font('Helvetica-Bold')
+           .text('REPUBLIQUE DE CÔTE D\'IVOIRE', 0, 35, { align: 'center' })
+           .text('MINISTERE DE LA DEFENSE', { align: 'center' })
+           .text('GROUPEMENT DE SAPEURS POMPIERS MILITAIRES', { align: 'center' });
+        doc.fontSize(10).font('Helvetica')
+           .text('CSA 3e COMPAGNIE GSPM BOUAKÉ', { align: 'center' });
+
+        // Bande tricolore (Orange / Blanc / Vert)
+        const bandY = 110;
+        doc.rect(50, bandY, 495, 5).fill('#FF6600');
+        doc.rect(50, bandY + 5, 495, 5).fill('#FFFFFF').stroke('#CCCCCC');
+        doc.rect(50, bandY + 10, 495, 5).fill('#009900');
+
+        // Titre du document
+        doc.moveDown(2.5);
+        doc.fontSize(14).font('Helvetica-Bold').fillColor('#1a1a1a')
+           .text('LISTE DES FACTURES', { align: 'center' });
+        doc.fontSize(9).font('Helvetica').fillColor('#555555')
+           .text(`Exporté le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}`, { align: 'center' });
+        if (statut || date_from || date_to || search) {
+            const filtres = [];
+            if (statut) filtres.push(`Statut: ${statut}`);
+            if (date_from) filtres.push(`Du: ${new Date(date_from).toLocaleDateString('fr-FR')}`);
+            if (date_to) filtres.push(`Au: ${new Date(date_to).toLocaleDateString('fr-FR')}`);
+            if (search) filtres.push(`Recherche: ${search}`);
+            doc.text(`Filtres appliqués: ${filtres.join(' | ')}`, { align: 'center' });
+        }
+        doc.moveDown(1);
+
+        // ---- TABLEAU ----
+        const tableTop = doc.y;
+        const colX = { num: 50, date: 145, patient: 230, total: 360, reste: 430, statut: 500 };
+        const colW = { num: 90, date: 80, patient: 125, total: 65, reste: 65, statut: 55 };
+
+        // En-tête du tableau
+        doc.rect(50, tableTop, 505, 18).fill('#B22222');
+        doc.fontSize(8).font('Helvetica-Bold').fillColor('#FFFFFF');
+        doc.text('N° Facture',   colX.num,     tableTop + 5, { width: colW.num });
+        doc.text('Date',         colX.date,    tableTop + 5, { width: colW.date });
+        doc.text('Patient',      colX.patient, tableTop + 5, { width: colW.patient });
+        doc.text('Total TTC',    colX.total,   tableTop + 5, { width: colW.total, align: 'right' });
+        doc.text('Reste',        colX.reste,   tableTop + 5, { width: colW.reste, align: 'right' });
+        doc.text('Statut',       colX.statut,  tableTop + 5, { width: colW.statut });
+
+        let y = tableTop + 18;
+        const rowH = 16;
+
+        const statutLabel = { brouillon:'Brouillon', validee:'Validée', payee:'Payée', partiellement_payee:'Part.Payée', annulee:'Annulée' };
+        let totalGeneral = 0;
+
+        (factures || []).forEach((f, i) => {
+            if (y > 760) {
+                doc.addPage();
+                y = 50;
+            }
+            const bg = i % 2 === 0 ? '#F9F9F9' : '#FFFFFF';
+            doc.rect(50, y, 505, rowH).fill(bg);
+
+            const patNom = f.patients ? `${f.patients.nom} ${f.patients.prenom}` : '-';
+            const dateStr = f.date_facture ? new Date(f.date_facture).toLocaleDateString('fr-FR') : '-';
+            const totalNet = f.total_net || 0;
+            const reste = f.reste_a_payer || 0;
+            totalGeneral += totalNet;
+
+            doc.fontSize(7.5).font('Helvetica').fillColor('#333333');
+            doc.text(f.numero_facture || '-',       colX.num,     y + 4, { width: colW.num });
+            doc.text(dateStr,                        colX.date,    y + 4, { width: colW.date });
+            doc.text(patNom,                         colX.patient, y + 4, { width: colW.patient });
+            doc.text(totalNet.toLocaleString('fr-FR') + ' FCFA', colX.total, y + 4, { width: colW.total, align: 'right' });
+            doc.text(reste.toLocaleString('fr-FR') + ' FCFA',    colX.reste, y + 4, { width: colW.reste, align: 'right' });
+            doc.text(statutLabel[f.statut] || f.statut || '-', colX.statut, y + 4, { width: colW.statut });
+
+            y += rowH;
+        });
+
+        // Ligne de total
+        doc.rect(50, y, 505, 18).fill('#F0F0F0');
+        doc.fontSize(8).font('Helvetica-Bold').fillColor('#1a1a1a');
+        doc.text(`TOTAL (${(factures||[]).length} factures)`, colX.num, y + 5, { width: 300 });
+        doc.text(totalGeneral.toLocaleString('fr-FR') + ' FCFA', colX.total, y + 5, { width: colW.total, align: 'right' });
+
+        // Pied de page
+        doc.fontSize(7).font('Helvetica').fillColor('#888888')
+           .text('CSA 3e COMPAGNIE GSPM BOUAKÉ — Document généré automatiquement — SAUVER OU PERIR',
+               50, 800, { align: 'center', width: 505 });
+
+        doc.end();
+    } catch (error) {
+        console.error('Erreur export PDF factures:', error);
+        res.status(500).send('Erreur lors de la génération du PDF');
+    }
+});
+
 // POST /factures — création
 router.post('/', async (req, res) => {
     try {
@@ -100,6 +226,7 @@ router.post('/', async (req, res) => {
         const remiseVal = parseFloat(remise || 0);
 
         // Créer la facture — numero_facture généré automatiquement par la séquence DB
+        const editeParId = (req.session && req.session.user && req.session.user.id) ? req.session.user.id : null;
         const { data: facture, error: errFacture } = await supabase
             .from('factures')
             .insert([{
@@ -107,7 +234,8 @@ router.post('/', async (req, res) => {
                 consultation_id: consultation_id || null,
                 date_facture: new Date(),
                 remise: remiseVal,
-                statut
+                statut,
+                edite_par: editeParId
             }])
             .select()
             .single();
@@ -173,11 +301,21 @@ router.get('/:id', async (req, res) => {
     try {
         const { data: facture, error } = await supabase
             .from('factures')
-            .select('*, patients(*), consultations(id, date_entree, motif, praticiens(nom, prenom))')
+            .select('*, patients(*), consultations(id, date_entree, date_sortie, motif, praticiens(nom, prenom, specialite))')
             .eq('id', req.params.id)
             .single();
 
         if (error) throw error;
+
+        let editeur = null;
+        if (facture.edite_par) {
+            const { data: user } = await supabase
+                .from('utilisateurs')
+                .select('nom, prenom')
+                .eq('id', facture.edite_par)
+                .single();
+            editeur = user;
+        }
 
         const { data: lignes } = await supabase
             .from('facture_lignes')
@@ -194,6 +332,7 @@ router.get('/:id', async (req, res) => {
         res.render('factures/show', {
             title: `Facture N°${facture.numero_facture}`,
             facture,
+            editeur,
             lignes: lignes || [],
             paiements: paiements || []
         });
@@ -209,11 +348,22 @@ router.get('/:id/print', async (req, res) => {
     try {
         const { data: facture, error } = await supabase
             .from('factures')
-            .select('*, patients(*), consultations(id, date_entree, motif, praticiens(nom, prenom))')
+            .select('*, patients(*), consultations(id, date_entree, date_sortie, motif, praticiens(nom, prenom, specialite))')
             .eq('id', req.params.id)
             .single();
 
         if (error) throw error;
+
+        // Charger l'éditeur si edite_par est renseigné
+        let editeur = null;
+        if (facture.edite_par) {
+            const { data: user } = await supabase
+                .from('utilisateurs')
+                .select('nom, prenom')
+                .eq('id', facture.edite_par)
+                .single();
+            editeur = user;
+        }
 
         const { data: lignes } = await supabase
             .from('facture_lignes')
@@ -231,6 +381,7 @@ router.get('/:id/print', async (req, res) => {
             facture,
             lignes: lignes || [],
             clinique: params || {},
+            editeur,
             numberToFrenchWords
         });
     } catch (error) {

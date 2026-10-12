@@ -1,9 +1,15 @@
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold text-gray-800">Factures</h1>
-        <a href="/factures/create" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            Nouvelle Facture
-        </a>
+        <div class="flex gap-2">
+            <a id="btnExportPdf" href="/factures/export/pdf" target="_blank"
+               class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                <i class="fas fa-file-pdf"></i> Exporter PDF
+            </a>
+            <a href="/factures/create" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Nouvelle Facture
+            </a>
+        </div>
     </div>
 
     <!-- Filters -->
@@ -86,3 +92,26 @@
         </table>
     </div>
 </div>
+
+<script>
+// Met à jour le lien d'export PDF avec les filtres actifs du formulaire
+(function() {
+    const btn = document.getElementById('btnExportPdf');
+    if (!btn) return;
+    // Récupérer les filtres actuels depuis l'URL courante
+    const params = new URLSearchParams(window.location.search);
+    if (params.toString()) {
+        btn.href = '/factures/export/pdf?' + params.toString();
+    }
+    // Mettre à jour en temps réel lors d'une soumission du formulaire de filtre
+    const form = document.querySelector('form[action="/factures"]');
+    if (form) {
+        form.addEventListener('submit', function() {
+            const fd = new FormData(form);
+            const p = new URLSearchParams();
+            for (const [k, v] of fd.entries()) { if (v) p.set(k, v); }
+            btn.href = '/factures/export/pdf?' + p.toString();
+        });
+    }
+})();
+</script>

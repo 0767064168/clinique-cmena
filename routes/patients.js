@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
+const ExcelJS = require('exceljs');
 
 router.get('/', async (req, res) => {
     try {
@@ -48,6 +49,129 @@ router.get('/create', async (req, res) => {
 });
 
 router.get('/nouveau', (req, res) => res.redirect('/patients/create'));
+
+// GET /patients/export/excel — export Excel de tous les patients
+router.get('/export/excel', async (req, res) => {
+    try {
+        const search = req.query.search || '';
+        let query = supabase.from('patients').select('*');
+        if (search) {
+            query = query.or(`nom.ilike.%${search}%,prenom.ilike.%${search}%,matricule.ilike.%${search}%`);
+        }
+        const { data: patients, error } = await query.order('nom', { ascending: true });
+        if (error) throw error;
+
+        // Création du classeur Excel
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'CSA 3e COMPAGNIE GSPM BOUAKÉ';
+        workbook.created = new Date();
+        workbook.lastModifiedBy = 'Système GSPM';
+        workbook.modified = new Date();
+
+        const sheet = workbook.addWorksheet('Patients', {
+            pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
+        });
+
+        // ---- Titre ----
+        sheet.mergeCells('A1:J1');
+        const titleRow = sheet.getRow(1);
+        titleRow.getCell(1).value = 'CSA 3e COMPAGNIE GSPM BOUAKÉ — LISTE DES PATIENTS';
+        titleRow.getCell(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+        titleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB22222' } };
+        titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+        titleRow.height = 28;
+
+        sheet.mergeCells('A2:J2');
+        const subRow = sheet.getRow(2);
+        subRow.getCell(1).value = `Exporté le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}${search ? ' — Recherche: ' + search : ''}`;
+        subRow.getCell(1).font = { italic: true, size: 9, color: { argb: 'FF555555' } };
+        subRow.getCell(1).alignment = { horizontal: 'center' };
+        subRow.height = 16;
+
+        // ---- En-têtes colonnes ----
+        const headerRow = sheet.getRow(4);
+        const headers = [
+            { label: 'N° Dossier',    key: 'numero_dossier',    width: 14 },
+            { label: 'Nom',            key: 'nom',               width: 18 },
+            { label: 'Prénom',         key: 'prenom',            width: 18 },
+            { label: 'Sexe',           key: 'sexe',              width: 8  },
+            { label: 'Date naissance', key: 'date_naissance',    width: 16 },
+            { label: 'Téléphone',      key: 'telephone',         width: 16 },
+            { label: 'Ville',          key: 'ville',             width: 15 },
+            { label: 'Gr. Sanguin',    key: 'groupe_sanguin',    width: 12 },
+            { label: 'Allergies',      key: 'allergies',         width: 25 },
+            { label: 'Date inscription', key: 'created_at',      width: 16 },
+        ];
+
+        headers.forEach((h, i) => {
+            const cell = headerRow.getCell(i + 1);
+            cell.value = h.label;
+            cell.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFAAAAAA' } },
+                bottom: { style: 'thin', color: { argb: 'FFAAAAAA' } },
+                left: { style: 'thin', color: { argb: 'FFAAAAAA' } },
+                right: { style: 'thin', color: { argb: 'FFAAAAAA' } }
+            };
+            sheet.getColumn(i + 1).width = h.width;
+        });
+        headerRow.height = 22;
+
+        // ---- Données ----
+        (patients || []).forEach((p, rowIdx) => {
+            const row = sheet.getRow(rowIdx + 5);
+            const bg = rowIdx % 2 === 0 ? 'FFF2F2F2' : 'FFFFFFFF';
+
+            const vals = [
+                p.numero_dossier || '',
+                p.nom || '',
+                p.prenom || '',
+                p.sexe || '',
+                p.date_naissance ? new Date(p.date_naissance).toLocaleDateString('fr-FR') : '',
+                p.telephone || '',
+                p.ville || '',
+                p.groupe_sanguin || '',
+                p.allergies || '',
+                p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR') : '',
+            ];
+
+            vals.forEach((v, ci) => {
+                const cell = row.getCell(ci + 1);
+                cell.value = v;
+                cell.font = { size: 9 };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+                cell.alignment = { vertical: 'middle', wrapText: true };
+                cell.border = {
+                    top: { style: 'hair', color: { argb: 'FFCCCCCC' } },
+                    bottom: { style: 'hair', color: { argb: 'FFCCCCCC' } },
+                    left: { style: 'hair', color: { argb: 'FFCCCCCC' } },
+                    right: { style: 'hair', color: { argb: 'FFCCCCCC' } }
+                };
+            });
+            row.height = 15;
+        });
+
+        // ---- Ligne de total ----
+        const totalRow = sheet.getRow((patients || []).length + 5);
+        sheet.mergeCells(`A${totalRow.number}:I${totalRow.number}`);
+        totalRow.getCell(1).value = `Total : ${(patients || []).length} patient(s)`;
+        totalRow.getCell(1).font = { bold: true, size: 10 };
+        totalRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCE6F1' } };
+        totalRow.height = 18;
+
+        // ---- Envoi ----
+        const filename = `patients_${new Date().toISOString().slice(0,10)}.xlsx`;
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error('Erreur export Excel patients:', error);
+        res.status(500).send('Erreur lors de la génération du fichier Excel');
+    }
+});
 
 router.post('/', async (req, res) => {
     try {

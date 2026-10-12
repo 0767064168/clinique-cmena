@@ -33,26 +33,43 @@
         </div>
     </div>
 
-    <!-- Infos patient et consultation -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <!-- Infos patient, praticien et consultation -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div class="bg-white shadow rounded-lg p-6">
             <h2 class="text-lg font-semibold text-gray-700 mb-3">Patient</h2>
             <% if (facture.patients) { %>
-                <p class="text-gray-900 font-medium"><%= facture.patients.nom %> <%= facture.patients.prenom %></p>
-                <% if (facture.patients.matricule) { %><p class="text-gray-500 text-sm">Matricule : <%= facture.patients.matricule %></p><% } %>
+                <p class="text-gray-900 font-medium text-base"><%= facture.patients.nom %> <%= facture.patients.prenom %></p>
+                <p class="text-gray-500 text-sm">N° Dossier : <%= facture.patients.numero_dossier %></p>
                 <% if (facture.patients.telephone) { %><p class="text-gray-500 text-sm">Tél : <%= facture.patients.telephone %></p><% } %>
             <% } else { %>
                 <p class="text-gray-400">—</p>
             <% } %>
         </div>
         <div class="bg-white shadow rounded-lg p-6">
-            <h2 class="text-lg font-semibold text-gray-700 mb-3">Consultation</h2>
+            <h2 class="text-lg font-semibold text-gray-700 mb-3">Praticien</h2>
+            <% 
+                const praticienShow = (facture.consultations && facture.consultations.praticiens) ? facture.consultations.praticiens : null;
+            %>
+            <% if (praticienShow) { %>
+                <p class="text-gray-900 font-medium text-base"><%= praticienShow.nom %> <%= praticienShow.prenom %></p>
+                <p class="text-gray-600 text-sm">Matricule : <strong class="text-gray-900"><%= praticienShow.matricule || 'Non renseigné' %></strong></p>
+                <% if (praticienShow.specialite) { %><p class="text-gray-500 text-sm">Spécialité : <%= praticienShow.specialite %></p><% } %>
+            <% } else { %>
+                <p class="text-gray-500 text-sm">Médecin traitant non assigné</p>
+            <% } %>
+        </div>
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-gray-700 mb-3">Consultation & Suivi</h2>
             <% if (facture.consultations) { %>
-                <p class="text-gray-500 text-sm">Date entrée : <%= new Date(facture.consultations.date_entree).toLocaleDateString('fr-FR') %></p>
-                <% if (facture.consultations.motif) { %><p class="text-gray-500 text-sm">Motif : <%= facture.consultations.motif %></p><% } %>
+                <p class="text-gray-500 text-sm">Date entrée : <strong class="text-gray-700"><%= new Date(facture.consultations.date_entree).toLocaleDateString('fr-FR') %></strong></p>
+                <p class="text-gray-500 text-sm">Date sortie : <strong class="text-gray-700"><%= facture.consultations.date_sortie ? new Date(facture.consultations.date_sortie).toLocaleDateString('fr-FR') : 'Non renseignée' %></strong></p>
+                <% if (facture.consultations.motif) { %><p class="text-gray-500 text-sm mt-1">Motif : <%= facture.consultations.motif %></p><% } %>
             <% } else { %>
                 <p class="text-gray-400">Aucune consultation liée</p>
             <% } %>
+            <div class="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-500">
+                Éditeur : <strong class="text-gray-700"><%= (typeof editeur !== 'undefined' && editeur) ? (editeur.nom + ' ' + editeur.prenom) : 'Système' %></strong>
+            </div>
         </div>
     </div>
 

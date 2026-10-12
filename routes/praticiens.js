@@ -34,11 +34,11 @@ router.get('/nouveau', (req, res) => res.redirect('/praticiens/create'));
 
 router.post('/', async (req, res) => {
     try {
-        const { nom, prenom, specialite, telephone, email } = req.body;
+        const { nom, prenom, matricule, specialite, telephone, email } = req.body;
         
         const { error } = await supabase
             .from('praticiens')
-            .insert([{ nom, prenom, specialite, telephone, email }]);
+            .insert([{ nom, prenom, matricule, specialite, telephone, email }]);
 
         if (error) throw error;
 
@@ -100,11 +100,11 @@ router.get('/:id/edit', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
     try {
-        const { nom, prenom, specialite, telephone, email } = req.body;
+        const { nom, prenom, matricule, specialite, telephone, email } = req.body;
         
         const { error } = await supabase
             .from('praticiens')
-            .update({ nom, prenom, specialite, telephone, email })
+            .update({ nom, prenom, matricule, specialite, telephone, email })
             .eq('id', req.params.id);
 
         if (error) throw error;

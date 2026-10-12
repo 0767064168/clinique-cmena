@@ -18,7 +18,7 @@
                     <select name="praticien_id" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
                         <% if (typeof praticiens !== 'undefined') { %>
                             <% praticiens.forEach(p => { %>
-                                <option value="<%= p.id %>" <%= consultation.praticien_id === p.id ? 'selected' : '' %>><%= p.nom %> <%= p.prenom %> (<%= p.specialite %>)</option>
+                                <option value="<%= p.id %>" <%= consultation.praticien_id === p.id ? 'selected' : '' %>><%= p.nom %> <%= p.prenom %> (<%= p.specialite %><%= p.matricule ? ' - Mle: ' + p.matricule : '' %>)</option>
                             <% }); %>
                         <% } %>
                     </select>

@@ -1,14 +1,20 @@
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold text-gray-800">Patients</h1>
-        <a href="/patients/create" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            Nouveau Patient
-        </a>
+        <div class="flex gap-2">
+            <a id="btnExportExcel" href="/patients/export/excel<%= typeof search !== 'undefined' && search ? '?search=' + encodeURIComponent(search) : '' %>"
+               class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                <i class="fas fa-file-excel"></i> Exporter Excel
+            </a>
+            <a href="/patients/create" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Nouveau Patient
+            </a>
+        </div>
     </div>
 
     <!-- Search Bar -->
     <div class="bg-white p-4 rounded-lg shadow mb-6">
-        <form action="/patients" method="GET" class="flex gap-4">
+        <form id="searchForm" action="/patients" method="GET" class="flex gap-4">
             <input type="text" name="search" placeholder="Rechercher par nom, prénom, N° dossier..." class="flex-grow border rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value="<%= typeof search !== 'undefined' ? search : (typeof query !== 'undefined' ? query.search : '') %>">
             <button type="submit" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">
                 Rechercher
@@ -91,3 +97,16 @@
         <% } %>
     </div>
 </div>
+
+<script>
+// Met à jour le lien d'export Excel avec le terme de recherche actif
+(function() {
+    const btn = document.getElementById('btnExportExcel');
+    const form = document.getElementById('searchForm');
+    if (!btn || !form) return;
+    form.addEventListener('submit', function() {
+        const search = form.querySelector('input[name="search"]').value.trim();
+        btn.href = '/patients/export/excel' + (search ? '?search=' + encodeURIComponent(search) : '');
+    });
+})();
+</script>

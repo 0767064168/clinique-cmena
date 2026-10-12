@@ -25,7 +25,7 @@
                         <option value="">Sélectionner un praticien...</option>
                         <% if (typeof praticiens !== 'undefined') { %>
                             <% praticiens.forEach(p => { %>
-                                <option value="<%= p.id %>"><%= p.nom %> <%= p.prenom %> (<%= p.specialite %>)</option>
+                                <option value="<%= p.id %>"><%= p.nom %> <%= p.prenom %> (<%= p.specialite %><%= p.matricule ? ' - Mle: ' + p.matricule : '' %>)</option>
                             <% }); %>
                         <% } %>
                     </select>
