@@ -172,7 +172,7 @@ router.get('/:id', async (req, res) => {
     try {
         const { data: facture, error } = await supabase
             .from('factures')
-            .select('*, patients(*), consultations(id, date_entree, motif)')
+            .select('*, patients(*), consultations(id, date_entree, motif, praticiens(nom, prenom))')
             .eq('id', req.params.id)
             .single();
 
@@ -208,7 +208,7 @@ router.get('/:id/print', async (req, res) => {
     try {
         const { data: facture, error } = await supabase
             .from('factures')
-            .select('*, patients(*), consultations(id, date_entree, motif)')
+            .select('*, patients(*), consultations(id, date_entree, motif, praticiens(nom, prenom))')
             .eq('id', req.params.id)
             .single();
 

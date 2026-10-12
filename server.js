@@ -98,10 +98,11 @@ app.use((req, res, next) => {
     }).format(d);
   };
 
-  // Informations générales de la clinique
+  // Informations générales de l'établissement
   res.locals.clinicInfo = {
-    nom: 'Clinique Médico-Chirurgicale NANAN',
-    sigle: 'CMENA',
+    nom: 'CSA 3e COMPAGNIE GSPM BOUAKE',
+    sigle: 'GSPM',
+    tutelle: 'Groupement de Sapeurs Pompiers Militaires - Ministère de la Défense',
     pays: 'Côte d\'Ivoire',
     devise: 'FCFA'
   };
@@ -234,7 +235,8 @@ app.use((err, req, res, next) => {
 // Démarrage de l'écoute du serveur
 app.listen(PORT, () => {
   console.log(`====================================================`);
-  console.log(`🏥 Clinique Médico-Chirurgicale NANAN (CMENA)`);
+  console.log(`🚒 GROUPEMENT DE SAPEURS POMPIERS MILITAIRES (GSPM)`);
+  console.log(`🏥 CSA 3e COMPAGNIE - BOUAKÉ`);
   console.log(`🚀 Serveur actif sur : http://localhost:${PORT}`);
   console.log(`⚙️  Environnement     : ${process.env.NODE_ENV || 'development'}`);
   console.log(`====================================================`);
