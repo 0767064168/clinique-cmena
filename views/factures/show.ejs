@@ -1,17 +1,17 @@
-<div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Facture N°<%= facture.numero_facture %></h1>
-        <div class="flex gap-2">
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Facture N°<%= facture.numero_facture %></h1>
+        <div class="flex flex-wrap gap-2 w-full sm:w-auto">
             <% if (facture.statut === 'brouillon') { %>
-                <form action="/factures/<%= facture.id %>/valider?_method=PUT" method="POST" class="inline">
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Valider</button>
+                <form action="/factures/<%= facture.id %>/valider?_method=PUT" method="POST" class="inline flex-1 sm:flex-none">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Valider</button>
                 </form>
             <% } %>
             <% if (facture.statut !== 'brouillon' && facture.statut !== 'annulee' && (facture.reste_a_payer || 0) > 0) { %>
-                <button type="button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onclick="document.getElementById('payment-modal').classList.remove('hidden')">Enregistrer Paiement</button>
+                <button type="button" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm" onclick="document.getElementById('payment-modal').classList.remove('hidden')">Paiement</button>
             <% } %>
-            <a href="/factures/<%= facture.id %>/print" target="_blank" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded">Imprimer</a>
-            <a href="/factures" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Retour</a>
+            <a href="/factures/<%= facture.id %>/print" target="_blank" class="flex-1 sm:flex-none text-center bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Imprimer</a>
+            <a href="/factures" class="flex-1 sm:flex-none text-center bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Retour</a>
         </div>
     </div>
 
@@ -24,7 +24,7 @@
         if (facture.statut === 'partiellement_payee') { alertClass = 'bg-yellow-50 border-yellow-200 text-yellow-800'; statutMsg = 'Partiellement payée (Reste: ' + (facture.reste_a_payer || 0).toLocaleString('fr-FR') + ' FCFA)'; }
         if (facture.statut === 'annulee') { alertClass = 'bg-red-50 border-red-200 text-red-800'; statutMsg = 'Annulée'; }
     %>
-    <div class="border rounded-md p-4 mb-6 <%= alertClass %> flex justify-between items-center">
+    <div class="border rounded-md p-3 sm:p-4 mb-6 <%= alertClass %> flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
             <span class="font-bold">Statut :</span> <%= statutMsg %>
         </div>
@@ -75,12 +75,13 @@
 
     <!-- Lignes de facturation -->
     <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
-        <div class="flex justify-between items-center px-6 py-4 border-b">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center px-4 sm:px-6 py-3 sm:py-4 border-b gap-2">
             <h2 class="text-lg font-semibold text-gray-700">Lignes de facturation</h2>
             <% if (facture.statut === 'brouillon') { %>
                 <button type="button" class="text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-1 px-3 rounded" onclick="document.getElementById('add-ligne-modal').classList.remove('hidden')">+ Ajouter</button>
             <% } %>
         </div>
+        <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
@@ -132,6 +133,7 @@
                 </tr>
             </tfoot>
         </table>
+        </div>
     </div>
 
     <!-- Paiements -->
@@ -162,8 +164,8 @@
     <% } %>
 
     <!-- Modal ajout ligne -->
-    <div id="add-ligne-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div id="add-ligne-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
+        <div class="relative top-10 sm:top-20 mx-auto p-4 sm:p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Ajouter une ligne</h3>
             <form action="/factures/<%= facture.id %>/lignes" method="POST" class="space-y-3">
                 <div>
@@ -193,8 +195,8 @@
     </div>
 
     <!-- Modal paiement -->
-    <div id="payment-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div id="payment-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
+        <div class="relative top-10 sm:top-20 mx-auto p-4 sm:p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Nouveau Paiement</h3>
             <form action="/paiements" method="POST" class="space-y-4">
                 <input type="hidden" name="facture_id" value="<%= facture.id %>">

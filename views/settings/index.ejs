@@ -1,15 +1,15 @@
-<div class="container mx-auto px-4 py-8 max-w-4xl">
-    <div class="flex justify-between items-center mb-6">
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-4xl">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <div>
-            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Paramètres de l'Établissement</h1>
-            <p class="text-sm text-gray-500 mt-1">Configurez les coordonnées officielles qui apparaissent sur les factures et documents imprimables</p>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Paramètres</h1>
+            <p class="text-xs sm:text-sm text-gray-500 mt-1">Coordonnées officielles pour factures et documents</p>
         </div>
         <a href="/dashboard" class="text-gray-600 hover:text-gray-900 text-sm font-semibold flex items-center gap-1">
             <i class="fas fa-arrow-left"></i> Tableau de bord
         </a>
     </div>
 
-    <form action="/settings" method="POST" class="bg-white shadow-lg rounded-2xl border border-gray-200 p-8 space-y-8">
+    <form action="/settings" method="POST" class="bg-white shadow-lg rounded-2xl border border-gray-200 p-4 sm:p-8 space-y-6 sm:space-y-8">
         
         <!-- Informations Générales -->
         <section>
@@ -118,7 +118,7 @@
             </div>
         </section>
 
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 border-t border-gray-200">
             <a href="/dashboard" class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
                 Annuler
             </a>

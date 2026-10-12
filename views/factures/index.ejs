@@ -1,35 +1,35 @@
-<div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Factures</h1>
-        <div class="flex gap-2">
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Factures</h1>
+        <div class="flex flex-wrap gap-2 w-full sm:w-auto">
             <a id="btnExportPdf" href="/factures/export/pdf" target="_blank"
-               class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+               class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm shadow-sm">
                 <i class="fas fa-file-pdf"></i> Exporter PDF
             </a>
-            <a href="/factures/create" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                Nouvelle Facture
+            <a href="/factures/create" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm shadow-sm">
+                <i class="fas fa-plus"></i> Nouvelle Facture
             </a>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white p-4 rounded-lg shadow mb-6">
-        <form action="/factures" method="GET" class="flex flex-wrap gap-4 items-end">
-            <div class="flex-grow max-w-sm">
+    <div class="bg-white p-3 sm:p-4 rounded-lg shadow mb-6">
+        <form action="/factures" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 items-end">
+            <div class="sm:col-span-2 lg:col-span-1">
                 <label class="block text-sm text-gray-600 mb-1">Rechercher</label>
-                <input type="text" name="search" placeholder="Patient..." class="w-full border rounded-md px-3 py-2" value="<%= filters && filters.search ? filters.search : '' %>">
+                <input type="text" name="search" placeholder="Patient..." class="w-full border rounded-md px-3 py-2 text-sm" value="<%= filters && filters.search ? filters.search : '' %>">
             </div>
             <div>
                 <label class="block text-sm text-gray-600 mb-1">Du</label>
-                <input type="date" name="date_from" class="border rounded-md px-3 py-2" value="<%= filters && filters.date_from ? filters.date_from : '' %>">
+                <input type="date" name="date_from" class="w-full border rounded-md px-3 py-2 text-sm" value="<%= filters && filters.date_from ? filters.date_from : '' %>">
             </div>
             <div>
                 <label class="block text-sm text-gray-600 mb-1">Au</label>
-                <input type="date" name="date_to" class="border rounded-md px-3 py-2" value="<%= filters && filters.date_to ? filters.date_to : '' %>">
+                <input type="date" name="date_to" class="w-full border rounded-md px-3 py-2 text-sm" value="<%= filters && filters.date_to ? filters.date_to : '' %>">
             </div>
             <div>
                 <label class="block text-sm text-gray-600 mb-1">Statut</label>
-                <select name="statut" class="border rounded-md px-3 py-2 min-w-[150px]">
+                <select name="statut" class="w-full border rounded-md px-3 py-2 text-sm">
                     <option value="">Tous</option>
                     <option value="brouillon" <%= filters && filters.statut === 'brouillon' ? 'selected' : '' %>>Brouillon</option>
                     <option value="validee" <%= filters && filters.statut === 'validee' ? 'selected' : '' %>>Validée</option>
@@ -38,13 +38,15 @@
                     <option value="annulee" <%= filters && filters.statut === 'annulee' ? 'selected' : '' %>>Annulée</option>
                 </select>
             </div>
-            <button type="submit" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Filtrer</button>
-            <a href="/factures" class="text-sm text-gray-500 hover:underline px-2 py-2">Réinitialiser</a>
+            <div class="flex gap-2 items-center sm:col-span-2 lg:col-span-1">
+                <button type="submit" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded text-sm">Filtrer</button>
+                <a href="/factures" class="text-sm text-gray-500 hover:underline px-2 py-2">Réinitialiser</a>
+            </div>
         </form>
     </div>
 
     <!-- Table -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="bg-white shadow rounded-lg overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>

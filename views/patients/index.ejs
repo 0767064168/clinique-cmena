@@ -1,32 +1,34 @@
-<div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Patients</h1>
-        <div class="flex gap-2">
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Patients</h1>
+        <div class="flex flex-wrap gap-2 w-full sm:w-auto">
             <a id="btnExportExcel" href="/patients/export/excel<%= typeof search !== 'undefined' && search ? '?search=' + encodeURIComponent(search) : '' %>"
-               class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+               class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm shadow-sm">
                 <i class="fas fa-file-excel"></i> Exporter Excel
             </a>
-            <a href="/patients/create" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                Nouveau Patient
+            <a href="/patients/create" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm shadow-sm">
+                <i class="fas fa-plus"></i> Nouveau Patient
             </a>
         </div>
     </div>
 
     <!-- Search Bar -->
-    <div class="bg-white p-4 rounded-lg shadow mb-6">
-        <form id="searchForm" action="/patients" method="GET" class="flex gap-4">
-            <input type="text" name="search" placeholder="Rechercher par nom, prénom, N° dossier..." class="flex-grow border rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value="<%= typeof search !== 'undefined' ? search : (typeof query !== 'undefined' ? query.search : '') %>">
-            <button type="submit" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">
-                Rechercher
-            </button>
-            <% if (typeof search !== 'undefined' && search) { %>
-                <a href="/patients" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium py-2 px-3 rounded flex items-center">Effacer</a>
-            <% } %>
+    <div class="bg-white p-3 sm:p-4 rounded-lg shadow mb-6">
+        <form id="searchForm" action="/patients" method="GET" class="flex flex-col sm:flex-row gap-2 sm:gap-4">
+            <input type="text" name="search" placeholder="Nom, prénom, N° dossier..." class="flex-grow border rounded-md px-3 sm:px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="<%= typeof search !== 'undefined' ? search : (typeof query !== 'undefined' ? query.search : '') %>">
+            <div class="flex gap-2">
+                <button type="submit" class="flex-1 sm:flex-none bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded text-sm">
+                    Rechercher
+                </button>
+                <% if (typeof search !== 'undefined' && search) { %>
+                    <a href="/patients" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium py-2 px-3 rounded flex items-center justify-center text-sm">Effacer</a>
+                <% } %>
+            </div>
         </form>
     </div>
 
     <!-- Patients Table -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="bg-white rounded-lg shadow overflow-x-auto">
         <% if (typeof patients !== 'undefined' && patients.length > 0) { %>
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">

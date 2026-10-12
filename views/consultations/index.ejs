@@ -1,29 +1,29 @@
-<div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Consultations</h1>
-        <a href="/consultations/create" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            Nouvelle Consultation
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Consultations</h1>
+        <a href="/consultations/create" class="w-full sm:w-auto text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm sm:text-base">
+            <i class="fas fa-plus mr-1"></i> Nouvelle Consultation
         </a>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white p-4 rounded-lg shadow mb-6">
-        <form action="/consultations" method="GET" class="flex flex-wrap gap-4 items-end">
-            <div class="flex-grow min-w-[200px]">
+    <div class="bg-white p-3 sm:p-4 rounded-lg shadow mb-6">
+        <form action="/consultations" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 items-end">
+            <div class="sm:col-span-2 lg:col-span-1">
                 <label class="block text-sm text-gray-600 mb-1">Recherche</label>
-                <input type="text" name="search" placeholder="Patient, motif..." class="w-full border rounded-md px-3 py-2" value="<%= typeof query !== 'undefined' ? query.search : '' %>">
+                <input type="text" name="search" placeholder="Patient, motif..." class="w-full border rounded-md px-3 py-2 text-sm" value="<%= typeof query !== 'undefined' ? query.search : '' %>">
             </div>
             <div>
                 <label class="block text-sm text-gray-600 mb-1">Du</label>
-                <input type="date" name="date_from" class="border rounded-md px-3 py-2" value="<%= typeof query !== 'undefined' ? query.date_from : '' %>">
+                <input type="date" name="date_from" class="w-full border rounded-md px-3 py-2 text-sm" value="<%= typeof query !== 'undefined' ? query.date_from : '' %>">
             </div>
             <div>
                 <label class="block text-sm text-gray-600 mb-1">Au</label>
-                <input type="date" name="date_to" class="border rounded-md px-3 py-2" value="<%= typeof query !== 'undefined' ? query.date_to : '' %>">
+                <input type="date" name="date_to" class="w-full border rounded-md px-3 py-2 text-sm" value="<%= typeof query !== 'undefined' ? query.date_to : '' %>">
             </div>
             <div>
                 <label class="block text-sm text-gray-600 mb-1">Praticien</label>
-                <select name="praticien_id" class="border rounded-md px-3 py-2 min-w-[200px]">
+                <select name="praticien_id" class="w-full border rounded-md px-3 py-2 text-sm">
                     <option value="">Tous les praticiens</option>
                     <% if (typeof praticiens !== 'undefined') { %>
                         <% praticiens.forEach(p => { %>
@@ -34,20 +34,22 @@
             </div>
             <div>
                 <label class="block text-sm text-gray-600 mb-1">Statut</label>
-                <select name="statut" class="border rounded-md px-3 py-2 min-w-[150px]">
+                <select name="statut" class="w-full border rounded-md px-3 py-2 text-sm">
                     <option value="">Tous les statuts</option>
                     <option value="en_cours" <%= typeof query !== 'undefined' && query.statut === 'en_cours' ? 'selected' : '' %>>En cours</option>
                     <option value="termine" <%= typeof query !== 'undefined' && query.statut === 'termine' ? 'selected' : '' %>>Terminé</option>
                     <option value="annule" <%= typeof query !== 'undefined' && query.statut === 'annule' ? 'selected' : '' %>>Annulé</option>
                 </select>
             </div>
-            <button type="submit" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Filtrer</button>
-            <a href="/consultations" class="text-sm text-gray-500 hover:underline px-2 py-2">Réinitialiser</a>
+            <div class="flex gap-2 items-center">
+                <button type="submit" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded text-sm">Filtrer</button>
+                <a href="/consultations" class="text-sm text-gray-500 hover:underline px-2 py-2">Réinitialiser</a>
+            </div>
         </form>
     </div>
 
     <!-- List -->
-    <div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="bg-white shadow rounded-lg overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>

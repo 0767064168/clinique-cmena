@@ -1,4 +1,4 @@
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
             <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Gestion des Utilisateurs</h1>
@@ -11,9 +11,9 @@
     </div>
 
     <!-- Filtres & Recherche -->
-    <div class="bg-white p-4 rounded-xl shadow border border-gray-200 mb-6">
-        <form action="/utilisateurs" method="GET" class="flex flex-wrap gap-4 items-end">
-            <div class="flex-grow min-w-[220px]">
+    <div class="bg-white p-3 sm:p-4 rounded-xl shadow border border-gray-200 mb-6">
+        <form action="/utilisateurs" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 items-end">
+            <div class="sm:col-span-2 lg:col-span-1">
                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Rechercher</label>
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
@@ -24,7 +24,7 @@
                         value="<%= query && query.search ? query.search : '' %>">
                 </div>
             </div>
-            <div class="w-48">
+            <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Rôle</label>
                 <select name="role" class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-red-600 focus:outline-none">
                     <option value="">Tous les rôles</option>
@@ -35,7 +35,7 @@
                     <option value="pharmacien" <%= query && query.role === 'pharmacien' ? 'selected' : '' %>>Pharmacien</option>
                 </select>
             </div>
-            <div class="w-36">
+            <div>
                 <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Statut</label>
                 <select name="actif" class="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-red-600 focus:outline-none">
                     <option value="">Tous</option>
@@ -43,17 +43,19 @@
                     <option value="false" <%= query && query.actif === 'false' ? 'selected' : '' %>>Inactif</option>
                 </select>
             </div>
-            <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white font-semibold py-2 px-4 rounded-md text-sm transition">
-                Filtrer
-            </button>
-            <a href="/utilisateurs" class="text-sm text-gray-500 hover:text-gray-800 px-2 py-2">
-                Réinitialiser
-            </a>
+            <div class="flex gap-2 items-center">
+                <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white font-semibold py-2 px-4 rounded-md text-sm transition">
+                    Filtrer
+                </button>
+                <a href="/utilisateurs" class="text-sm text-gray-500 hover:text-gray-800 px-2 py-2">
+                    Réinitialiser
+                </a>
+            </div>
         </form>
     </div>
 
     <!-- Tableau des Utilisateurs -->
-    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+    <div class="bg-white rounded-xl shadow border border-gray-200 overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>

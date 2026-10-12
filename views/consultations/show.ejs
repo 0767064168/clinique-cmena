@@ -1,10 +1,10 @@
-<div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Détail Consultation</h1>
-        <div class="flex gap-2">
-            <a href="/consultations/<%= consultation.id %>/edit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">Modifier</a>
-            <a href="/factures/create?consultation_id=<%= consultation.id %>" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Facturer</a>
-            <a href="/consultations" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Retour</a>
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Détail Consultation</h1>
+        <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+            <a href="/consultations/<%= consultation.id %>/edit" class="flex-1 sm:flex-none text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Modifier</a>
+            <a href="/factures/create?consultation_id=<%= consultation.id %>" class="flex-1 sm:flex-none text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Facturer</a>
+            <a href="/consultations" class="flex-1 sm:flex-none text-center bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Retour</a>
         </div>
     </div>
 
