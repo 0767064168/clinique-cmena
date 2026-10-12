@@ -9,7 +9,7 @@ const path = require('path');
 router.get('/', async (req, res) => {
     try {
         const { statut, date_from, date_to, search } = req.query;
-        let query = supabase.from('factures').select('*, patients!inner(nom, prenom, matricule)');
+        let query = supabase.from('factures').select('*, patients!inner(nom, prenom)');
 
         if (statut) query = query.eq('statut', statut);
         if (date_from) query = query.gte('date_facture', date_from);
@@ -46,7 +46,7 @@ router.get('/create', async (req, res) => {
         if (consultation_id) {
             const { data } = await supabase
                 .from('consultations')
-                .select('*, patients(nom, prenom, matricule)')
+                .select('*, patients(nom, prenom)')
                 .eq('id', consultation_id)
                 .single();
             selectedConsultation = data;
@@ -55,7 +55,7 @@ router.get('/create', async (req, res) => {
         // Consultations terminées sans facture (ou toutes si pas de filtre)
         const { data: consultations } = await supabase
             .from('consultations')
-            .select('*, patients(nom, prenom, matricule)')
+            .select('*, patients(nom, prenom)')
             .eq('statut', 'termine')
             .order('date_entree', { ascending: false })
             .limit(50);
@@ -63,7 +63,7 @@ router.get('/create', async (req, res) => {
         // Patients actifs
         const { data: patients } = await supabase
             .from('patients')
-            .select('id, nom, prenom, matricule')
+            .select('id, nom, prenom')
             .order('nom');
 
         // Actes disponibles
@@ -93,7 +93,7 @@ router.get(['/nouveau', '/nouvelle'], (req, res) => res.redirect('/factures/crea
 router.get('/export/pdf', async (req, res) => {
     try {
         const { statut, date_from, date_to, search } = req.query;
-        let query = supabase.from('factures').select('*, patients!inner(nom, prenom, matricule)');
+        let query = supabase.from('factures').select('*, patients!inner(nom, prenom)');
 
         if (statut) query = query.eq('statut', statut);
         if (date_from) query = query.gte('date_facture', date_from);

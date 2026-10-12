@@ -6,7 +6,7 @@ const { packVitals, unpackVitals } = require('../utils/vitals');
 router.get('/', async (req, res) => {
     try {
         const { date_from, date_to, praticien_id, statut, search } = req.query;
-        let query = supabase.from('consultations').select('*, patients(nom, prenom, matricule), praticiens(nom, prenom)');
+        let query = supabase.from('consultations').select('*, patients(nom, prenom), praticiens(nom, prenom)');
 
         if (date_from) query = query.gte('date_entree', `${date_from}T00:00:00`);
         if (date_to) query = query.lte('date_entree', `${date_to}T23:59:59`);

@@ -63,7 +63,7 @@ router.get('/:id', async (req, res) => {
 
         const { data: consultations } = await supabase
             .from('consultations')
-            .select('*, patients(nom, prenom, matricule)')
+            .select('*, patients(nom, prenom)')
             .eq('praticien_id', req.params.id)
             .order('date_entree', { ascending: false })
             .limit(50);

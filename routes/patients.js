@@ -61,7 +61,7 @@ router.get('/export/excel', async (req, res) => {
         const search = req.query.search || '';
         let query = supabase.from('patients').select('*');
         if (search) {
-            query = query.or(`nom.ilike.%${search}%,prenom.ilike.%${search}%,matricule.ilike.%${search}%`);
+            query = query.or(`nom.ilike.%${search}%,prenom.ilike.%${search}%`);
         }
         const { data: patients, error } = await query.order('nom', { ascending: true });
         if (error) throw error;
