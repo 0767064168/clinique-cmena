@@ -139,6 +139,11 @@ app.use((req, res, next) => {
 app.use('/auth', authRoutes);
 app.get('/login', (req, res) => res.redirect('/auth/login'));
 app.get('/logout', (req, res) => res.redirect('/auth/logout'));
+app.get('/profile', requireAuth, (req, res) => res.redirect('/auth/profile'));
+app.post('/profile/password', requireAuth, (req, res, next) => {
+    req.url = '/password';
+    authRoutes(req, res, next);
+});
 
 // Routes protégées par authentification obligatoire
 app.use('/', requireAuth, dashboardRoutes);

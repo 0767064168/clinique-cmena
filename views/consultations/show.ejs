@@ -28,13 +28,49 @@
                 </div>
 
                 <div class="space-y-4">
+                    <!-- Constantes vitales du patient -->
+                    <% 
+                        const v = consultation.vitals || {};
+                        const hasV = v.tension || v.temperature || v.poids || v.taille || v.pouls;
+                    %>
+                    <% if (hasV) { %>
+                    <div>
+                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                            <i class="fas fa-heartbeat text-red-600"></i>
+                            Constantes Vitales du Patient
+                        </h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-red-50/40 border border-red-100 rounded-lg p-3">
+                            <div class="bg-white p-2.5 rounded border border-gray-200 text-center shadow-xs">
+                                <span class="text-[11px] text-gray-500 block">Tension (TA)</span>
+                                <strong class="text-sm font-bold text-gray-800"><%= v.tension ? (v.tension + ' mmHg') : '-' %></strong>
+                            </div>
+                            <div class="bg-white p-2.5 rounded border border-gray-200 text-center shadow-xs">
+                                <span class="text-[11px] text-gray-500 block">Température</span>
+                                <strong class="text-sm font-bold text-gray-800"><%= v.temperature ? (v.temperature + ' °C') : '-' %></strong>
+                            </div>
+                            <div class="bg-white p-2.5 rounded border border-gray-200 text-center shadow-xs">
+                                <span class="text-[11px] text-gray-500 block">Poids</span>
+                                <strong class="text-sm font-bold text-gray-800"><%= v.poids ? (v.poids + ' kg') : '-' %></strong>
+                            </div>
+                            <div class="bg-white p-2.5 rounded border border-gray-200 text-center shadow-xs">
+                                <span class="text-[11px] text-gray-500 block">Pouls</span>
+                                <strong class="text-sm font-bold text-gray-800"><%= v.pouls ? (v.pouls + ' bpm') : '-' %></strong>
+                            </div>
+                            <div class="bg-white p-2.5 rounded border border-gray-200 text-center shadow-xs">
+                                <span class="text-[11px] text-gray-500 block">Taille</span>
+                                <strong class="text-sm font-bold text-gray-800"><%= v.taille ? (v.taille + ' cm') : '-' %></strong>
+                            </div>
+                        </div>
+                    </div>
+                    <% } %>
+
                     <div>
                         <h3 class="text-sm font-medium text-gray-500 uppercase">Motif</h3>
                         <p class="mt-1 text-gray-900 bg-gray-50 p-3 rounded-md"><%= consultation.motif || 'Non renseigné' %></p>
                     </div>
                     <div>
                         <h3 class="text-sm font-medium text-gray-500 uppercase">Observations</h3>
-                        <p class="mt-1 text-gray-900 bg-gray-50 p-3 rounded-md whitespace-pre-wrap"><%= consultation.observations || 'Aucune observation' %></p>
+                        <p class="mt-1 text-gray-900 bg-gray-50 p-3 rounded-md whitespace-pre-wrap"><%= consultation.observations_clean || consultation.observations || 'Aucune observation' %></p>
                     </div>
                     <div>
                         <h3 class="text-sm font-medium text-gray-500 uppercase">Diagnostic</h3>

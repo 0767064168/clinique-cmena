@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
+const { packVitals, unpackVitals } = require('../utils/vitals');
 
 router.get('/', async (req, res) => {
     try {
@@ -68,7 +69,10 @@ router.get(['/nouveau', '/nouvelle'], (req, res) => res.redirect('/consultations
 
 router.post('/', async (req, res) => {
     try {
-        const { patient_id, praticien_id, date_entree, date_sortie, statut, motif, observations, diagnostic } = req.body;
+        const { 
+            patient_id, praticien_id, date_entree, date_sortie, statut, motif, observations, diagnostic,
+            tension, temperature, poids, taille, pouls
+        } = req.body;
         
         let nombre_jours = 1;
         if (date_entree && date_sortie) {
@@ -77,6 +81,8 @@ router.post('/', async (req, res) => {
             const diffTime = Math.max(0, sortie - entree);
             nombre_jours = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
         }
+
+        const packedObs = packVitals(observations, { tension, temperature, poids, taille, pouls });
 
         const { data: consultation, error } = await supabase
             .from('consultations')
@@ -87,7 +93,7 @@ router.post('/', async (req, res) => {
                 date_sortie: date_sortie ? new Date(date_sortie) : null, 
                 statut: statut || 'en_cours',
                 motif: motif || null, 
-                observations: observations || null, 
+                observations: packedObs || null, 
                 diagnostic: diagnostic || null,
                 nombre_jours
             }])
@@ -128,6 +134,17 @@ router.get('/:id', async (req, res) => {
                 consultation.praticien_specialite = consultation.praticiens.specialite || '-';
                 consultation.praticien_matricule = consultation.praticiens.matricule || null;
             }
+
+            // Décodage des constantes vitales
+            const unpacked = unpackVitals(consultation.observations);
+            consultation.vitals = {
+                tension: unpacked.tension,
+                temperature: unpacked.temperature,
+                poids: unpacked.poids,
+                taille: unpacked.taille,
+                pouls: unpacked.pouls
+            };
+            consultation.observations_clean = unpacked.cleanObservations;
         }
 
         res.render('consultations/show', {
@@ -151,9 +168,21 @@ router.get('/:id/edit', async (req, res) => {
 
         if (error) throw error;
 
-        if (consultation && consultation.patients) {
-            consultation.patient_nom = consultation.patients.nom;
-            consultation.patient_prenom = consultation.patients.prenom;
+        if (consultation) {
+            if (consultation.patients) {
+                consultation.patient_nom = consultation.patients.nom;
+                consultation.patient_prenom = consultation.patients.prenom;
+            }
+            // Décodage des constantes vitales pour le formulaire
+            const unpacked = unpackVitals(consultation.observations);
+            consultation.vitals = {
+                tension: unpacked.tension,
+                temperature: unpacked.temperature,
+                poids: unpacked.poids,
+                taille: unpacked.taille,
+                pouls: unpacked.pouls
+            };
+            consultation.observations_clean = unpacked.cleanObservations;
         }
 
         const { data: praticiens } = await supabase.from('praticiens').select('id, nom, prenom, specialite').eq('actif', true).order('nom');
@@ -172,13 +201,18 @@ router.get('/:id/edit', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
     try {
-        const { praticien_id, date_entree, date_sortie, statut, motif, observations, diagnostic } = req.body;
+        const { 
+            praticien_id, date_entree, date_sortie, statut, motif, observations, diagnostic,
+            tension, temperature, poids, taille, pouls
+        } = req.body;
         
         let nombre_jours = 1;
         if (date_entree && date_sortie) {
             const diffTime = Math.max(0, new Date(date_sortie) - new Date(date_entree));
             nombre_jours = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
         }
+
+        const packedObs = packVitals(observations, { tension, temperature, poids, taille, pouls });
 
         const { error } = await supabase
             .from('consultations')
@@ -188,7 +222,7 @@ router.put('/:id', async (req, res) => {
                 date_sortie: date_sortie ? new Date(date_sortie) : null, 
                 statut: statut || 'en_cours',
                 motif: motif || null, 
-                observations: observations || null, 
+                observations: packedObs || null, 
                 diagnostic: diagnostic || null,
                 nombre_jours,
                 updated_at: new Date()
