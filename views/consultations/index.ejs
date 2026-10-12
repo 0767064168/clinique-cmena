@@ -9,6 +9,10 @@
     <!-- Filters -->
     <div class="bg-white p-4 rounded-lg shadow mb-6">
         <form action="/consultations" method="GET" class="flex flex-wrap gap-4 items-end">
+            <div class="flex-grow min-w-[200px]">
+                <label class="block text-sm text-gray-600 mb-1">Recherche</label>
+                <input type="text" name="search" placeholder="Patient, motif..." class="w-full border rounded-md px-3 py-2" value="<%= typeof query !== 'undefined' ? query.search : '' %>">
+            </div>
             <div>
                 <label class="block text-sm text-gray-600 mb-1">Du</label>
                 <input type="date" name="date_from" class="border rounded-md px-3 py-2" value="<%= typeof query !== 'undefined' ? query.date_from : '' %>">

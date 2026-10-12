@@ -9,10 +9,13 @@
     <!-- Search Bar -->
     <div class="bg-white p-4 rounded-lg shadow mb-6">
         <form action="/patients" method="GET" class="flex gap-4">
-            <input type="text" name="search" placeholder="Rechercher par nom, prénom, N° dossier..." class="flex-grow border rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value="<%= typeof query !== 'undefined' ? query.search : '' %>">
+            <input type="text" name="search" placeholder="Rechercher par nom, prénom, N° dossier..." class="flex-grow border rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value="<%= typeof search !== 'undefined' ? search : (typeof query !== 'undefined' ? query.search : '') %>">
             <button type="submit" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">
                 Rechercher
             </button>
+            <% if (typeof search !== 'undefined' && search) { %>
+                <a href="/patients" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium py-2 px-3 rounded flex items-center">Effacer</a>
+            <% } %>
         </form>
     </div>
 
@@ -35,8 +38,8 @@
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= patient.numero_dossier %></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= patient.nom %> <%= patient.prenom %></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= patient.telephone %></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= patient.ville %></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= patient.telephone || '-' %></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= patient.ville || '-' %></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 <%= new Date(patient.created_at).toLocaleDateString('fr-FR') %>
                             </td>
@@ -52,20 +55,34 @@
                 </tbody>
             </table>
             
-            <!-- Pagination (Placeholder) -->
+            <!-- Pagination -->
+            <% if (typeof totalPages !== 'undefined' && totalPages > 1) { %>
             <div class="px-6 py-3 flex items-center justify-between border-t border-gray-200 bg-white">
                 <div class="flex-1 flex justify-between sm:hidden">
-                    <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Précédent</a>
-                    <a href="#" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Suivant</a>
+                    <% if (currentPage > 1) { %>
+                        <a href="/patients?page=<%= currentPage - 1 %><%= typeof search !== 'undefined' && search ? '&search=' + encodeURIComponent(search) : '' %>" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Précédent</a>
+                    <% } %>
+                    <% if (currentPage < totalPages) { %>
+                        <a href="/patients?page=<%= currentPage + 1 %><%= typeof search !== 'undefined' && search ? '&search=' + encodeURIComponent(search) : '' %>" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Suivant</a>
+                    <% } %>
                 </div>
                 <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                     <div>
                         <p class="text-sm text-gray-700">
-                            Affichage de la page <span class="font-medium">1</span>
+                            Page <span class="font-medium"><%= currentPage %></span> sur <span class="font-medium"><%= totalPages %></span>
                         </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <% if (currentPage > 1) { %>
+                            <a href="/patients?page=<%= currentPage - 1 %><%= typeof search !== 'undefined' && search ? '&search=' + encodeURIComponent(search) : '' %>" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50">Précédent</a>
+                        <% } %>
+                        <% if (currentPage < totalPages) { %>
+                            <a href="/patients?page=<%= currentPage + 1 %><%= typeof search !== 'undefined' && search ? '&search=' + encodeURIComponent(search) : '' %>" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50">Suivant</a>
+                        <% } %>
                     </div>
                 </div>
             </div>
+            <% } %>
         <% } else { %>
             <div class="p-8 text-center text-gray-500">
                 <p class="mb-4">Aucun patient trouvé.</p>

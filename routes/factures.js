@@ -113,21 +113,28 @@ router.post('/', async (req, res) => {
 
         if (errFacture) throw errFacture;
 
-        // Traiter les lignes si présentes
-        if (libelle && Array.isArray(libelle)) {
+        // Normaliser les entrées pour supporter 1 ou plusieurs lignes
+        const libelles = Array.isArray(libelle) ? libelle : (libelle ? [libelle] : []);
+        const pus = Array.isArray(prix_unitaire) ? prix_unitaire : (prix_unitaire !== undefined ? [prix_unitaire] : []);
+        const qtes = Array.isArray(quantite) ? quantite : (quantite !== undefined ? [quantite] : []);
+        const pcts = Array.isArray(pourcentage) ? pourcentage : (pourcentage !== undefined ? [pourcentage] : []);
+        const actes = Array.isArray(acte_id) ? acte_id : (acte_id ? [acte_id] : []);
+        const praticiens = Array.isArray(nom_praticien) ? nom_praticien : (nom_praticien ? [nom_praticien] : []);
+
+        if (libelles.length > 0) {
             let total = 0;
-            const lignes = libelle.map((l, index) => {
-                const pu = parseFloat(prix_unitaire[index] || 0);
-                const qte = parseInt(quantite[index] || 1);
-                const pct = parseFloat(pourcentage[index] || 100);
+            const lignes = libelles.map((l, index) => {
+                const pu = parseFloat(pus[index] !== undefined ? pus[index] : 0) || 0;
+                const qte = parseInt(qtes[index] !== undefined ? qtes[index] : 1, 10) || 1;
+                const pct = parseFloat(pcts[index] !== undefined ? pcts[index] : 100) || 100;
                 const montant = pu * qte * (pct / 100);
                 total += montant;
 
                 return {
                     facture_id: facture.id,
-                    acte_id: (acte_id && acte_id[index]) ? acte_id[index] : null,
+                    acte_id: actes[index] || null,
                     libelle: l,
-                    nom_praticien: (nom_praticien && nom_praticien[index]) ? nom_praticien[index] : null,
+                    nom_praticien: praticiens[index] || null,
                     prix_unitaire: pu,
                     quantite: qte,
                     pourcentage: pct,
