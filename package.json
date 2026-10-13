@@ -19,6 +19,7 @@
   "author": "Clinique CMENA",
   "license": "ISC",
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.3.1",
     "@supabase/supabase-js": "^2.45.4",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",
