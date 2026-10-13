@@ -27,10 +27,11 @@ router.get('/', async (req, res) => {
 
         if (errFactures) throw errFactures;
 
-        // 2. Paiements réels enregistrés sur la période
+        // 2. Paiements réels enregistrés sur la période (en excluant les paiements des factures annulées)
         const { data: paiements, error: errPaiements } = await supabase
             .from('paiements')
-            .select('montant, mode_paiement, date_paiement')
+            .select('montant, mode_paiement, date_paiement, factures!inner(statut)')
+            .neq('factures.statut', 'annulee')
             .gte('date_paiement', `${date_from}T00:00:00.000Z`)
             .lte('date_paiement', `${date_to}T23:59:59.999Z`);
 

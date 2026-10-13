@@ -30,12 +30,13 @@ router.get('/', async (req, res) => {
         const facturesImpayees = (impayeesData || []).length;
         const totalMontantImpaye = (impayeesData || []).reduce((acc, curr) => acc + (parseFloat(curr.reste_a_payer) || 0), 0);
 
-        // Revenue du mois
+        // Revenue du mois (exclure factures annulées)
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         const { data: monthFactures, error: errRevenue } = await supabase
             .from('factures')
             .select('montant_paye')
+            .neq('statut', 'annulee')
             .gte('date_facture', startOfMonth.toISOString().split('T')[0]);
         if (errRevenue) throw errRevenue;
 

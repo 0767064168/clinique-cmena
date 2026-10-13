@@ -658,7 +658,10 @@ router.post('/:id/annuler', async (req, res) => {
 
         const { error } = await supabase
             .from('factures')
-            .update({ statut: 'annulee' })
+            .update({ 
+                statut: 'annulee',
+                reste_a_payer: 0
+            })
             .eq('id', req.params.id);
 
         if (error) throw error;
@@ -677,7 +680,10 @@ router.delete('/:id', async (req, res) => {
     try {
         const { error } = await supabase
             .from('factures')
-            .update({ statut: 'annulee' })
+            .update({ 
+                statut: 'annulee',
+                reste_a_payer: 0 
+            })
             .eq('id', req.params.id);
 
         if (error) throw error;
