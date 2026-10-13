@@ -33,9 +33,16 @@ router.post('/login', async (req, res) => {
             // Récupérer les informations du profil utilisateur
             const { data: profil } = await supabase
                 .from('utilisateurs')
-                .select('nom, prenom, role')
+                .select('nom, prenom, role, actif')
                 .eq('id', data.user.id)
                 .single();
+
+            // Vérifier si le compte est actif
+            if (profil && profil.actif === false) {
+                await supabase.auth.signOut();
+                req.flash('error', 'Votre compte a été désactivé par l\'administrateur. Veuillez contacter l\'administration.');
+                return res.redirect('/auth/login');
+            }
 
             req.session.user = {
                 id: data.user.id,

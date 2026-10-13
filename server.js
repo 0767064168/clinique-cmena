@@ -6,6 +6,8 @@
 require('dotenv').config();
 const path = require('path');
 const express = require('express');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const expressLayouts = require('express-ejs-layouts');
 const session = require('express-session');
 const methodOverride = require('method-override');
@@ -24,12 +26,28 @@ const rapportsRoutes = require('./routes/rapports');
 const utilisateursRoutes = require('./routes/utilisateurs');
 const settingsRoutes = require('./routes/settings');
 const authRoutes = require('./routes/auth');
-const { requireAuth } = require('./middleware/auth');
+const { requireAuth, requireAdmin } = require('./middleware/auth');
 
 // Initialisation de l'application Express
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isProd = process.env.NODE_ENV === 'production';
+
+// Sécurité : Masquer la signature d'Express
+app.disable('x-powered-by');
+
+// Vercel / Reverse Proxy (permet au rate limiter d'obtenir la véritable adresse IP cliente)
+if (isProd) {
+  app.set('trust proxy', 1);
+}
+
+// Sécurité : En-têtes HTTP sécurisés avec Helmet (CSP assoupli pour scripts inline Alpine/Tailwind/FontAwesome)
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // EJS utilise des scripts inline et des CDN (FontAwesome, Alpine.js)
+    crossOriginEmbedderPolicy: false
+  })
+);
 
 // Configuration du moteur de rendu EJS avec express-ejs-layouts
 app.use(expressLayouts);
@@ -41,13 +59,13 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Analyseurs de corps de requête (Body parsers)
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Remplacement de méthode HTTP pour supporter PUT et DELETE via formulaires
 app.use(methodOverride('_method'));
 
-// Configuration de la gestion de sessions
+// Configuration de la gestion de sessions sécurisée
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'cmena-secret-session-key-ci',
@@ -56,6 +74,7 @@ app.use(
     cookie: {
       secure: isProd,
       httpOnly: true,
+      sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000 // 24 heures
     }
   })
@@ -135,7 +154,25 @@ app.use((req, res, next) => {
   next();
 });
 
-// Enregistrement des routes de l'application
+// Limiteur de requêtes pour protéger l'authentification contre la force brute
+const loginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 tentatives maximum par adresse IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    req.flash('error', 'Trop de tentatives de connexion infructueuses. Veuillez patienter 15 minutes avant de réessayer.');
+    return res.redirect('/auth/login');
+  }
+});
+
+// Enregistrement des routes d'authentification (avec protection anti-bruteforce sur POST /auth/login)
+app.use('/auth/login', (req, res, next) => {
+  if (req.method === 'POST') {
+    return loginRateLimiter(req, res, next);
+  }
+  next();
+});
 app.use('/auth', authRoutes);
 app.get('/login', (req, res) => res.redirect('/auth/login'));
 app.get('/logout', (req, res) => res.redirect('/auth/logout'));
@@ -143,6 +180,25 @@ app.get('/profile', requireAuth, (req, res) => res.redirect('/auth/profile'));
 app.post('/profile/password', requireAuth, (req, res, next) => {
     req.url = '/password';
     authRoutes(req, res, next);
+});
+
+// Sécurité : Interdire les opérations de suppression (DELETE) aux non-administrateurs
+app.use((req, res, next) => {
+  if (req.method === 'DELETE' && req.session && req.session.user && req.session.user.role !== 'admin') {
+    const isApiRequest = req.xhr || 
+      (req.headers.accept && req.headers.accept.includes('application/json'));
+    
+    if (isApiRequest) {
+      return res.status(403).json({
+        success: false,
+        message: 'Seul l\'administrateur est autorisé à effectuer des suppressions.'
+      });
+    }
+
+    req.flash('error', 'Seul l\'administrateur est autorisé à effectuer des suppressions.');
+    return res.redirect('back');
+  }
+  next();
 });
 
 // Routes protégées par authentification obligatoire
@@ -156,8 +212,8 @@ app.use('/actes', requireAuth, actesRoutes);
 app.use('/assurances', requireAuth, assurancesRoutes);
 app.use('/paiements', requireAuth, paiementsRoutes);
 app.use('/rapports', requireAuth, rapportsRoutes);
-app.use('/utilisateurs', requireAuth, utilisateursRoutes);
-app.use('/settings', requireAuth, settingsRoutes);
+app.use('/utilisateurs', requireAuth, requireAdmin, utilisateursRoutes);
+app.use('/settings', requireAuth, requireAdmin, settingsRoutes);
 
 // Middleware pour la gestion de la route 404 (Ressource non trouvée)
 app.use((req, res) => {

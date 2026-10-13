@@ -150,7 +150,7 @@
 
     <!-- Modal d'ajout Responsive -->
     <div x-show="showModal" x-cloak class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-3 sm:p-4">
-        <div class="relative w-full max-w-md p-5 sm:p-6 bg-white rounded-2xl shadow-2xl border border-gray-100 transition-all" @click.away="showModal = false">
+        <div class="relative w-full max-w-md p-5 sm:p-6 bg-white rounded-2xl shadow-2xl border border-gray-100 transition-all" x-data="{ selectedType: 'MUTUELLE' }" @click.away="showModal = false">
             <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
                 <h3 class="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
                     <i class="fas fa-shield-alt text-blue-600"></i>
@@ -167,12 +167,27 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Type d'organisme</label>
-                    <select name="type" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
+                    <select name="type" x-model="selectedType" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
                         <option value="MUTUELLE">Mutuelle</option>
                         <option value="ASSURANCE_PRIVEE">Assurance Privée</option>
-                        <option value="AUTRE">Autre</option>
+                        <option value="AUTRE">Autre (à préciser)</option>
                     </select>
                 </div>
+
+                <!-- Champ précision obligatoire si Autre est sélectionné -->
+                <div x-show="selectedType === 'AUTRE'" x-cloak class="transition-all duration-200 bg-amber-50/70 p-3 rounded-lg border border-amber-200">
+                    <label class="block text-xs font-bold text-amber-900 uppercase tracking-wider mb-1">
+                        Précisez le type d'organisme <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        name="type_autre" 
+                        :required="selectedType === 'AUTRE'"
+                        placeholder="Ex: Société d'État, ONG, Ambassade..." 
+                        class="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 focus:outline-none bg-white">
+                    <p class="text-[11px] text-amber-700 mt-1">Indiquez la nature exacte de cet organisme partenaire.</p>
+                </div>
+
                 <div>
                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Numéro de téléphone</label>
                     <input type="text" name="telephone" placeholder="Ex: +225 27 20 00 00 00" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">

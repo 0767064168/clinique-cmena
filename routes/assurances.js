@@ -27,16 +27,23 @@ router.get('/', async (req, res) => {
 // POST /assurances — création
 router.post('/', async (req, res) => {
     try {
-        const { nom, type, telephone, email, adresse, taux_couverture } = req.body;
+        let { nom, type, type_autre, telephone, email, adresse, taux_couverture } = req.body;
+        nom = (nom || '').trim();
+
+        // Si l'utilisateur choisit 'AUTRE', utiliser la précision fournie
+        let finalType = type || null;
+        if (type === 'AUTRE') {
+            finalType = (type_autre && type_autre.trim()) ? type_autre.trim() : 'Autre';
+        }
 
         const { error } = await supabase
             .from('assurances')
             .insert([{
                 nom,
-                type: type || null,
-                telephone: telephone || null,
-                email: email || null,
-                adresse: adresse || null,
+                type: finalType,
+                telephone: telephone ? telephone.trim() : null,
+                email: email ? email.trim() : null,
+                adresse: adresse ? adresse.trim() : null,
                 taux_couverture: taux_couverture ? parseFloat(taux_couverture) : 80
             }]);
 
@@ -51,19 +58,51 @@ router.post('/', async (req, res) => {
     }
 });
 
+// GET /assurances/:id/edit — Formulaire d'édition
+router.get('/:id/edit', async (req, res) => {
+    try {
+        const { data: assurance, error } = await supabase
+            .from('assurances')
+            .select('*')
+            .eq('id', req.params.id)
+            .single();
+
+        if (error || !assurance) {
+            req.flash('error', 'Assurance introuvable');
+            return res.redirect('/assurances');
+        }
+
+        res.render('assurances/edit', {
+            title: `Modifier l'assurance — ${assurance.nom}`,
+            assurance
+        });
+    } catch (error) {
+        console.error('Erreur edit assurance:', error);
+        req.flash('error', 'Erreur lors de la récupération de l\'assurance');
+        res.redirect('/assurances');
+    }
+});
+
 // PUT /assurances/:id — mise à jour
 router.put('/:id', async (req, res) => {
     try {
-        const { nom, type, telephone, email, adresse, taux_couverture } = req.body;
+        let { nom, type, type_autre, telephone, email, adresse, taux_couverture } = req.body;
+        nom = (nom || '').trim();
+
+        // Si l'utilisateur choisit 'AUTRE', utiliser la précision fournie
+        let finalType = type || null;
+        if (type === 'AUTRE') {
+            finalType = (type_autre && type_autre.trim()) ? type_autre.trim() : 'Autre';
+        }
 
         const { error } = await supabase
             .from('assurances')
             .update({
                 nom,
-                type: type || null,
-                telephone: telephone || null,
-                email: email || null,
-                adresse: adresse || null,
+                type: finalType,
+                telephone: telephone ? telephone.trim() : null,
+                email: email ? email.trim() : null,
+                adresse: adresse ? adresse.trim() : null,
                 taux_couverture: taux_couverture ? parseFloat(taux_couverture) : 80
             })
             .eq('id', req.params.id);

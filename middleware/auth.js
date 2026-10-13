@@ -3,12 +3,48 @@
  * Gère le contrôle d'accès basé sur la session utilisateur
  */
 
+const { supabase } = require('../config/supabase');
+
+// Intervalle de re-vérification du statut actif (toutes les 5 minutes)
+const ACTIVE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+
 /**
  * Middleware vérifiant que l'utilisateur est authentifié en session
- * Redirige vers /auth/login si non connecté
+ * Re-vérifie périodiquement que le compte est toujours actif en base
+ * Redirige vers /auth/login si non connecté ou désactivé
  */
-const requireAuth = (req, res, next) => {
+const requireAuth = async (req, res, next) => {
   if (req.session && req.session.user) {
+    // Re-vérifier le statut actif toutes les 5 minutes
+    const now = Date.now();
+    const lastCheck = req.session._lastActiveCheck || 0;
+
+    if (now - lastCheck > ACTIVE_CHECK_INTERVAL_MS) {
+      try {
+        const { data: profil } = await supabase
+          .from('utilisateurs')
+          .select('actif, role')
+          .eq('id', req.session.user.id)
+          .single();
+
+        if (profil && profil.actif === false) {
+          // Compte désactivé : détruire la session
+          req.session.destroy();
+          return res.redirect('/auth/login');
+        }
+
+        // Mettre à jour le rôle si changé par l'admin
+        if (profil && profil.role !== req.session.user.role) {
+          req.session.user.role = profil.role;
+        }
+
+        req.session._lastActiveCheck = now;
+      } catch (err) {
+        // En cas d'erreur DB, on laisse passer mais on log
+        console.error('Erreur vérification statut actif:', err.message);
+      }
+    }
+
     req.user = req.session.user;
     res.locals.user = req.session.user;
     return next();
@@ -49,7 +85,59 @@ const optionalAuth = (req, res, next) => {
   return next();
 };
 
+/**
+ * Middleware vérifiant que l'utilisateur a le rôle administrateur
+ */
+const requireAdmin = (req, res, next) => {
+  if (req.session && req.session.user && req.session.user.role === 'admin') {
+    return next();
+  }
+
+  const isApiRequest = req.xhr || 
+    (req.headers.accept && req.headers.accept.includes('application/json')) ||
+    req.path.startsWith('/api/');
+
+  if (isApiRequest) {
+    return res.status(403).json({
+      success: false,
+      message: 'Accès interdit. Privilèges administrateur requis.'
+    });
+  }
+
+  if (req.flash) req.flash('error', 'Accès réservé aux administrateurs');
+  return res.redirect('/dashboard');
+};
+
+/**
+ * Middleware vérifiant que l'utilisateur possède l'un des rôles autorisés
+ * @param {string[]} roles - Tableau des rôles autorisés (ex: ['admin', 'medecin'])
+ */
+const requireRole = (roles = []) => {
+  return (req, res, next) => {
+    if (req.session && req.session.user && roles.includes(req.session.user.role)) {
+      return next();
+    }
+
+    const isApiRequest = req.xhr || 
+      (req.headers.accept && req.headers.accept.includes('application/json')) ||
+      req.path.startsWith('/api/');
+
+    if (isApiRequest) {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès non autorisé pour votre profil.'
+      });
+    }
+
+    if (req.flash) req.flash('error', 'Vous n\'avez pas les permissions nécessaires pour accéder à cette page');
+    return res.redirect('/dashboard');
+  };
+};
+
 module.exports = {
   requireAuth,
-  optionalAuth
+  optionalAuth,
+  requireAdmin,
+  requireRole
 };
+
