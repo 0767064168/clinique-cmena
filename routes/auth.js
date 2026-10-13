@@ -98,23 +98,29 @@ router.get('/profile', async (req, res) => {
     }
 });
 
-// POST /profile/password — Modification de son propre mot de passe
+// POST /profile/password — Modification de son propre mot de passe (ADMIN UNIQUEMENT)
 router.post('/profile/password', async (req, res) => {
     try {
         if (!req.session || !req.session.user) {
             return res.redirect('/auth/login');
         }
 
+        // Seul l'administrateur a le droit de modifier son mot de passe depuis son profil
+        if (req.session.user.role !== 'admin') {
+            req.flash('error', 'Seul l\'administrateur est autorisé à modifier son mot de passe directement. Pour toute modification, veuillez contacter l\'administrateur.');
+            return res.redirect('/auth/profile');
+        }
+
         const { current_password, new_password, confirm_password } = req.body;
 
         if (!new_password || new_password.length < 6) {
             req.flash('error', 'Le nouveau mot de passe doit comporter au moins 6 caractères');
-            return res.redirect('/profile');
+            return res.redirect('/auth/profile');
         }
 
         if (new_password !== confirm_password) {
             req.flash('error', 'Les deux mots de passe ne correspondent pas');
-            return res.redirect('/profile');
+            return res.redirect('/auth/profile');
         }
 
         // Vérification de l'ancien mot de passe via Supabase Auth
@@ -125,7 +131,7 @@ router.post('/profile/password', async (req, res) => {
 
         if (signInError) {
             req.flash('error', 'Mot de passe actuel incorrect');
-            return res.redirect('/profile');
+            return res.redirect('/auth/profile');
         }
 
         // 1. Mettre à jour dans Supabase Auth
@@ -141,11 +147,11 @@ router.post('/profile/password', async (req, res) => {
             .eq('id', req.session.user.id);
 
         req.flash('success', 'Votre mot de passe a été modifié avec succès');
-        res.redirect('/profile');
+        res.redirect('/auth/profile');
     } catch (error) {
         console.error('Erreur changement mot de passe:', error);
         req.flash('error', 'Erreur lors du changement de mot de passe');
-        res.redirect('/profile');
+        res.redirect('/auth/profile');
     }
 });
 
