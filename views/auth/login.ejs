@@ -1,18 +1,25 @@
 <!DOCTYPE html>
-<html lang="fr" class="h-full bg-slate-100">
+<html lang="fr" class="h-full">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= typeof title !== 'undefined' ? title : 'Connexion | CSA 3e Compagnie GSPM Bouaké' %></title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/tailwind.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     .devise-text { font-family: 'Times New Roman', serif; letter-spacing: 0.2em; font-style: italic; }
     .flag-band div { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .bg-firefighter {
+      background-image: linear-gradient(rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.78)), url('/images/firefighter_bg.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
   </style>
 </head>
-<body class="min-h-full flex items-center justify-center p-4 bg-gradient-to-br from-slate-100 via-gray-100 to-slate-200">
-  <div class="max-w-lg w-full bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+<body class="min-h-screen flex items-center justify-center p-4 bg-firefighter">
+  <div class="max-w-lg w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 overflow-hidden my-6">
     
     <!-- En-tête officiel GSPM & Ministère de la Défense -->
     <div class="bg-gradient-to-b from-gray-50 to-white pt-6 px-6 pb-4 border-b border-gray-200">
