@@ -19,13 +19,16 @@ router.get('/', async (req, res) => {
             .gte('date_entree', today);
         if (errConsultations) throw errConsultations;
 
-        // Factures en attente / non totalement réglées
-        const { count: facturesImpayees, error: errFactures } = await supabase
+        // Factures en attente / non totalement réglées (nombre et montant total dû)
+        const { data: impayeesData, error: errFactures } = await supabase
             .from('factures')
-            .select('*', { count: 'exact', head: true })
+            .select('reste_a_payer, statut')
             .neq('statut', 'payee')
             .neq('statut', 'annulee');
         if (errFactures) throw errFactures;
+
+        const facturesImpayees = (impayeesData || []).length;
+        const totalMontantImpaye = (impayeesData || []).reduce((acc, curr) => acc + (parseFloat(curr.reste_a_payer) || 0), 0);
 
         // Revenue du mois
         const startOfMonth = new Date();
@@ -63,6 +66,7 @@ router.get('/', async (req, res) => {
                 totalPatients: totalPatients || 0,
                 consultationsToday: consultationsToday || 0,
                 facturesImpayees: facturesImpayees || 0,
+                totalMontantImpaye: totalMontantImpaye || 0,
                 revenueMois: revenueMois,
                 revenusMois: revenueMois
             },
@@ -74,7 +78,7 @@ router.get('/', async (req, res) => {
         req.flash('error', 'Erreur lors du chargement du tableau de bord');
         res.render('dashboard', {
             title: 'Tableau de Bord',
-            stats: { totalPatients: 0, consultationsToday: 0, facturesImpayees: 0, revenueMois: 0, revenusMois: 0 },
+            stats: { totalPatients: 0, consultationsToday: 0, facturesImpayees: 0, totalMontantImpaye: 0, revenueMois: 0, revenusMois: 0 },
             recentPatients: [],
             recentFactures: []
         });

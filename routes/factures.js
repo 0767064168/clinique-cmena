@@ -539,6 +539,139 @@ router.put('/:id/valider', async (req, res) => {
     }
 });
 
+// PUT /factures/:id/brouillon — Repasser en brouillon (ADMIN UNIQUEMENT, si aucun paiement enregistré)
+router.put('/:id/brouillon', async (req, res) => {
+    try {
+        if (!req.session || !req.session.user || req.session.user.role !== 'admin') {
+            req.flash('error', 'Action réservée aux administrateurs');
+            return res.redirect(`/factures/${req.params.id}`);
+        }
+
+        const { data: facture, error: errGet } = await supabase
+            .from('factures')
+            .select('montant_paye, statut')
+            .eq('id', req.params.id)
+            .single();
+
+        if (errGet || !facture) {
+            req.flash('error', 'Facture introuvable');
+            return res.redirect('/factures');
+        }
+
+        if (parseFloat(facture.montant_paye || 0) > 0) {
+            req.flash('error', 'Impossible de repasser en brouillon une facture ayant des paiements enregistrés');
+            return res.redirect(`/factures/${req.params.id}`);
+        }
+
+        const { error } = await supabase
+            .from('factures')
+            .update({ statut: 'brouillon' })
+            .eq('id', req.params.id);
+
+        if (error) throw error;
+
+        req.flash('success', 'Facture repassée en brouillon avec succès');
+        res.redirect(`/factures/${req.params.id}`);
+    } catch (error) {
+        console.error('Erreur repassage brouillon:', error);
+        req.flash('error', 'Erreur lors du changement de statut');
+        res.redirect(`/factures/${req.params.id}`);
+    }
+});
+
+// PUT /factures/:id/marquer-payee — Marquer la facture comme payée (ADMIN UNIQUEMENT)
+router.put('/:id/marquer-payee', async (req, res) => {
+    try {
+        if (!req.session || !req.session.user || req.session.user.role !== 'admin') {
+            req.flash('error', 'Action réservée aux administrateurs');
+            return res.redirect(`/factures/${req.params.id}`);
+        }
+
+        const { mode_paiement, reference } = req.body;
+
+        const { data: facture, error: errGet } = await supabase
+            .from('factures')
+            .select('*')
+            .eq('id', req.params.id)
+            .single();
+
+        if (errGet || !facture) {
+            req.flash('error', 'Facture introuvable');
+            return res.redirect('/factures');
+        }
+
+        if (facture.statut === 'payee') {
+            req.flash('error', 'Cette facture est déjà payée');
+            return res.redirect(`/factures/${req.params.id}`);
+        }
+
+        const reste = parseFloat(facture.reste_a_payer !== undefined ? facture.reste_a_payer : (facture.total_net - (facture.montant_paye || 0)));
+
+        if (reste > 0) {
+            // Créer le paiement pour solder la facture
+            const { error: errPaiement } = await supabase
+                .from('paiements')
+                .insert([{
+                    facture_id: req.params.id,
+                    montant: reste,
+                    mode_paiement: mode_paiement || 'especes',
+                    reference: reference || 'Régularisation Admin',
+                    date_paiement: new Date()
+                }]);
+
+            if (errPaiement) {
+                console.error('Erreur insertion paiement régularisation:', errPaiement);
+            }
+        }
+
+        // Mettre à jour la facture au statut "payee" avec montant_paye = total_net et reste_a_payer = 0
+        const totalNet = parseFloat(facture.total_net || 0);
+        const { error: errUpdate } = await supabase
+            .from('factures')
+            .update({
+                statut: 'payee',
+                montant_paye: totalNet,
+                reste_a_payer: 0
+            })
+            .eq('id', req.params.id);
+
+        if (errUpdate) throw errUpdate;
+
+        req.flash('success', 'Facture marquée comme PAYÉE avec succès');
+        res.redirect(`/factures/${req.params.id}`);
+    } catch (error) {
+        console.error('Erreur marquer payee:', error);
+        req.flash('error', 'Erreur lors de la validation du paiement');
+        res.redirect(`/factures/${req.params.id}`);
+    }
+});
+
+// POST ou DELETE /factures/:id/annuler — Annuler la facture (ADMIN UNIQUEMENT)
+router.post('/:id/annuler', async (req, res) => {
+    try {
+        if (!req.session || !req.session.user || req.session.user.role !== 'admin') {
+            req.flash('error', 'Seul l\'administrateur est autorisé à annuler une facture');
+            return res.redirect(`/factures/${req.params.id}`);
+        }
+
+        const { motif } = req.body;
+
+        const { error } = await supabase
+            .from('factures')
+            .update({ statut: 'annulee' })
+            .eq('id', req.params.id);
+
+        if (error) throw error;
+
+        req.flash('success', 'Facture annulée avec succès');
+        res.redirect(`/factures/${req.params.id}`);
+    } catch (error) {
+        console.error(error);
+        req.flash('error', 'Erreur lors de l\'annulation');
+        res.redirect(`/factures/${req.params.id}`);
+    }
+});
+
 // DELETE /factures/:id — annuler la facture
 router.delete('/:id', async (req, res) => {
     try {

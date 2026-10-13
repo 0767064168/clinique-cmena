@@ -4,14 +4,49 @@
         <div class="flex flex-wrap gap-2 w-full sm:w-auto">
             <% if (facture.statut === 'brouillon') { %>
                 <form action="/factures/<%= facture.id %>/valider?_method=PUT" method="POST" class="inline flex-1 sm:flex-none">
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Valider</button>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">
+                        <i class="fas fa-check-circle mr-1"></i> Valider
+                    </button>
                 </form>
             <% } %>
+
             <% if (facture.statut !== 'brouillon' && facture.statut !== 'annulee' && (facture.reste_a_payer || 0) > 0) { %>
-                <button type="button" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm" onclick="document.getElementById('payment-modal').classList.remove('hidden')">Paiement</button>
+                <button type="button" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm shadow-sm" onclick="document.getElementById('payment-modal').classList.remove('hidden')">
+                    <i class="fas fa-money-bill-wave mr-1"></i> Encaisser
+                </button>
             <% } %>
-            <a href="/factures/<%= facture.id %>/print" target="_blank" class="flex-1 sm:flex-none text-center bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Imprimer</a>
-            <a href="/factures" class="flex-1 sm:flex-none text-center bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Retour</a>
+
+            <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
+                <!-- Boutons d'administration avancée -->
+                <% if (facture.statut === 'validee' || facture.statut === 'partiellement_payee') { %>
+                    <button type="button" class="flex-1 sm:flex-none bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm shadow-sm" onclick="document.getElementById('modal-marquer-payee').classList.remove('hidden')" title="Marquer directement comme payée (Admin)">
+                        <i class="fas fa-badge-check mr-1"></i> Marquer Payée (Admin)
+                    </button>
+                <% } %>
+
+                <% if (facture.statut === 'validee' && (!facture.montant_paye || Number(facture.montant_paye) === 0)) { %>
+                    <form action="/factures/<%= facture.id %>/brouillon?_method=PUT" method="POST" class="inline flex-1 sm:flex-none" onsubmit="return confirm('Confirmez-vous le retour au statut brouillon pour modification ?');">
+                        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm shadow-sm" title="Repasser en brouillon pour modifier (Admin)">
+                            <i class="fas fa-undo mr-1"></i> Repasser Brouillon
+                        </button>
+                    </form>
+                <% } %>
+
+                <% if (facture.statut !== 'annulee') { %>
+                    <form action="/factures/<%= facture.id %>/annuler" method="POST" class="inline flex-1 sm:flex-none" onsubmit="return confirm('Êtes-vous sûr de vouloir ANNULER cette facture ? Cette action est irréversible.');">
+                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm shadow-sm" title="Annuler la facture (Admin)">
+                            <i class="fas fa-ban mr-1"></i> Annuler Facture
+                        </button>
+                    </form>
+                <% } %>
+            <% } %>
+
+            <a href="/factures/<%= facture.id %>/print" target="_blank" class="flex-1 sm:flex-none text-center bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm shadow-sm">
+                <i class="fas fa-print mr-1"></i> Imprimer
+            </a>
+            <a href="/factures" class="flex-1 sm:flex-none text-center bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">
+                Retour
+            </a>
         </div>
     </div>
 
@@ -221,6 +256,45 @@
                 <div class="flex gap-3 mt-5">
                     <button type="submit" class="flex-1 bg-blue-600 text-white font-medium py-2 px-4 rounded hover:bg-blue-700">Enregistrer</button>
                     <button type="button" onclick="document.getElementById('payment-modal').classList.add('hidden')" class="flex-1 bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded hover:bg-gray-50">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal marquer payée (ADMIN) -->
+    <div id="modal-marquer-payee" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
+        <div class="relative top-10 sm:top-20 mx-auto p-4 sm:p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="flex items-center gap-3 mb-4 text-emerald-700">
+                <i class="fas fa-check-double text-2xl"></i>
+                <h3 class="text-lg font-bold">Marquer la facture comme Payée (Admin)</h3>
+            </div>
+            <p class="text-xs text-gray-600 mb-4 bg-emerald-50 p-3 rounded border border-emerald-200">
+                Cette action soldera intégralement le montant restant dû de 
+                <strong class="text-emerald-800"><%= (facture.reste_a_payer || 0).toLocaleString('fr-FR') %> FCFA</strong>
+                et passera le statut de la facture à <strong>PAYÉE</strong>.
+            </p>
+            <form action="/factures/<%= facture.id %>/marquer-payee?_method=PUT" method="POST" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Mode de paiement appliqué</label>
+                    <select name="mode_paiement" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
+                        <option value="especes">Espèces</option>
+                        <option value="mobile_money">Mobile Money (Wave / Orange / MTN)</option>
+                        <option value="cheque">Chèque</option>
+                        <option value="virement">Virement bancaire</option>
+                        <option value="carte">Carte Bancaire</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Référence / Note justificative</label>
+                    <input type="text" name="reference" placeholder="Ex: Régularisation comptable, Reçu N°..." value="Régularisation Direction" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
+                </div>
+                <div class="flex gap-3 mt-5">
+                    <button type="submit" class="flex-1 bg-emerald-700 text-white font-bold py-2 px-4 rounded hover:bg-emerald-800">
+                        Confirmer le règlement
+                    </button>
+                    <button type="button" onclick="document.getElementById('modal-marquer-payee').classList.add('hidden')" class="flex-1 bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded hover:bg-gray-50">
+                        Annuler
+                    </button>
                 </div>
             </form>
         </div>
