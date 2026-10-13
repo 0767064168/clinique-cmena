@@ -59,7 +59,12 @@
                     <i class="fas fa-file-invoice-dollar text-xl"></i>
                 </div>
             </div>
-            <p class="text-xs text-gray-500 mt-2"><%= stats.totalFactures %> facture(s) émise(s)</p>
+            <p class="text-xs text-gray-500 mt-2">
+                <%= (stats.statutsCount.payee || 0) + (stats.statutsCount.validee || 0) + (stats.statutsCount.partiellement_payee || 0) %> facture(s) validée(s)
+                <% if (stats.statutsCount.brouillon > 0) { %>
+                    <span class="text-gray-400">(+<%= stats.statutsCount.brouillon %> brouillon(s))</span>
+                <% } %>
+            </p>
         </div>
 
         <!-- Total Encaissé -->

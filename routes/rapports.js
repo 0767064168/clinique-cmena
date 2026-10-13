@@ -16,21 +16,52 @@ router.get('/', async (req, res) => {
         const date_from = req.query.date_from || defaultFrom;
         const date_to = req.query.date_to || defaultTo;
 
-        // 1. Factures sur la période
+        // 1. Factures sur la période (exclure annulées)
         const { data: factures, error: errFactures } = await supabase
             .from('factures')
             .select('*, patients(nom, prenom, numero_dossier)')
-            .gte('date_facture', `${date_from}T00:00:00`)
-            .lte('date_facture', `${date_to}T23:59:59`)
+            .gte('date_facture', date_from)
+            .lte('date_facture', date_to)
             .neq('statut', 'annulee')
             .order('date_facture', { ascending: false });
 
         if (errFactures) throw errFactures;
 
-        // Calculs financiers
-        let totalFactureNet = 0;
-        let totalEncaisse = 0;
-        let totalResteAPayer = 0;
+        // 2. Paiements réels enregistrés sur la période
+        const { data: paiements, error: errPaiements } = await supabase
+            .from('paiements')
+            .select('montant, mode_paiement, date_paiement')
+            .gte('date_paiement', `${date_from}T00:00:00.000Z`)
+            .lte('date_paiement', `${date_to}T23:59:59.999Z`);
+
+        if (errPaiements) throw errPaiements;
+
+        // Répartition par mode de règlement
+        const modesPaiement = {
+            especes: 0,
+            carte: 0,
+            mobile_money: 0,
+            virement: 0,
+            cheque: 0
+        };
+
+        let totalEncaisseReel = 0;
+        (paiements || []).forEach(p => {
+            const montant = parseFloat(p.montant || 0);
+            totalEncaisseReel += montant;
+
+            const mode = (p.mode_paiement || 'especes').toLowerCase();
+            if (modesPaiement[mode] !== undefined) {
+                modesPaiement[mode] += montant;
+            } else {
+                modesPaiement.especes += montant;
+            }
+        });
+
+        // Calculs des factures
+        let totalFactureNet = 0;      // Factures validées ou payées (chiffre d'affaires effectif)
+        let totalFactureBrouillon = 0; // Montant des brouillons
+        let totalResteAPayer = 0;      // Créances en attente sur ces factures
         let totalRemises = 0;
 
         const statutsCount = {
@@ -41,62 +72,44 @@ router.get('/', async (req, res) => {
         };
 
         (factures || []).forEach(f => {
-            totalFactureNet += parseFloat(f.total_net || 0);
-            totalEncaisse += parseFloat(f.montant_paye || 0);
-            totalResteAPayer += parseFloat(f.reste_a_payer || 0);
-            totalRemises += parseFloat(f.remise || 0);
+            const net = parseFloat(f.total_net || 0);
+            const remise = parseFloat(f.remise || 0);
+            const reste = parseFloat(f.reste_a_payer || 0);
 
             if (statutsCount[f.statut] !== undefined) {
                 statutsCount[f.statut]++;
             }
+
+            // Seules les factures validées, payées ou partiellement payées comptent dans le CA
+            if (f.statut !== 'brouillon') {
+                totalFactureNet += net;
+                totalRemises += remise;
+                totalResteAPayer += reste;
+            } else {
+                totalFactureBrouillon += net;
+            }
         });
 
-        // 2. Consultations sur la période
+        // 3. Consultations sur la période
         const { data: consultations, error: errConsultations } = await supabase
             .from('consultations')
             .select('id, statut, date_entree')
-            .gte('date_entree', `${date_from}T00:00:00`)
-            .lte('date_entree', `${date_to}T23:59:59`);
+            .gte('date_entree', date_from)
+            .lte('date_entree', date_to);
 
         if (errConsultations) throw errConsultations;
 
         const totalConsultations = (consultations || []).length;
         const consultationsTerminees = (consultations || []).filter(c => c.statut === 'termine').length;
 
-        // 3. Nouveaux patients enregistrés
+        // 4. Nouveaux patients enregistrés
         const { count: nouveauxPatients, error: errPatients } = await supabase
             .from('patients')
             .select('*', { count: 'exact', head: true })
-            .gte('created_at', `${date_from}T00:00:00`)
-            .lte('created_at', `${date_to}T23:59:59`);
+            .gte('created_at', `${date_from}T00:00:00.000Z`)
+            .lte('created_at', `${date_to}T23:59:59.999Z`);
 
         if (errPatients) throw errPatients;
-
-        // 4. Paiements et modes de règlement
-        const { data: paiements, error: errPaiements } = await supabase
-            .from('paiements')
-            .select('montant, mode_paiement')
-            .gte('date_paiement', `${date_from}T00:00:00`)
-            .lte('date_paiement', `${date_to}T23:59:59`);
-
-        if (errPaiements) throw errPaiements;
-
-        const modesPaiement = {
-            especes: 0,
-            carte: 0,
-            mobile_money: 0,
-            virement: 0,
-            cheque: 0
-        };
-
-        (paiements || []).forEach(p => {
-            const mode = p.mode_paiement || 'especes';
-            if (modesPaiement[mode] !== undefined) {
-                modesPaiement[mode] += parseFloat(p.montant || 0);
-            } else {
-                modesPaiement.especes += parseFloat(p.montant || 0);
-            }
-        });
 
         res.render('rapports/index', {
             title: 'Rapports d\'Activité & Financiers',
@@ -104,7 +117,8 @@ router.get('/', async (req, res) => {
             date_to,
             stats: {
                 totalFactureNet,
-                totalEncaisse,
+                totalFactureBrouillon,
+                totalEncaisse: totalEncaisseReel,
                 totalResteAPayer,
                 totalRemises,
                 totalFactures: (factures || []).length,
