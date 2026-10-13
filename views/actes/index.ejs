@@ -1,77 +1,297 @@
-<div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Catalogue des Actes Médicaux</h1>
-        <button onclick="document.getElementById('createForm').classList.toggle('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            Nouvel Acte
-        </button>
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+    <!-- En-tête -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Catalogue des Actes Médicaux</h1>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                    <%= typeof actes !== 'undefined' ? actes.length : 0 %>
+                </span>
+            </div>
+            <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Tarification et nomenclature des actes du centre médical</p>
+        </div>
+        <div class="flex gap-2 w-full sm:w-auto">
+            <button onclick="toggleCreateForm()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-2.5 px-4 rounded-lg shadow-sm text-sm transition">
+                <i class="fas fa-plus text-xs"></i>
+                <span>Nouvel Acte</span>
+            </button>
+        </div>
     </div>
 
-    <!-- Inline Create Form (Hidden by default) -->
-    <div id="createForm" class="hidden bg-white p-6 rounded-lg shadow-md mb-8 border-t-4 border-blue-500">
-        <h2 class="text-lg font-bold mb-4">Ajouter un acte</h2>
-        <form action="/actes" method="POST" class="flex flex-wrap gap-4 items-end">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Code</label>
-                <input type="text" name="code" required class="border rounded-md px-3 py-2 w-24 focus:ring-blue-500 focus:border-blue-500">
+    <!-- Formulaire d'ajout inline (Masqué par défaut) -->
+    <div id="createForm" class="hidden bg-white p-4 sm:p-6 rounded-xl shadow-md mb-6 border-t-4 border-blue-600 transition-all duration-300">
+        <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
+            <h2 class="text-base sm:text-lg font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-notes-medical text-blue-600"></i>
+                Ajouter un nouvel acte médical
+            </h2>
+            <button type="button" onclick="toggleCreateForm()" class="text-gray-400 hover:text-gray-600 p-1">
+                <i class="fas fa-times text-base"></i>
+            </button>
+        </div>
+        <form action="/actes" method="POST" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Code</label>
+                    <input type="text" name="code" placeholder="Ex: CS-GEN" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
+                </div>
+                <div class="sm:col-span-2 lg:col-span-2">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Libellé <span class="text-red-500">*</span></label>
+                    <input type="text" name="libelle" required placeholder="Ex: Consultation Médecine Générale" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Catégorie</label>
+                    <select name="categorie" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
+                        <option value="consultation">Consultation</option>
+                        <option value="soins">Soins</option>
+                        <option value="laboratoire">Laboratoire</option>
+                        <option value="imagerie">Imagerie</option>
+                        <option value="chirurgie">Chirurgie</option>
+                        <option value="pharmacie">Pharmacie</option>
+                        <option value="hospitalisation">Hospitalisation</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Prix Unitaire (FCFA) <span class="text-red-500">*</span></label>
+                    <input type="number" name="prix_unitaire" required min="0" placeholder="5000" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
+                </div>
             </div>
-            <div class="flex-grow">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Libellé *</label>
-                <input type="text" name="libelle" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+
+            <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-gray-100">
+                <button type="button" onclick="toggleCreateForm()" class="w-full sm:w-auto px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-sm text-center transition">
+                    Annuler
+                </button>
+                <button type="submit" class="w-full sm:w-auto px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm shadow-sm text-center transition">
+                    <i class="fas fa-check mr-1"></i> Enregistrer l'acte
+                </button>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
-                <select name="categorie" class="border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+        </form>
+    </div>
+
+    <!-- Barre de recherche et filtre rapide mobile/desktop -->
+    <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm mb-6 border border-gray-100">
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <div class="relative flex-grow">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                    <i class="fas fa-search text-xs"></i>
+                </span>
+                <input 
+                    type="text" 
+                    id="searchActes" 
+                    placeholder="Rechercher par libellé ou code..." 
+                    class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    onkeyup="filterActes()">
+            </div>
+            <div class="w-full sm:w-48">
+                <select 
+                    id="filterCategory" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    onchange="filterActes()">
+                    <option value="">Toutes les catégories</option>
                     <option value="consultation">Consultation</option>
+                    <option value="soins">Soins</option>
                     <option value="laboratoire">Laboratoire</option>
                     <option value="imagerie">Imagerie</option>
                     <option value="chirurgie">Chirurgie</option>
-                    <option value="soins">Soins</option>
                     <option value="pharmacie">Pharmacie</option>
                     <option value="hospitalisation">Hospitalisation</option>
                 </select>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Prix Unitaire (FCFA) *</label>
-                <input type="number" name="prix_unitaire" required min="0" class="border rounded-md px-3 py-2 w-32 focus:ring-blue-500 focus:border-blue-500">
-            </div>
-            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Enregistrer</button>
-            <button type="button" onclick="document.getElementById('createForm').classList.add('hidden')" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">Annuler</button>
-        </form>
+        </div>
     </div>
 
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Libellé</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Catégorie</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Prix Unitaire</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                <% if (typeof actes !== 'undefined' && actes.length > 0) { %>
-                    <% actes.forEach(acte => { %>
+    <% 
+    // Helper pour les couleurs de catégorie
+    const getBadgeClass = (cat) => {
+        const c = (cat || '').toLowerCase();
+        if (c === 'consultation') return 'bg-blue-100 text-blue-800 border-blue-200';
+        if (c === 'chirurgie') return 'bg-rose-100 text-rose-800 border-rose-200';
+        if (c === 'laboratoire') return 'bg-purple-100 text-purple-800 border-purple-200';
+        if (c === 'imagerie') return 'bg-teal-100 text-teal-800 border-teal-200';
+        if (c === 'soins') return 'bg-amber-100 text-amber-800 border-amber-200';
+        if (c === 'pharmacie') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+        if (c === 'hospitalisation') return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+    };
+    %>
+
+    <!-- Vue Mobile (Cartes adaptées smartphones) -->
+    <div class="block md:hidden space-y-3" id="actesMobileList">
+        <% if (typeof actes !== 'undefined' && actes.length > 0) { %>
+            <% actes.forEach(acte => { %>
+                <div class="acte-item-card bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-3"
+                     data-libelle="<%= (acte.libelle || '').toLowerCase() %>"
+                     data-code="<%= (acte.code || '').toLowerCase() %>"
+                     data-category="<%= (acte.categorie || '').toLowerCase() %>">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex-grow">
+                            <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                <% if (acte.code) { %>
+                                    <span class="font-mono text-xs font-bold px-2 py-0.5 bg-gray-100 text-gray-700 rounded border border-gray-200">
+                                        <%= acte.code %>
+                                    </span>
+                                <% } %>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded border capitalize <%= getBadgeClass(acte.categorie) %>">
+                                    <%= acte.categorie %>
+                                </span>
+                            </div>
+                            <h3 class="text-sm font-bold text-gray-900 leading-snug"><%= acte.libelle %></h3>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <div>
+                            <span class="text-[11px] text-gray-500 block uppercase font-medium">Prix unitaire</span>
+                            <span class="text-base font-extrabold text-blue-700">
+                                <%= Number(acte.prix_unitaire).toLocaleString('fr-FR') %> <span class="text-xs font-semibold text-gray-500">FCFA</span>
+                            </span>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <a href="/actes/<%= acte.id %>/edit" class="inline-flex items-center justify-center h-8 px-3 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-indigo-50 text-indigo-700 hover:text-indigo-900 transition">
+                                <i class="fas fa-edit mr-1"></i> Modifier
+                            </a>
+                            <form action="/actes/<%= acte.id %>?_method=DELETE" method="POST" class="inline" onsubmit="return confirm('Supprimer cet acte ?');">
+                                <button type="submit" class="inline-flex items-center justify-center h-8 w-8 rounded-lg text-xs bg-red-50 hover:bg-red-100 text-red-600 transition" title="Supprimer">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <div class="bg-white p-6 rounded-xl text-center text-gray-500 shadow-sm border border-gray-100">
+                <i class="fas fa-folder-open text-2xl text-gray-300 mb-2 block"></i>
+                Aucun acte médical enregistré
+            </div>
+        <% } %>
+    </div>
+
+    <!-- Vue Desktop / Tablette (Tableau avec overflow horizontal sécurisé) -->
+    <div class="hidden md:block bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200" id="actesTable">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Code</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Libellé</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Catégorie</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Prix Unitaire</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <% if (typeof actes !== 'undefined' && actes.length > 0) { %>
+                        <% actes.forEach(acte => { %>
+                            <tr class="acte-item-row hover:bg-slate-50 transition"
+                                data-libelle="<%= (acte.libelle || '').toLowerCase() %>"
+                                data-code="<%= (acte.code || '').toLowerCase() %>"
+                                data-category="<%= (acte.categorie || '').toLowerCase() %>">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-700">
+                                    <% if (acte.code) { %>
+                                        <span class="font-mono bg-gray-100 px-2 py-0.5 rounded text-xs border border-gray-200"><%= acte.code %></span>
+                                    <% } else { %>
+                                        <span class="text-gray-400">-</span>
+                                    <% } %>
+                                </td>
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900"><%= acte.libelle %></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold capitalize border <%= getBadgeClass(acte.categorie) %>">
+                                        <%= acte.categorie %>
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-bold text-blue-700">
+                                    <%= Number(acte.prix_unitaire).toLocaleString('fr-FR') %> FCFA
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <a href="/actes/<%= acte.id %>/edit" class="text-indigo-600 hover:text-indigo-900 mr-3 inline-flex items-center gap-1 font-semibold">
+                                        <i class="fas fa-edit text-xs"></i> Modifier
+                                    </a>
+                                    <form action="/actes/<%= acte.id %>?_method=DELETE" method="POST" class="inline" onsubmit="return confirm('Supprimer cet acte ?');">
+                                        <button type="submit" class="text-red-600 hover:text-red-900 inline-flex items-center gap-1 font-semibold">
+                                            <i class="fas fa-trash-alt text-xs"></i> Supprimer
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
                         <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= acte.code || '-' %></td>
-                            <td class="px-6 py-4 text-sm text-gray-900"><%= acte.libelle %></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs"><%= acte.categorie %></span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-semibold"><%= acte.prix_unitaire.toLocaleString('fr-FR') %> FCFA</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a href="/actes/<%= acte.id %>/edit" class="text-indigo-600 hover:text-indigo-900 mr-3">Modifier</a>
-                                <form action="/actes/<%= acte.id %>?_method=DELETE" method="POST" class="inline" onsubmit="return confirm('Supprimer cet acte ?');">
-                                    <button type="submit" class="text-red-600 hover:text-red-900">Supprimer</button>
-                                </form>
+                            <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                                <i class="fas fa-folder-open text-3xl text-gray-300 mb-2 block"></i>
+                                Aucun acte médical trouvé
                             </td>
                         </tr>
-                    <% }); %>
-                <% } else { %>
-                    <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Aucun acte trouvé</td></tr>
-                <% } %>
-            </tbody>
-        </table>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Message aucun résultat après filtre -->
+    <div id="noResultsMsg" class="hidden bg-white p-6 rounded-xl text-center text-gray-500 shadow-sm border border-gray-100 mt-3">
+        <i class="fas fa-search text-2xl text-gray-300 mb-2 block"></i>
+        Aucun acte ne correspond à votre recherche
     </div>
 </div>
+
+<script>
+    function toggleCreateForm() {
+        const form = document.getElementById('createForm');
+        form.classList.toggle('hidden');
+        if (!form.classList.contains('hidden')) {
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    function filterActes() {
+        const query = (document.getElementById('searchActes').value || '').toLowerCase().trim();
+        const category = (document.getElementById('filterCategory').value || '').toLowerCase().trim();
+
+        const mobileCards = document.querySelectorAll('.acte-item-card');
+        const desktopRows = document.querySelectorAll('.acte-item-row');
+        let visibleCount = 0;
+
+        // Filtre Mobile
+        mobileCards.forEach(card => {
+            const libelle = card.getAttribute('data-libelle') || '';
+            const code = card.getAttribute('data-code') || '';
+            const cat = card.getAttribute('data-category') || '';
+
+            const matchQuery = !query || libelle.includes(query) || code.includes(query);
+            const matchCategory = !category || cat === category;
+
+            if (matchQuery && matchCategory) {
+                card.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+
+        // Filtre Desktop
+        desktopRows.forEach(row => {
+            const libelle = row.getAttribute('data-libelle') || '';
+            const code = row.getAttribute('data-code') || '';
+            const cat = row.getAttribute('data-category') || '';
+
+            const matchQuery = !query || libelle.includes(query) || code.includes(query);
+            const matchCategory = !category || cat === category;
+
+            if (matchQuery && matchCategory) {
+                row.classList.remove('hidden');
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+
+        // Afficher ou masquer le message d'absence de résultat
+        const noResults = document.getElementById('noResultsMsg');
+        if (visibleCount === 0 && (mobileCards.length > 0 || desktopRows.length > 0)) {
+            noResults.classList.remove('hidden');
+        } else {
+            noResults.classList.add('hidden');
+        }
+    }
+</script>

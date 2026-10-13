@@ -1,38 +1,38 @@
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-            <h1 class="text-3xl font-bold text-gray-800">Rapports d'Activité & Financiers</h1>
-            <p class="text-sm text-gray-500 mt-1">CSA 3<sup>e</sup> Compagnie GSPM Bouaké — Bilan des encaissements et prestations</p>
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Rapports d'Activité & Financiers</h1>
+            <p class="text-xs sm:text-sm text-gray-500 mt-1">CSA 3<sup>e</sup> Compagnie GSPM Bouaké — Bilan des encaissements et prestations</p>
         </div>
-        <div class="flex gap-2">
-            <button onclick="window.print()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded inline-flex items-center gap-2 shadow-sm">
-                <i class="fas fa-print"></i> Imprimer le rapport
+        <div class="flex flex-wrap gap-2 w-full md:w-auto">
+            <button onclick="window.print()" class="flex-1 sm:flex-none justify-center bg-gray-800 hover:bg-gray-900 text-white font-bold py-2.5 px-4 rounded-lg inline-flex items-center gap-2 shadow-sm text-sm">
+                <i class="fas fa-print"></i> Imprimer
             </button>
-            <a href="/dashboard" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">
-                Retour au tableau de bord
+            <a href="/dashboard" class="flex-1 sm:flex-none justify-center text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 px-4 rounded-lg text-sm">
+                Tableau de bord
             </a>
         </div>
     </div>
 
     <!-- Période / Filtres -->
-    <div class="bg-white p-5 rounded-lg shadow mb-8 border border-gray-200">
-        <form action="/rapports" method="GET" class="flex flex-wrap items-end gap-4">
-            <div>
+    <div class="bg-white p-3 sm:p-5 rounded-xl shadow-sm mb-6 sm:mb-8 border border-gray-200">
+        <form action="/rapports" method="GET" class="flex flex-wrap items-end gap-3 sm:gap-4">
+            <div class="flex-1 min-w-[140px]">
                 <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Date Début</label>
-                <input type="date" name="date_from" value="<%= date_from %>" required class="border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                <input type="date" name="date_from" value="<%= date_from %>" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
             </div>
-            <div>
+            <div class="flex-1 min-w-[140px]">
                 <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Date Fin</label>
-                <input type="date" name="date_to" value="<%= date_to %>" required class="border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                <input type="date" name="date_to" value="<%= date_to %>" required class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
             </div>
-            <div>
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded text-sm shadow">
+            <div class="w-full sm:w-auto">
+                <button type="submit" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-lg text-sm shadow">
                     <i class="fas fa-filter mr-1"></i> Filtrer
                 </button>
             </div>
             <!-- Raccourcis rapides -->
-            <div class="flex items-center gap-2 text-xs ml-auto">
+            <div class="flex items-center flex-wrap gap-2 text-xs w-full sm:w-auto sm:ml-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                 <span class="text-gray-500 font-medium">Période rapide :</span>
                 <% 
                     const now = new Date();
@@ -40,8 +40,8 @@
                     const curMonth = String(now.getMonth() + 1).padStart(2, '0');
                     const lastDay = new Date(curYear, now.getMonth() + 1, 0).getDate();
                 %>
-                <a href="/rapports?date_from=<%= curYear %>-<%= curMonth %>-01&date_to=<%= curYear %>-<%= curMonth %>-<%= String(lastDay).padStart(2, '0') %>" class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded font-medium">Ce mois-ci</a>
-                <a href="/rapports?date_from=<%= curYear %>-01-01&date_to=<%= curYear %>-12-31" class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded font-medium">Cette année</a>
+                <a href="/rapports?date_from=<%= curYear %>-<%= curMonth %>-01&date_to=<%= curYear %>-<%= curMonth %>-<%= String(lastDay).padStart(2, '0') %>" class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium">Ce mois-ci</a>
+                <a href="/rapports?date_from=<%= curYear %>-01-01&date_to=<%= curYear %>-12-31" class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium">Cette année</a>
             </div>
         </form>
     </div>

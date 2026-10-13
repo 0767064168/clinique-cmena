@@ -1,35 +1,51 @@
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
     <div class="max-w-xl mx-auto">
-        <h1 class="text-2xl font-bold mb-6">Ajouter un acte</h1>
-        <!-- Same form as index but standalone -->
-        <form action="/actes" method="POST" class="bg-white p-6 rounded-lg shadow-md space-y-4">
+        <div class="flex items-center gap-3 mb-6">
+            <a href="/actes" class="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition" title="Retour">
+                <i class="fas fa-arrow-left text-sm"></i>
+            </a>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Code</label>
-                <input type="text" name="code" class="border rounded-md px-3 py-2 w-full focus:ring-blue-500 focus:border-blue-500">
+                <h1 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Ajouter un acte médical</h1>
+                <p class="text-xs text-gray-500">Enregistrer un nouvel acte dans le catalogue</p>
             </div>
+        </div>
+
+        <form action="/actes" method="POST" class="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Libellé *</label>
-                <input type="text" name="libelle" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Code de l'acte</label>
+                <input type="text" name="code" placeholder="Ex: CS-GEN, RAD-01" class="border border-gray-300 rounded-lg px-3.5 py-2.5 w-full text-base sm:text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
             </div>
+
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
-                <select name="categorie" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Libellé de l'acte <span class="text-red-500">*</span></label>
+                <input type="text" name="libelle" required placeholder="Ex: Consultation Médecine Générale" class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-base sm:text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Catégorie</label>
+                <select name="categorie" class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-base sm:text-sm text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
                     <option value="consultation">Consultation</option>
+                    <option value="soins">Soins</option>
                     <option value="laboratoire">Laboratoire</option>
                     <option value="imagerie">Imagerie</option>
                     <option value="chirurgie">Chirurgie</option>
-                    <option value="soins">Soins</option>
                     <option value="pharmacie">Pharmacie</option>
                     <option value="hospitalisation">Hospitalisation</option>
                 </select>
             </div>
+
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Prix Unitaire (FCFA) *</label>
-                <input type="number" name="prix_unitaire" required min="0" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Prix Unitaire (FCFA) <span class="text-red-500">*</span></label>
+                <input type="number" name="prix_unitaire" required min="0" placeholder="Ex: 5000" class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-base sm:text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
             </div>
-            <div class="flex justify-end gap-2 pt-4">
-                <a href="/actes" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">Annuler</a>
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Enregistrer</button>
+
+            <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4 border-t border-gray-100">
+                <a href="/actes" class="w-full sm:w-auto px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-sm text-center transition">
+                    Annuler
+                </a>
+                <button type="submit" class="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm shadow-sm text-center transition">
+                    <i class="fas fa-check mr-1.5"></i> Enregistrer
+                </button>
             </div>
         </form>
     </div>
