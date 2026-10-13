@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= typeof title !== 'undefined' ? title : 'Connexion | CSA 3e Compagnie GSPM Bouaké' %></title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/css/tailwind.min.css">
   <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
   <style>
@@ -14,45 +15,49 @@
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
-      background-attachment: fixed;
+    }
+    @media (min-width: 768px) {
+      .bg-firefighter {
+        background-attachment: fixed;
+      }
     }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 bg-firefighter">
-  <div class="max-w-lg w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 overflow-hidden my-6">
+<body class="min-h-screen flex items-center justify-center p-3 sm:p-6 bg-firefighter">
+  <div class="max-w-lg w-full bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/30 overflow-hidden my-3 sm:my-6">
     
     <!-- En-tête officiel GSPM & Ministère de la Défense -->
-    <div class="bg-gradient-to-b from-gray-50 to-white pt-6 px-6 pb-4 border-b border-gray-200">
+    <div class="bg-gradient-to-b from-gray-50 to-white pt-5 sm:pt-6 px-4 sm:px-6 pb-4 border-b border-gray-200">
       <div class="flex justify-between items-center mb-3">
         <!-- Logo GSPM -->
         <div class="text-center w-5/12">
-          <p class="font-extrabold text-[10px] uppercase text-gray-800 tracking-tight leading-tight">
+          <p class="font-extrabold text-[9px] sm:text-[10px] uppercase text-gray-800 tracking-tight leading-tight">
             GROUPEMENT DE SAPEURS POMPIERS MILITAIRES
           </p>
-          <div class="my-2 flex justify-center">
-            <img src="/images/logo_gspm.jpg" alt="Logo GSPM" class="h-16 w-auto object-contain drop-shadow-sm">
+          <div class="my-1.5 sm:my-2 flex justify-center">
+            <img src="/images/logo_gspm.jpg" alt="Logo GSPM" class="h-12 sm:h-16 w-auto object-contain drop-shadow-sm">
           </div>
-          <p class="font-bold text-[10px] uppercase text-red-800 tracking-tight leading-tight">
+          <p class="font-bold text-[9px] sm:text-[10px] uppercase text-red-800 tracking-tight leading-tight">
             CSA 3<sup>e</sup> COMPAGNIE GSPM
           </p>
         </div>
 
         <!-- Armoiries Ministère de la Défense -->
         <div class="text-center w-5/12">
-          <p class="font-extrabold text-[10px] uppercase text-gray-800 tracking-tight leading-tight">
+          <p class="font-extrabold text-[9px] sm:text-[10px] uppercase text-gray-800 tracking-tight leading-tight">
             RÉPUBLIQUE DE CÔTE D'IVOIRE
           </p>
-          <div class="my-2 flex justify-center">
-            <img src="/images/logo_defense.jpg" alt="Ministère de la Défense" class="h-16 w-auto object-contain drop-shadow-sm">
+          <div class="my-1.5 sm:my-2 flex justify-center">
+            <img src="/images/logo_defense.jpg" alt="Ministère de la Défense" class="h-12 sm:h-16 w-auto object-contain drop-shadow-sm">
           </div>
-          <p class="font-bold text-[10px] uppercase text-gray-700 tracking-tight leading-tight">
+          <p class="font-bold text-[9px] sm:text-[10px] uppercase text-gray-700 tracking-tight leading-tight">
             MINISTÈRE DE LA DÉFENSE
           </p>
         </div>
       </div>
 
       <!-- Bande tricolore officielle (Orange, Blanc, Vert) -->
-      <div style="border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 1.5px 0;" class="my-3">
+      <div style="border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; padding: 1.5px 0;" class="my-2.5 sm:my-3">
         <div class="flag-band" style="display: flex; height: 5px; width: 100%;">
           <div style="flex: 1; background-color: #f77f00;"></div>
           <div style="flex: 1; background-color: #ffffff; border-left: 1px solid #ddd; border-right: 1px solid #ddd;"></div>
@@ -62,13 +67,13 @@
 
       <!-- Titre de l'application -->
       <div class="text-center mt-2">
-        <h1 class="text-lg font-black text-slate-800 uppercase tracking-wide">Système de Gestion Médicale & Facturation</h1>
+        <h1 class="text-base sm:text-lg font-black text-slate-800 uppercase tracking-wide">Système de Gestion Médicale & Facturation</h1>
         <p class="text-xs text-slate-500 font-semibold">Centre Médical Militaire — Bouaké</p>
       </div>
     </div>
 
     <!-- Corps du formulaire -->
-    <div class="p-8 pt-6 space-y-6">
+    <div class="p-5 sm:p-8 pt-5 sm:pt-6 space-y-5 sm:space-y-6">
       
       <!-- Messages Flash (Erreur / Succès) -->
       <% if (typeof messages !== 'undefined' && messages.error) { %>
