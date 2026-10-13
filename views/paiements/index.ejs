@@ -1,4 +1,4 @@
-<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8" x-data="{ search: '', modeFilter: '' }">
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
     <!-- En-tête -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <div>
@@ -25,14 +25,16 @@
                 </span>
                 <input 
                     type="text" 
-                    x-model="search" 
-                    placeholder="Rechercher par patient, facture, référence..." 
-                    class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    id="searchPaiements" 
+                    placeholder="Rechercher par patient, numéro facture, référence..." 
+                    class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    onkeyup="filterPaiements()">
             </div>
             <div class="w-full sm:w-48">
                 <select 
-                    x-model="modeFilter" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    id="filterMode" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    onchange="filterPaiements()">
                     <option value="">Tous les modes</option>
                     <option value="especes">Espèces</option>
                     <option value="mobile_money">Mobile Money</option>
@@ -46,7 +48,7 @@
 
     <% 
     const getModeBadge = (mode) => {
-        const m = (mode || '').toLowerCase();
+        const m = String(mode || '').toLowerCase();
         if (m.includes('espece')) return 'bg-emerald-100 text-emerald-800 border-emerald-200';
         if (m.includes('mobile')) return 'bg-blue-100 text-blue-800 border-blue-200';
         if (m.includes('carte')) return 'bg-indigo-100 text-indigo-800 border-indigo-200';
@@ -57,11 +59,14 @@
     %>
 
     <!-- Vue Mobile (Cartes adaptées smartphones) -->
-    <div class="block md:hidden space-y-3">
+    <div class="block md:hidden space-y-3" id="paiementsMobileList">
         <% if (typeof paiements !== 'undefined' && paiements.length > 0) { %>
             <% paiements.forEach(paiement => { %>
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-2.5"
-                     x-show="(!search || '<%= (paiement.patient_nom || '').toLowerCase() %>'.includes(search.toLowerCase()) || '<%= (paiement.facture_numero || '').toLowerCase() %>'.includes(search.toLowerCase()) || '<%= (paiement.reference || '').toLowerCase() %>'.includes(search.toLowerCase())) && (!modeFilter || '<%= (paiement.mode_paiement || '').toLowerCase() %>'.includes(modeFilter.toLowerCase()))">
+                <div class="paiement-card bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-2.5"
+                     data-patient="<%= String(paiement.patient_nom || '').toLowerCase() %>"
+                     data-facture="<%= String(paiement.facture_numero || '').toLowerCase() %>"
+                     data-ref="<%= String(paiement.reference || '').toLowerCase() %>"
+                     data-mode="<%= String(paiement.mode_paiement || '').toLowerCase() %>">
                     
                     <div class="flex items-start justify-between gap-2">
                         <div>
@@ -110,7 +115,7 @@
     <!-- Vue Desktop / Tablette (Tableau avec overflow horizontal) -->
     <div class="hidden md:block bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200" id="paiementsTable">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
@@ -124,8 +129,11 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     <% if (typeof paiements !== 'undefined' && paiements.length > 0) { %>
                         <% paiements.forEach(paiement => { %>
-                            <tr class="hover:bg-slate-50 transition"
-                                x-show="(!search || '<%= (paiement.patient_nom || '').toLowerCase() %>'.includes(search.toLowerCase()) || '<%= (paiement.facture_numero || '').toLowerCase() %>'.includes(search.toLowerCase()) || '<%= (paiement.reference || '').toLowerCase() %>'.includes(search.toLowerCase())) && (!modeFilter || '<%= (paiement.mode_paiement || '').toLowerCase() %>'.includes(modeFilter.toLowerCase()))">
+                            <tr class="paiement-row hover:bg-slate-50 transition"
+                                data-patient="<%= String(paiement.patient_nom || '').toLowerCase() %>"
+                                data-facture="<%= String(paiement.facture_numero || '').toLowerCase() %>"
+                                data-ref="<%= String(paiement.reference || '').toLowerCase() %>"
+                                data-mode="<%= String(paiement.mode_paiement || '').toLowerCase() %>">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <%= new Date(paiement.created_at || paiement.date_paiement).toLocaleString('fr-FR') %>
                                 </td>
@@ -162,4 +170,61 @@
             </table>
         </div>
     </div>
+
+    <!-- Message aucun résultat après filtre -->
+    <div id="noPaiementsResult" class="hidden bg-white p-6 rounded-xl text-center text-gray-500 shadow-sm border border-gray-100 mt-3">
+        <i class="fas fa-search text-2xl text-gray-300 mb-2 block"></i>
+        Aucun paiement ne correspond à votre recherche
+    </div>
 </div>
+
+<script>
+    function filterPaiements() {
+        const query = (document.getElementById('searchPaiements').value || '').toLowerCase().trim();
+        const mode = (document.getElementById('filterMode').value || '').toLowerCase().trim();
+
+        const cards = document.querySelectorAll('.paiement-card');
+        const rows = document.querySelectorAll('.paiement-row');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const patient = card.getAttribute('data-patient') || '';
+            const facture = card.getAttribute('data-facture') || '';
+            const ref = card.getAttribute('data-ref') || '';
+            const cardMode = card.getAttribute('data-mode') || '';
+
+            const matchQuery = !query || patient.includes(query) || facture.includes(query) || ref.includes(query);
+            const matchMode = !mode || cardMode.includes(mode);
+
+            if (matchQuery && matchMode) {
+                card.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+
+        rows.forEach(row => {
+            const patient = row.getAttribute('data-patient') || '';
+            const facture = row.getAttribute('data-facture') || '';
+            const ref = row.getAttribute('data-ref') || '';
+            const rowMode = row.getAttribute('data-mode') || '';
+
+            const matchQuery = !query || patient.includes(query) || facture.includes(query) || ref.includes(query);
+            const matchMode = !mode || rowMode.includes(mode);
+
+            if (matchQuery && matchMode) {
+                row.classList.remove('hidden');
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+
+        const noResults = document.getElementById('noPaiementsResult');
+        if (visibleCount === 0 && (cards.length > 0 || rows.length > 0)) {
+            noResults.classList.remove('hidden');
+        } else {
+            noResults.classList.add('hidden');
+        }
+    }
+</script>

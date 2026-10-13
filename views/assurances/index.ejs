@@ -1,4 +1,4 @@
-<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8" x-data="{ showModal: false, search: '', filterType: '' }">
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8" x-data="{ showModal: false }">
     <!-- En-tête -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <div>
@@ -25,14 +25,16 @@
                 </span>
                 <input 
                     type="text" 
-                    x-model="search" 
+                    id="searchAssurances" 
                     placeholder="Rechercher une assurance, mutuelle, contact..." 
-                    class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    onkeyup="filterAssurances()">
             </div>
             <div class="w-full sm:w-48">
                 <select 
-                    x-model="filterType" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    id="filterAssuranceType" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    onchange="filterAssurances()">
                     <option value="">Tous les types</option>
                     <option value="MUTUELLE">Mutuelle</option>
                     <option value="ASSURANCE_PRIVEE">Assurance Privée</option>
@@ -43,15 +45,17 @@
     </div>
 
     <!-- Vue Mobile (Cartes adaptées smartphones) -->
-    <div class="block md:hidden space-y-3">
+    <div class="block md:hidden space-y-3" id="assurancesMobileList">
         <% if (typeof assurances !== 'undefined' && assurances.length > 0) { %>
             <% assurances.forEach(assurance => { %>
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-3"
-                     x-show="(!search || '<%= (assurance.nom || '').toLowerCase() %>'.includes(search.toLowerCase()) || '<%= (assurance.telephone || '').toLowerCase() %>'.includes(search.toLowerCase())) && (!filterType || '<%= (assurance.type || '').toUpperCase() %>' === filterType.toUpperCase())">
+                <div class="assurance-card bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-3"
+                     data-nom="<%= String(assurance.nom || '').toLowerCase() %>"
+                     data-tel="<%= String(assurance.telephone || '').toLowerCase() %>"
+                     data-type="<%= String(assurance.type || '').toUpperCase() %>">
                     <div class="flex items-start justify-between gap-2">
                         <div>
-                            <span class="inline-block text-[11px] font-semibold px-2 py-0.5 rounded border mb-1 <%= (assurance.type || '') === 'MUTUELLE' ? 'bg-purple-100 text-purple-800 border-purple-200' : ((assurance.type || '') === 'ASSURANCE_PRIVEE' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-gray-100 text-gray-700 border-gray-200') %>">
-                                <%= (assurance.type || 'Autre').replace('_', ' ') %>
+                            <span class="inline-block text-[11px] font-semibold px-2 py-0.5 rounded border mb-1 <%= String(assurance.type || '') === 'MUTUELLE' ? 'bg-purple-100 text-purple-800 border-purple-200' : (String(assurance.type || '') === 'ASSURANCE_PRIVEE' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-gray-100 text-gray-700 border-gray-200') %>">
+                                <%= String(assurance.type || 'Autre').replace('_', ' ') %>
                             </span>
                             <h3 class="text-base font-bold text-gray-900 leading-snug"><%= assurance.nom %></h3>
                         </div>
@@ -85,7 +89,7 @@
     <!-- Vue Desktop / Tablette (Tableau avec overflow horizontal) -->
     <div class="hidden md:block bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200" id="assurancesTable">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nom de l'assurance</th>
@@ -97,12 +101,14 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     <% if (typeof assurances !== 'undefined' && assurances.length > 0) { %>
                         <% assurances.forEach(assurance => { %>
-                            <tr class="hover:bg-slate-50 transition"
-                                x-show="(!search || '<%= (assurance.nom || '').toLowerCase() %>'.includes(search.toLowerCase()) || '<%= (assurance.telephone || '').toLowerCase() %>'.includes(search.toLowerCase())) && (!filterType || '<%= (assurance.type || '').toUpperCase() %>' === filterType.toUpperCase())">
+                            <tr class="assurance-row hover:bg-slate-50 transition"
+                                data-nom="<%= String(assurance.nom || '').toLowerCase() %>"
+                                data-tel="<%= String(assurance.telephone || '').toLowerCase() %>"
+                                data-type="<%= String(assurance.type || '').toUpperCase() %>">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900"><%= assurance.nom %></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold border <%= (assurance.type || '') === 'MUTUELLE' ? 'bg-purple-100 text-purple-800 border-purple-200' : ((assurance.type || '') === 'ASSURANCE_PRIVEE' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-gray-100 text-gray-700 border-gray-200') %>">
-                                        <%= (assurance.type || 'Autre').replace('_', ' ') %>
+                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold border <%= String(assurance.type || '') === 'MUTUELLE' ? 'bg-purple-100 text-purple-800 border-purple-200' : (String(assurance.type || '') === 'ASSURANCE_PRIVEE' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-gray-100 text-gray-700 border-gray-200') %>">
+                                        <%= String(assurance.type || 'Autre').replace('_', ' ') %>
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -134,6 +140,12 @@
                 </tbody>
             </table>
         </div>
+    </div>
+
+    <!-- Message aucun résultat après filtre -->
+    <div id="noAssurancesResult" class="hidden bg-white p-6 rounded-xl text-center text-gray-500 shadow-sm border border-gray-100 mt-3">
+        <i class="fas fa-search text-2xl text-gray-300 mb-2 block"></i>
+        Aucune assurance ne correspond à votre recherche
     </div>
 
     <!-- Modal d'ajout Responsive -->
@@ -177,3 +189,52 @@
         </div>
     </div>
 </div>
+
+<script>
+    function filterAssurances() {
+        const query = (document.getElementById('searchAssurances').value || '').toLowerCase().trim();
+        const type = (document.getElementById('filterAssuranceType').value || '').toUpperCase().trim();
+
+        const cards = document.querySelectorAll('.assurance-card');
+        const rows = document.querySelectorAll('.assurance-row');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const nom = card.getAttribute('data-nom') || '';
+            const tel = card.getAttribute('data-tel') || '';
+            const cardType = card.getAttribute('data-type') || '';
+
+            const matchQuery = !query || nom.includes(query) || tel.includes(query);
+            const matchType = !type || cardType === type;
+
+            if (matchQuery && matchType) {
+                card.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+
+        rows.forEach(row => {
+            const nom = row.getAttribute('data-nom') || '';
+            const tel = row.getAttribute('data-tel') || '';
+            const rowType = row.getAttribute('data-type') || '';
+
+            const matchQuery = !query || nom.includes(query) || tel.includes(query);
+            const matchType = !type || rowType === type;
+
+            if (matchQuery && matchType) {
+                row.classList.remove('hidden');
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+
+        const noResults = document.getElementById('noAssurancesResult');
+        if (visibleCount === 0 && (cards.length > 0 || rows.length > 0)) {
+            noResults.classList.remove('hidden');
+        } else {
+            noResults.classList.add('hidden');
+        }
+    }
+</script>
