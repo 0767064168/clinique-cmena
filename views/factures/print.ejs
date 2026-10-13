@@ -186,6 +186,10 @@
                     <span>Total Net :</span>
                     <span><%= (facture.total_net || 0).toLocaleString('fr-FR') %> FCFA</span>
                 </div>
+                <div class="flex justify-between text-xs text-gray-600 mt-1">
+                    <span>Soit en Euros (€) :</span>
+                    <span><%= ((facture.total_net || 0) / 655.957).toFixed(2).replace('.', ',') %> €</span>
+                </div>
             </div>
         </div>
 
