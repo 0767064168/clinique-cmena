@@ -1,4 +1,34 @@
 <style>
+    .report-shell {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .report-panel {
+        backdrop-filter: blur(2px);
+    }
+
+    .metric-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .section-badge {
+        letter-spacing: 0.18em;
+    }
+
+    .summary-pill {
+        border: 1px solid rgba(15, 118, 110, 0.12);
+        background: linear-gradient(135deg, rgba(13, 148, 136, 0.06), rgba(15, 23, 42, 0.02));
+    }
+
+    .mode-row {
+        border: 1px solid #e5e7eb;
+        background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    }
+
     @media print {
         body {
             background: #fff !important;
@@ -83,23 +113,23 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div class="bg-white rounded-xl shadow-sm border border-teal-200 p-4">
+        <div class="metric-card bg-white rounded-xl shadow-sm border border-teal-200 p-4 summary-pill">
             <div class="flex items-center justify-between mb-2">
-                <span class="text-[11px] uppercase tracking-[0.2em] text-gray-500 font-bold">Moyenne par facture</span>
+                <span class="section-badge text-[11px] uppercase tracking-[0.2em] text-gray-500 font-bold">Moyenne par facture</span>
                 <span class="p-2 rounded-lg bg-teal-50 text-teal-700"><i class="fas fa-chart-column"></i></span>
             </div>
             <p class="text-2xl font-black text-gray-900"><%= (stats.moyenneFactureNet || 0).toLocaleString('fr-FR') %> <span class="text-sm font-medium text-gray-500">FCFA</span></p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-emerald-200 p-4">
+        <div class="metric-card bg-white rounded-xl shadow-sm border border-emerald-200 p-4 summary-pill">
             <div class="flex items-center justify-between mb-2">
-                <span class="text-[11px] uppercase tracking-[0.2em] text-gray-500 font-bold">Taux de recouvrement</span>
+                <span class="section-badge text-[11px] uppercase tracking-[0.2em] text-gray-500 font-bold">Taux de recouvrement</span>
                 <span class="p-2 rounded-lg bg-emerald-50 text-emerald-700"><i class="fas fa-wallet"></i></span>
             </div>
             <p class="text-2xl font-black text-emerald-700"><%= (stats.tauxRecouvrement || 0).toFixed(0) %>%</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-amber-200 p-4">
+        <div class="metric-card bg-white rounded-xl shadow-sm border border-amber-200 p-4 summary-pill">
             <div class="flex items-center justify-between mb-2">
-                <span class="text-[11px] uppercase tracking-[0.2em] text-gray-500 font-bold">Factures validées</span>
+                <span class="section-badge text-[11px] uppercase tracking-[0.2em] text-gray-500 font-bold">Factures validées</span>
                 <span class="p-2 rounded-lg bg-amber-50 text-amber-700"><i class="fas fa-file-contract"></i></span>
             </div>
             <p class="text-2xl font-black text-gray-900"><%= stats.totalFacturesValidees || 0 %></p>
@@ -109,17 +139,17 @@
     <!-- KPI Grid Financier -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         <!-- Chiffre d'affaires net -->
-        <div class="bg-white p-5 rounded-lg shadow border-l-4 border-blue-600">
+        <div class="metric-card bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-l-4 border-blue-600">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Facturé Net</p>
-                    <p class="text-2xl font-extrabold text-gray-900 mt-1"><%= (stats.totalFactureNet || 0).toLocaleString('fr-FR') %> <span class="text-sm font-normal text-gray-500">FCFA</span></p>
+                    <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em]">Total Facturé Net</p>
+                    <p class="text-2xl font-extrabold text-gray-900 mt-2"><%= (stats.totalFactureNet || 0).toLocaleString('fr-FR') %> <span class="text-sm font-normal text-gray-500">FCFA</span></p>
                 </div>
                 <div class="p-3 bg-blue-50 text-blue-600 rounded-lg">
                     <i class="fas fa-file-invoice-dollar text-xl"></i>
                 </div>
             </div>
-            <p class="text-xs text-gray-500 mt-2">
+            <p class="text-xs text-gray-500 mt-3">
                 <%= (stats.statutsCount.payee || 0) + (stats.statutsCount.validee || 0) + (stats.statutsCount.partiellement_payee || 0) %> facture(s) validée(s)
                 <% if (stats.statutsCount.brouillon > 0) { %>
                     <span class="text-gray-400">(+<%= stats.statutsCount.brouillon %> brouillon(s))</span>
@@ -128,85 +158,85 @@
         </div>
 
         <!-- Total Encaissé -->
-        <div class="bg-white p-5 rounded-lg shadow border-l-4 border-green-600">
+        <div class="metric-card bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-l-4 border-green-600">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Recouvrement / Encaissé</p>
-                    <p class="text-2xl font-extrabold text-green-700 mt-1"><%= (stats.totalEncaisse || 0).toLocaleString('fr-FR') %> <span class="text-sm font-normal text-gray-500">FCFA</span></p>
+                    <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em]">Recouvrement / Encaissé</p>
+                    <p class="text-2xl font-extrabold text-green-700 mt-2"><%= (stats.totalEncaisse || 0).toLocaleString('fr-FR') %> <span class="text-sm font-normal text-gray-500">FCFA</span></p>
                 </div>
                 <div class="p-3 bg-green-50 text-green-600 rounded-lg">
                     <i class="fas fa-hand-holding-usd text-xl"></i>
                 </div>
             </div>
             <% const tauxRecouvrement = stats.totalFactureNet > 0 ? Math.round((stats.totalEncaisse / stats.totalFactureNet) * 100) : 100; %>
-            <p class="text-xs text-gray-500 mt-2">Taux de recouvrement : <strong class="text-green-700"><%= tauxRecouvrement %>%</strong></p>
+            <p class="text-xs text-gray-500 mt-3">Taux de recouvrement : <strong class="text-green-700"><%= tauxRecouvrement %>%</strong></p>
         </div>
 
         <!-- Reste à recouvrer -->
-        <div class="bg-white p-5 rounded-lg shadow border-l-4 border-red-500">
+        <div class="metric-card bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-l-4 border-red-500">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Reste à Recouvrer</p>
-                    <p class="text-2xl font-extrabold text-red-600 mt-1"><%= (stats.totalResteAPayer || 0).toLocaleString('fr-FR') %> <span class="text-sm font-normal text-gray-500">FCFA</span></p>
+                    <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em]">Reste à Recouvrer</p>
+                    <p class="text-2xl font-extrabold text-red-600 mt-2"><%= (stats.totalResteAPayer || 0).toLocaleString('fr-FR') %> <span class="text-sm font-normal text-gray-500">FCFA</span></p>
                 </div>
                 <div class="p-3 bg-red-50 text-red-500 rounded-lg">
                     <i class="fas fa-clock text-xl"></i>
                 </div>
             </div>
-            <p class="text-xs text-gray-500 mt-2">Créances et soldes en attente</p>
+            <p class="text-xs text-gray-500 mt-3">Créances et soldes en attente</p>
         </div>
 
         <!-- Remises -->
-        <div class="bg-white p-5 rounded-lg shadow border-l-4 border-yellow-500">
+        <div class="metric-card bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-l-4 border-yellow-500">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Remises</p>
-                    <p class="text-2xl font-extrabold text-yellow-700 mt-1"><%= (stats.totalRemises || 0).toLocaleString('fr-FR') %> <span class="text-sm font-normal text-gray-500">FCFA</span></p>
+                    <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-[0.2em]">Total Remises</p>
+                    <p class="text-2xl font-extrabold text-yellow-700 mt-2"><%= (stats.totalRemises || 0).toLocaleString('fr-FR') %> <span class="text-sm font-normal text-gray-500">FCFA</span></p>
                 </div>
                 <div class="p-3 bg-yellow-50 text-yellow-600 rounded-lg">
                     <i class="fas fa-tags text-xl"></i>
                 </div>
             </div>
-            <p class="text-xs text-gray-500 mt-2">Réductions accordées</p>
+            <p class="text-xs text-gray-500 mt-3">Réductions accordées</p>
         </div>
     </div>
 
     <!-- Activité Médicale & Modes de Paiement -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <!-- Activité Médicale -->
-        <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-            <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2">
-                <i class="fas fa-stethoscope text-blue-600"></i> Activité Médicale sur la Période
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-3 flex items-center gap-2">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-blue-50 text-blue-600"><i class="fas fa-stethoscope"></i></span>
+                Activité Médicale sur la Période
             </h2>
             <div class="grid grid-cols-2 gap-4">
-                <div class="bg-gray-50 p-4 rounded-lg text-center">
-                    <p class="text-gray-500 text-xs uppercase font-semibold">Total Consultations</p>
-                    <p class="text-3xl font-extrabold text-gray-900 mt-1"><%= stats.totalConsultations %></p>
-                    <p class="text-xs text-green-600 mt-1"><%= stats.consultationsTerminees %> terminée(s)</p>
+                <div class="bg-gradient-to-br from-slate-50 to-white p-4 rounded-xl border border-slate-200 text-center shadow-sm">
+                    <p class="text-gray-500 text-[11px] uppercase font-semibold tracking-[0.18em]">Total Consultations</p>
+                    <p class="text-3xl font-extrabold text-gray-900 mt-2"><%= stats.totalConsultations %></p>
+                    <p class="text-xs text-green-600 mt-2"><%= stats.consultationsTerminees %> terminée(s)</p>
                 </div>
-                <div class="bg-gray-50 p-4 rounded-lg text-center">
-                    <p class="text-gray-500 text-xs uppercase font-semibold">Nouveaux Patients</p>
-                    <p class="text-3xl font-extrabold text-gray-900 mt-1"><%= stats.nouveauxPatients %></p>
-                    <p class="text-xs text-gray-500 mt-1">inscrits sur la période</p>
+                <div class="bg-gradient-to-br from-slate-50 to-white p-4 rounded-xl border border-slate-200 text-center shadow-sm">
+                    <p class="text-gray-500 text-[11px] uppercase font-semibold tracking-[0.18em]">Nouveaux Patients</p>
+                    <p class="text-3xl font-extrabold text-gray-900 mt-2"><%= stats.nouveauxPatients %></p>
+                    <p class="text-xs text-gray-500 mt-2">inscrits sur la période</p>
                 </div>
             </div>
-            <!-- Répartition des factures par statut -->
             <div class="mt-6">
-                <p class="text-xs font-semibold text-gray-600 uppercase mb-3">Répartition des factures</p>
+                <p class="text-[11px] font-semibold text-gray-600 uppercase tracking-[0.18em] mb-3">Répartition des factures</p>
                 <div class="space-y-2 text-xs">
-                    <div class="flex justify-between items-center bg-green-50 p-2 rounded">
+                    <div class="flex justify-between items-center bg-green-50 p-2.5 rounded-lg border border-green-100">
                         <span class="font-medium text-green-800">Payées intégralement</span>
                         <span class="font-bold text-green-900"><%= stats.statutsCount.payee || 0 %></span>
                     </div>
-                    <div class="flex justify-between items-center bg-blue-50 p-2 rounded">
+                    <div class="flex justify-between items-center bg-blue-50 p-2.5 rounded-lg border border-blue-100">
                         <span class="font-medium text-blue-800">Validées (en attente)</span>
                         <span class="font-bold text-blue-900"><%= stats.statutsCount.validee || 0 %></span>
                     </div>
-                    <div class="flex justify-between items-center bg-yellow-50 p-2 rounded">
+                    <div class="flex justify-between items-center bg-yellow-50 p-2.5 rounded-lg border border-yellow-100">
                         <span class="font-medium text-yellow-800">Partiellement payées</span>
                         <span class="font-bold text-yellow-900"><%= stats.statutsCount.partiellement_payee || 0 %></span>
                     </div>
-                    <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-lg border border-gray-200">
                         <span class="font-medium text-gray-700">Brouillons</span>
                         <span class="font-bold text-gray-900"><%= stats.statutsCount.brouillon || 0 %></span>
                     </div>
@@ -215,40 +245,41 @@
         </div>
 
         <!-- Encaissements par Mode de Règlement -->
-        <div class="bg-white rounded-lg shadow p-6 border border-gray-200">
-            <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2">
-                <i class="fas fa-cash-register text-green-600"></i> Encaissements par Mode de Règlement
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-3 flex items-center gap-2">
+                <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600"><i class="fas fa-cash-register"></i></span>
+                Encaissements par Mode de Règlement
             </h2>
             <div class="space-y-3">
-                <div class="flex justify-between items-center p-3 rounded-lg bg-gray-50">
+                <div class="mode-row flex justify-between items-center p-3 rounded-lg">
                     <div class="flex items-center gap-3">
                         <span class="p-2 bg-green-100 text-green-700 rounded-md"><i class="fas fa-money-bill-wave"></i></span>
                         <span class="text-sm font-semibold text-gray-800">Espèces</span>
                     </div>
                     <span class="font-bold text-sm text-gray-900"><%= (stats.modesPaiement.especes || 0).toLocaleString('fr-FR') %> FCFA</span>
                 </div>
-                <div class="flex justify-between items-center p-3 rounded-lg bg-gray-50">
+                <div class="mode-row flex justify-between items-center p-3 rounded-lg">
                     <div class="flex items-center gap-3">
                         <span class="p-2 bg-blue-100 text-blue-700 rounded-md"><i class="fas fa-mobile-alt"></i></span>
-                        <span class="text-sm font-semibold text-gray-800">Mobile Money (Orange/MTN/Wave)</span>
+                        <span class="text-sm font-semibold text-gray-800">Mobile Money</span>
                     </div>
                     <span class="font-bold text-sm text-gray-900"><%= (stats.modesPaiement.mobile_money || 0).toLocaleString('fr-FR') %> FCFA</span>
                 </div>
-                <div class="flex justify-between items-center p-3 rounded-lg bg-gray-50">
+                <div class="mode-row flex justify-between items-center p-3 rounded-lg">
                     <div class="flex items-center gap-3">
                         <span class="p-2 bg-indigo-100 text-indigo-700 rounded-md"><i class="fas fa-credit-card"></i></span>
                         <span class="text-sm font-semibold text-gray-800">Carte Bancaire</span>
                     </div>
                     <span class="font-bold text-sm text-gray-900"><%= (stats.modesPaiement.carte || 0).toLocaleString('fr-FR') %> FCFA</span>
                 </div>
-                <div class="flex justify-between items-center p-3 rounded-lg bg-gray-50">
+                <div class="mode-row flex justify-between items-center p-3 rounded-lg">
                     <div class="flex items-center gap-3">
                         <span class="p-2 bg-purple-100 text-purple-700 rounded-md"><i class="fas fa-university"></i></span>
                         <span class="text-sm font-semibold text-gray-800">Virement Bancaire</span>
                     </div>
                     <span class="font-bold text-sm text-gray-900"><%= (stats.modesPaiement.virement || 0).toLocaleString('fr-FR') %> FCFA</span>
                 </div>
-                <div class="flex justify-between items-center p-3 rounded-lg bg-gray-50">
+                <div class="mode-row flex justify-between items-center p-3 rounded-lg">
                     <div class="flex items-center gap-3">
                         <span class="p-2 bg-yellow-100 text-yellow-700 rounded-md"><i class="fas fa-money-check"></i></span>
                         <span class="text-sm font-semibold text-gray-800">Chèque</span>

@@ -4,6 +4,9 @@ const ExcelJS = require('exceljs');
 const { supabase } = require('../config/supabase');
 
 const formatMoney = (value) => `${Number(value || 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA`;
+const formatPercent = (value) => `${Number(value || 0).toFixed(0)} %`;
+const csvSafe = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+const asNumber = (value) => Number(value || 0);
 
 async function getRapportData(date_from, date_to) {
     const { data: factures, error: errFactures } = await supabase
@@ -181,10 +184,10 @@ router.get('/export/csv', async (req, res) => {
         const totalReste = (factures || []).reduce((sum, f) => sum + (f.statut !== 'brouillon' ? Number(f.reste_a_payer || 0) : 0), 0);
 
         csvContent += `Indicateurs clés;Valeur\n`;
-        csvContent += `Factures validées;"${totalFacturesValides}"\n`;
-        csvContent += `Total facturé net;"${formatMoney(totalFactureNet).replace(' FCFA', '')}"\n`;
-        csvContent += `Total encaissé;"${formatMoney(totalEncaisse).replace(' FCFA', '')}"\n`;
-        csvContent += `Reste à recouvrer;"${formatMoney(totalReste).replace(' FCFA', '')}"\n\n`;
+        csvContent += `Factures validées;${csvSafe(totalFacturesValides)}\n`;
+        csvContent += `Total facturé net;${csvSafe(formatMoney(totalFactureNet).replace(' FCFA', ''))}\n`;
+        csvContent += `Total encaissé;${csvSafe(formatMoney(totalEncaisse).replace(' FCFA', ''))}\n`;
+        csvContent += `Reste à recouvrer;${csvSafe(formatMoney(totalReste).replace(' FCFA', ''))}\n\n`;
 
         csvContent += `--- SECTION 1 : FACTURES ÉMISES SUR LA PÉRIODE ---\n`;
         csvContent += `N° Facture;Date;N° Dossier;Patient;Statut;Total Brut (FCFA);Remise (FCFA);Total Net (FCFA);Montant Payé (FCFA);Reste à Payer (FCFA)\n`;
@@ -196,21 +199,21 @@ router.get('/export/csv', async (req, res) => {
             const pat = f.patients ? `${f.patients.nom} ${f.patients.prenom}` : '-';
             const numDos = f.patients ? f.patients.numero_dossier : '-';
             const d = f.date_facture ? new Date(f.date_facture).toLocaleDateString('fr-FR') : '-';
-            const brut = Number(f.total || 0);
-            const remise = Number(f.remise || 0);
-            const net = Number(f.total_net || 0);
-            const paye = Number(f.montant_paye || 0);
-            const reste = Number(f.reste_a_payer || 0);
+            const brut = asNumber(f.total);
+            const remise = asNumber(f.remise);
+            const net = asNumber(f.total_net);
+            const paye = asNumber(f.montant_paye);
+            const reste = asNumber(f.reste_a_payer);
 
             if (f.statut !== 'brouillon') {
                 sumFactureNet += net;
                 sumReste += reste;
             }
 
-            csvContent += `"${f.numero_facture || '-'}";"${d}";"${numDos}";"${pat}";"${f.statut || '-'}";"${brut}";"${remise}";"${net}";"${paye}";"${reste}"\n`;
+            csvContent += `${csvSafe(f.numero_facture || '-')};${csvSafe(d)};${csvSafe(numDos)};${csvSafe(pat)};${csvSafe(f.statut || '-')};${csvSafe(brut)};${csvSafe(remise)};${csvSafe(net)};${csvSafe(paye)};${csvSafe(reste)}\n`;
         });
 
-        csvContent += `;;;;TOTAL FACTURE NET VALIDE;;;"${sumFactureNet}";;"${sumReste}"\n\n`;
+        csvContent += `;;;;TOTAL FACTURE NET VALIDE;;${csvSafe(sumFactureNet)};;${csvSafe(sumReste)}\n\n`;
 
         csvContent += `--- SECTION 2 : ENCAISSEMENTS RÉELS SUR LA PÉRIODE ---\n`;
         csvContent += `Date Paiement;N° Facture;Patient;Mode de Règlement;Référence;Montant Encaisse (FCFA)\n`;
@@ -220,13 +223,13 @@ router.get('/export/csv', async (req, res) => {
             const numFac = p.factures ? p.factures.numero_facture : '-';
             const pat = (p.factures && p.factures.patients) ? `${p.factures.patients.nom} ${p.factures.patients.prenom}` : '-';
             const d = p.date_paiement ? new Date(p.date_paiement).toLocaleString('fr-FR') : '-';
-            const montant = Number(p.montant || 0);
+            const montant = asNumber(p.montant);
             sumEncaisse += montant;
 
-            csvContent += `"${d}";"${numFac}";"${pat}";"${p.mode_paiement || 'especes'}";"${p.reference || '-'}";"${montant}"\n`;
+            csvContent += `${csvSafe(d)};${csvSafe(numFac)};${csvSafe(pat)};${csvSafe(p.mode_paiement || 'especes')};${csvSafe(p.reference || '-')};${csvSafe(montant)}\n`;
         });
 
-        csvContent += `;;;;TOTAL ENCAISSE RÉEL;"${sumEncaisse}"\n\n`;
+        csvContent += `;;;;TOTAL ENCAISSE RÉEL;${csvSafe(sumEncaisse)}\n\n`;
 
         const modeLabels = {
             especes: 'Espèces',
@@ -248,7 +251,7 @@ router.get('/export/csv', async (req, res) => {
         csvContent += `Mode;Montant;Part (%)\n`;
         modeSummary.forEach(([mode, montant]) => {
             const percent = sumEncaisse > 0 ? ((montant / sumEncaisse) * 100) : 0;
-            csvContent += `"${modeLabels[mode] || mode}";"${montant}";"${percent.toFixed(1)}"\n`;
+            csvContent += `${csvSafe(modeLabels[mode] || mode)};${csvSafe(montant)};${csvSafe(`${percent.toFixed(1)} %`)}\n`;
         });
 
         res.send(csvContent);
@@ -305,14 +308,14 @@ router.get('/export/excel', async (req, res) => {
         subHeaderRow.height = 18;
 
         const kpiRows = [
-            ['Factures validées', stats.totalFacturesValidees],
-            ['Total facturé net', stats.totalFactureNet],
-            ['Total encaissé', stats.totalEncaisse],
-            ['Reste à recouvrer', stats.totalResteAPayer],
-            ['Consultations', stats.totalConsultations],
-            ['Nouveaux patients', stats.nouveauxPatients],
-            ['Moyenne facture', stats.moyenneFactureNet],
-            ['Taux recouvrement', `${(stats.tauxRecouvrement || 0).toFixed(0)} %`]
+            ['Factures validées', Number(stats.totalFacturesValidees || 0)],
+            ['Total facturé net', Number(stats.totalFactureNet || 0)],
+            ['Total encaissé', Number(stats.totalEncaisse || 0)],
+            ['Reste à recouvrer', Number(stats.totalResteAPayer || 0)],
+            ['Consultations', Number(stats.totalConsultations || 0)],
+            ['Nouveaux patients', Number(stats.nouveauxPatients || 0)],
+            ['Moyenne facture', Number(stats.moyenneFactureNet || 0)],
+            ['Taux recouvrement', Number(stats.tauxRecouvrement || 0) / 100]
         ];
 
         syntheseSheet.getCell('A5').value = 'Indicateur';
@@ -336,7 +339,13 @@ router.get('/export/excel', async (req, res) => {
             valueCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: index % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } };
             valueCell.font = { bold: true, color: { argb: 'FF0F172A' } };
             if (typeof metric[1] === 'number') {
-                valueCell.numFmt = '# ##0 "FCFA"';
+                if (metric[0] === 'Taux recouvrement') {
+                    valueCell.numFmt = '0.0%';
+                } else if (metric[0].includes('Total') || metric[0].includes('Moyenne') || metric[0].includes('Reste')) {
+                    valueCell.numFmt = '# ##0 "FCFA"';
+                } else {
+                    valueCell.numFmt = '#,##0';
+                }
             }
         });
 
@@ -344,6 +353,11 @@ router.get('/export/excel', async (req, res) => {
             pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
         });
 
+        facturesSheet.views = [{ state: 'frozen', ySplit: 4 }];
+        facturesSheet.autoFilter = {
+            from: 'A4',
+            to: 'J4'
+        };
         facturesSheet.mergeCells('A1:K1');
         const factHeader = facturesSheet.getRow(1);
         factHeader.getCell(1).value = 'DÉTAIL DES FACTURES';
@@ -396,10 +410,30 @@ router.get('/export/excel', async (req, res) => {
             });
         });
 
+        const totalFacturesRow = facturesSheet.getRow((factures || []).length + 6);
+        totalFacturesRow.getCell(1).value = 'TOTAL';
+        totalFacturesRow.getCell(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        totalFacturesRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+        totalFacturesRow.getCell(8).value = (factures || []).reduce((sum, f) => sum + Number(f.total_net || 0), 0);
+        totalFacturesRow.getCell(9).value = (factures || []).reduce((sum, f) => sum + Number(f.montant_paye || 0), 0);
+        totalFacturesRow.getCell(10).value = (factures || []).reduce((sum, f) => sum + Number(f.reste_a_payer || 0), 0);
+        [8, 9, 10].forEach(col => {
+            const cell = totalFacturesRow.getCell(col);
+            cell.numFmt = '# ##0 "FCFA"';
+            cell.font = { bold: true, color: { argb: 'FF0F172A' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+            cell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+        });
+
         const encaissementsSheet = workbook.addWorksheet('Encaissements', {
             pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
         });
 
+        encaissementsSheet.views = [{ state: 'frozen', ySplit: 4 }];
+        encaissementsSheet.autoFilter = {
+            from: 'A4',
+            to: 'F4'
+        };
         encaissementsSheet.mergeCells('A1:F1');
         const encHeader = encaissementsSheet.getRow(1);
         encHeader.getCell(1).value = 'DÉTAIL DES ENCAISSEMENTS';
@@ -459,6 +493,11 @@ router.get('/export/excel', async (req, res) => {
             pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
         });
 
+        paymentBreakdownSheet.views = [{ state: 'frozen', ySplit: 4 }];
+        paymentBreakdownSheet.autoFilter = {
+            from: 'A4',
+            to: 'C4'
+        };
         paymentBreakdownSheet.mergeCells('A1:D1');
         const paymentHeader = paymentBreakdownSheet.getRow(1);
         paymentHeader.getCell(1).value = 'RÉPARTITION DES MODES DE PAIEMENT';
@@ -495,7 +534,7 @@ router.get('/export/excel', async (req, res) => {
             const percent = totalPaiements > 0 ? (amount / totalPaiements) * 100 : 0;
             row.getCell(1).value = modeLabels[mode] || mode;
             row.getCell(2).value = amount;
-            row.getCell(3).value = percent;
+            row.getCell(3).value = percent / 100;
             row.getCell(2).numFmt = '# ##0 "FCFA"';
             row.getCell(3).numFmt = '0.0%';
             row.getCell(1).border = { all: { style: 'thin', color: { argb: 'FFDDDDDD' } } };
@@ -504,6 +543,23 @@ router.get('/export/excel', async (req, res) => {
             row.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: idx % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } };
             row.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: idx % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } };
             row.getCell(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: idx % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } };
+        });
+
+        const totalModeRow = paymentBreakdownSheet.getRow((paymentSummary || []).length + 5);
+        totalModeRow.getCell(1).value = 'TOTAL';
+        totalModeRow.getCell(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        totalModeRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+        totalModeRow.getCell(2).value = totalPaiements;
+        totalModeRow.getCell(2).numFmt = '# ##0 "FCFA"';
+        totalModeRow.getCell(2).font = { bold: true, color: { argb: 'FF0F172A' } };
+        totalModeRow.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+        totalModeRow.getCell(3).value = 1;
+        totalModeRow.getCell(3).numFmt = '0.0%';
+        totalModeRow.getCell(3).font = { bold: true, color: { argb: 'FF0F172A' } };
+        totalModeRow.getCell(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+        [1, 2, 3].forEach(col => {
+            const cell = totalModeRow.getCell(col);
+            cell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
         });
 
         const filename = `Rapports_Activite_Financiers_${date_from}_au_${date_to}.xlsx`;
