@@ -1,6 +1,127 @@
 const express = require('express');
 const router = express.Router();
+const ExcelJS = require('exceljs');
 const { supabase } = require('../config/supabase');
+
+const formatMoney = (value) => `${Number(value || 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA`;
+
+async function getRapportData(date_from, date_to) {
+    const { data: factures, error: errFactures } = await supabase
+        .from('factures')
+        .select('*, patients(nom, prenom, numero_dossier)')
+        .gte('date_facture', date_from)
+        .lte('date_facture', date_to)
+        .neq('statut', 'annulee')
+        .order('date_facture', { ascending: false });
+
+    if (errFactures) throw errFactures;
+
+    const { data: paiements, error: errPaiements } = await supabase
+        .from('paiements')
+        .select('montant, mode_paiement, date_paiement, reference, factures!inner(numero_facture, statut, patients(nom, prenom))')
+        .neq('factures.statut', 'annulee')
+        .gte('date_paiement', `${date_from}T00:00:00.000Z`)
+        .lte('date_paiement', `${date_to}T23:59:59.999Z`)
+        .order('date_paiement', { ascending: false });
+
+    if (errPaiements) throw errPaiements;
+
+    const modesPaiement = {
+        especes: 0,
+        carte: 0,
+        mobile_money: 0,
+        virement: 0,
+        cheque: 0
+    };
+
+    let totalEncaisseReel = 0;
+    (paiements || []).forEach(p => {
+        const montant = parseFloat(p.montant || 0);
+        totalEncaisseReel += montant;
+
+        const mode = (p.mode_paiement || 'especes').toLowerCase();
+        if (modesPaiement[mode] !== undefined) {
+            modesPaiement[mode] += montant;
+        } else {
+            modesPaiement.especes += montant;
+        }
+    });
+
+    let totalFactureNet = 0;
+    let totalFactureBrouillon = 0;
+    let totalResteAPayer = 0;
+    let totalRemises = 0;
+    let totalFacturesValidees = 0;
+
+    const statutsCount = {
+        payee: 0,
+        validee: 0,
+        partiellement_payee: 0,
+        brouillon: 0
+    };
+
+    (factures || []).forEach(f => {
+        const net = parseFloat(f.total_net || 0);
+        const remise = parseFloat(f.remise || 0);
+        const reste = parseFloat(f.reste_a_payer || 0);
+
+        if (statutsCount[f.statut] !== undefined) {
+            statutsCount[f.statut]++;
+        }
+
+        if (f.statut !== 'brouillon') {
+            totalFactureNet += net;
+            totalRemises += remise;
+            totalResteAPayer += reste;
+            totalFacturesValidees += 1;
+        } else {
+            totalFactureBrouillon += net;
+        }
+    });
+
+    const moyenneFactureNet = totalFacturesValidees > 0 ? totalFactureNet / totalFacturesValidees : 0;
+    const tauxRecouvrement = totalFactureNet > 0 ? (totalEncaisseReel / totalFactureNet) * 100 : 0;
+
+    const { data: consultations, error: errConsultations } = await supabase
+        .from('consultations')
+        .select('id, statut, date_entree')
+        .gte('date_entree', date_from)
+        .lte('date_entree', date_to);
+
+    if (errConsultations) throw errConsultations;
+
+    const totalConsultations = (consultations || []).length;
+    const consultationsTerminees = (consultations || []).filter(c => c.statut === 'termine').length;
+
+    const { count: nouveauxPatients, error: errPatients } = await supabase
+        .from('patients')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', `${date_from}T00:00:00.000Z`)
+        .lte('created_at', `${date_to}T23:59:59.999Z`);
+
+    if (errPatients) throw errPatients;
+
+    return {
+        factures: factures || [],
+        paiements: paiements || [],
+        stats: {
+            totalFactureNet,
+            totalFactureBrouillon,
+            totalEncaisse: totalEncaisseReel,
+            totalResteAPayer,
+            totalRemises,
+            totalFactures: (factures || []).length,
+            totalFacturesValidees,
+            moyenneFactureNet,
+            tauxRecouvrement,
+            statutsCount,
+            totalConsultations,
+            consultationsTerminees,
+            nouveauxPatients: nouveauxPatients || 0,
+            modesPaiement
+        }
+    };
+}
 
 router.get('/', async (req, res) => {
     try {
@@ -8,7 +129,6 @@ router.get('/', async (req, res) => {
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
 
-        // Période par défaut : mois en cours
         const defaultFrom = `${year}-${month}-01`;
         const lastDayOfMonth = new Date(year, now.getMonth() + 1, 0).getDate();
         const defaultTo = `${year}-${month}-${String(lastDayOfMonth).padStart(2, '0')}`;
@@ -16,120 +136,14 @@ router.get('/', async (req, res) => {
         const date_from = req.query.date_from || defaultFrom;
         const date_to = req.query.date_to || defaultTo;
 
-        // 1. Factures sur la période (exclure annulées)
-        const { data: factures, error: errFactures } = await supabase
-            .from('factures')
-            .select('*, patients(nom, prenom, numero_dossier)')
-            .gte('date_facture', date_from)
-            .lte('date_facture', date_to)
-            .neq('statut', 'annulee')
-            .order('date_facture', { ascending: false });
-
-        if (errFactures) throw errFactures;
-
-        // 2. Paiements réels enregistrés sur la période (en excluant les paiements des factures annulées)
-        const { data: paiements, error: errPaiements } = await supabase
-            .from('paiements')
-            .select('montant, mode_paiement, date_paiement, factures!inner(statut)')
-            .neq('factures.statut', 'annulee')
-            .gte('date_paiement', `${date_from}T00:00:00.000Z`)
-            .lte('date_paiement', `${date_to}T23:59:59.999Z`);
-
-        if (errPaiements) throw errPaiements;
-
-        // Répartition par mode de règlement
-        const modesPaiement = {
-            especes: 0,
-            carte: 0,
-            mobile_money: 0,
-            virement: 0,
-            cheque: 0
-        };
-
-        let totalEncaisseReel = 0;
-        (paiements || []).forEach(p => {
-            const montant = parseFloat(p.montant || 0);
-            totalEncaisseReel += montant;
-
-            const mode = (p.mode_paiement || 'especes').toLowerCase();
-            if (modesPaiement[mode] !== undefined) {
-                modesPaiement[mode] += montant;
-            } else {
-                modesPaiement.especes += montant;
-            }
-        });
-
-        // Calculs des factures
-        let totalFactureNet = 0;      // Factures validées ou payées (chiffre d'affaires effectif)
-        let totalFactureBrouillon = 0; // Montant des brouillons
-        let totalResteAPayer = 0;      // Créances en attente sur ces factures
-        let totalRemises = 0;
-
-        const statutsCount = {
-            payee: 0,
-            validee: 0,
-            partiellement_payee: 0,
-            brouillon: 0
-        };
-
-        (factures || []).forEach(f => {
-            const net = parseFloat(f.total_net || 0);
-            const remise = parseFloat(f.remise || 0);
-            const reste = parseFloat(f.reste_a_payer || 0);
-
-            if (statutsCount[f.statut] !== undefined) {
-                statutsCount[f.statut]++;
-            }
-
-            // Seules les factures validées, payées ou partiellement payées comptent dans le CA
-            if (f.statut !== 'brouillon') {
-                totalFactureNet += net;
-                totalRemises += remise;
-                totalResteAPayer += reste;
-            } else {
-                totalFactureBrouillon += net;
-            }
-        });
-
-        // 3. Consultations sur la période
-        const { data: consultations, error: errConsultations } = await supabase
-            .from('consultations')
-            .select('id, statut, date_entree')
-            .gte('date_entree', date_from)
-            .lte('date_entree', date_to);
-
-        if (errConsultations) throw errConsultations;
-
-        const totalConsultations = (consultations || []).length;
-        const consultationsTerminees = (consultations || []).filter(c => c.statut === 'termine').length;
-
-        // 4. Nouveaux patients enregistrés
-        const { count: nouveauxPatients, error: errPatients } = await supabase
-            .from('patients')
-            .select('*', { count: 'exact', head: true })
-            .gte('created_at', `${date_from}T00:00:00.000Z`)
-            .lte('created_at', `${date_to}T23:59:59.999Z`);
-
-        if (errPatients) throw errPatients;
+        const { factures, stats } = await getRapportData(date_from, date_to);
 
         res.render('rapports/index', {
             title: 'Rapports d\'Activité & Financiers',
             date_from,
             date_to,
-            stats: {
-                totalFactureNet,
-                totalFactureBrouillon,
-                totalEncaisse: totalEncaisseReel,
-                totalResteAPayer,
-                totalRemises,
-                totalFactures: (factures || []).length,
-                statutsCount,
-                totalConsultations,
-                consultationsTerminees,
-                nouveauxPatients: nouveauxPatients || 0,
-                modesPaiement
-            },
-            factures: factures || []
+            stats,
+            factures
         });
 
     } catch (error) {
@@ -148,42 +162,32 @@ router.get('/export/csv', async (req, res) => {
             return res.redirect('/rapports');
         }
 
-        // Récupérer les factures de la période
-        const { data: factures, error: errFactures } = await supabase
-            .from('factures')
-            .select('*, patients(nom, prenom, numero_dossier)')
-            .gte('date_facture', date_from)
-            .lte('date_facture', date_to)
-            .neq('statut', 'annulee')
-            .order('date_facture', { ascending: false });
-
-        if (errFactures) throw errFactures;
-
-        // Récupérer les paiements de la période (exclure factures annulées)
-        const { data: paiements, error: errPaiements } = await supabase
-            .from('paiements')
-            .select('*, factures!inner(numero_facture, statut, patients(nom, prenom))')
-            .neq('factures.statut', 'annulee')
-            .gte('date_paiement', `${date_from}T00:00:00.000Z`)
-            .lte('date_paiement', `${date_to}T23:59:59.999Z`)
-            .order('date_paiement', { ascending: false });
-
-        if (errPaiements) throw errPaiements;
+        const { factures, paiements } = await getRapportData(date_from, date_to);
 
         const filename = `Rapport_Financier_GSPM_${date_from}_au_${date_to}.csv`;
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-        // BOM UTF-8 pour ouverture parfaite dans Microsoft Excel
         let csvContent = '\uFEFF';
 
-        csvContent += `RAPPORT FINANCIER & D'ACTIVITE - CSA 3e CIE GSPM BOUAKE\n`;
-        csvContent += `Periode du : ${date_from} au ${date_to}\n`;
-        csvContent += `Genere le : ${new Date().toLocaleString('fr-FR')}\n\n`;
+        csvContent += `RAPPORTS D'ACTIVITÉ & FINANCIERS\n`;
+        csvContent += `CSA 3e COMPAGNIE GSPM BOUAKÉ\n`;
+        csvContent += `Période du : ${date_from} au ${date_to}\n`;
+        csvContent += `Généré le : ${new Date().toLocaleString('fr-FR')}\n\n`;
 
-        // Section 1 : Détail des Factures
-        csvContent += `--- SECTION 1 : FACTURES EMISES SUR LA PERIODE ---\n`;
-        csvContent += `N° Facture;Date;N° Dossier;Patient;Statut;Total Brut (FCFA);Remise (FCFA);Total Net (FCFA);Montant Paye (FCFA);Reste a Payer (FCFA)\n`;
+        const totalFacturesValides = (factures || []).filter(f => f.statut !== 'brouillon').length;
+        const totalFactureNet = (factures || []).reduce((sum, f) => sum + (f.statut !== 'brouillon' ? Number(f.total_net || 0) : 0), 0);
+        const totalEncaisse = (paiements || []).reduce((sum, p) => sum + Number(p.montant || 0), 0);
+        const totalReste = (factures || []).reduce((sum, f) => sum + (f.statut !== 'brouillon' ? Number(f.reste_a_payer || 0) : 0), 0);
+
+        csvContent += `Indicateurs clés;Valeur\n`;
+        csvContent += `Factures validées;"${totalFacturesValides}"\n`;
+        csvContent += `Total facturé net;"${formatMoney(totalFactureNet).replace(' FCFA', '')}"\n`;
+        csvContent += `Total encaissé;"${formatMoney(totalEncaisse).replace(' FCFA', '')}"\n`;
+        csvContent += `Reste à recouvrer;"${formatMoney(totalReste).replace(' FCFA', '')}"\n\n`;
+
+        csvContent += `--- SECTION 1 : FACTURES ÉMISES SUR LA PÉRIODE ---\n`;
+        csvContent += `N° Facture;Date;N° Dossier;Patient;Statut;Total Brut (FCFA);Remise (FCFA);Total Net (FCFA);Montant Payé (FCFA);Reste à Payer (FCFA)\n`;
 
         let sumFactureNet = 0;
         let sumReste = 0;
@@ -203,14 +207,13 @@ router.get('/export/csv', async (req, res) => {
                 sumReste += reste;
             }
 
-            csvContent += `"${f.numero_facture || '-'}";"${d}";"${numDos}";"${pat}";"${f.statut}";"${brut}";"${remise}";"${net}";"${paye}";"${reste}"\n`;
+            csvContent += `"${f.numero_facture || '-'}";"${d}";"${numDos}";"${pat}";"${f.statut || '-'}";"${brut}";"${remise}";"${net}";"${paye}";"${reste}"\n`;
         });
 
         csvContent += `;;;;TOTAL FACTURE NET VALIDE;;;"${sumFactureNet}";;"${sumReste}"\n\n`;
 
-        // Section 2 : Détail des Encaissements Réels
-        csvContent += `--- SECTION 2 : ENCAISSEMENTS REELS SUR LA PERIODE ---\n`;
-        csvContent += `Date Paiement;N° Facture;Patient;Mode de Reglement;Reference;Montant Encaisse (FCFA)\n`;
+        csvContent += `--- SECTION 2 : ENCAISSEMENTS RÉELS SUR LA PÉRIODE ---\n`;
+        csvContent += `Date Paiement;N° Facture;Patient;Mode de Règlement;Référence;Montant Encaisse (FCFA)\n`;
 
         let sumEncaisse = 0;
         (paiements || []).forEach(p => {
@@ -223,12 +226,294 @@ router.get('/export/csv', async (req, res) => {
             csvContent += `"${d}";"${numFac}";"${pat}";"${p.mode_paiement || 'especes'}";"${p.reference || '-'}";"${montant}"\n`;
         });
 
-        csvContent += `;;;;TOTAL ENCAISSE REEL;"${sumEncaisse}"\n`;
+        csvContent += `;;;;TOTAL ENCAISSE RÉEL;"${sumEncaisse}"\n\n`;
+
+        const modeLabels = {
+            especes: 'Espèces',
+            carte: 'Carte',
+            mobile_money: 'Mobile Money',
+            virement: 'Virement',
+            cheque: 'Chèque'
+        };
+
+        const modeSummary = Object.entries({
+            especes: Number((paiements || []).filter(p => (p.mode_paiement || 'especes').toLowerCase() === 'especes').reduce((s, p) => s + Number(p.montant || 0), 0)),
+            carte: Number((paiements || []).filter(p => (p.mode_paiement || 'especes').toLowerCase() === 'carte').reduce((s, p) => s + Number(p.montant || 0), 0)),
+            mobile_money: Number((paiements || []).filter(p => (p.mode_paiement || 'especes').toLowerCase() === 'mobile_money').reduce((s, p) => s + Number(p.montant || 0), 0)),
+            virement: Number((paiements || []).filter(p => (p.mode_paiement || 'especes').toLowerCase() === 'virement').reduce((s, p) => s + Number(p.montant || 0), 0)),
+            cheque: Number((paiements || []).filter(p => (p.mode_paiement || 'especes').toLowerCase() === 'cheque').reduce((s, p) => s + Number(p.montant || 0), 0))
+        }).filter(([, total]) => total > 0);
+
+        csvContent += `--- SECTION 3 : RÉPARTITION DES MODES DE PAIEMENT ---\n`;
+        csvContent += `Mode;Montant;Part (%)\n`;
+        modeSummary.forEach(([mode, montant]) => {
+            const percent = sumEncaisse > 0 ? ((montant / sumEncaisse) * 100) : 0;
+            csvContent += `"${modeLabels[mode] || mode}";"${montant}";"${percent.toFixed(1)}"\n`;
+        });
 
         res.send(csvContent);
     } catch (error) {
         console.error('Erreur export CSV:', error);
         req.flash('error', 'Erreur lors de la génération du fichier Excel/CSV');
+        res.redirect('/rapports');
+    }
+});
+
+router.get('/export/excel', async (req, res) => {
+    try {
+        const { date_from, date_to } = req.query;
+        if (!date_from || !date_to) {
+            req.flash('error', 'Veuillez spécifier une période pour l\'export');
+            return res.redirect('/rapports');
+        }
+
+        const { factures, paiements, stats } = await getRapportData(date_from, date_to);
+
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'CSA 3e COMPAGNIE GSPM BOUAKÉ';
+        workbook.created = new Date();
+        workbook.modified = new Date();
+
+        const generatedAt = new Date();
+        const syntheseSheet = workbook.addWorksheet('Synthèse', {
+            pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
+        });
+
+        syntheseSheet.mergeCells('A1:K1');
+        syntheseSheet.mergeCells('A2:K2');
+        syntheseSheet.mergeCells('A3:K3');
+
+        const titleRow = syntheseSheet.getRow(1);
+        titleRow.getCell(1).value = 'RAPPORTS D\'ACTIVITÉ & FINANCIERS';
+        titleRow.getCell(1).font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
+        titleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+        titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+        titleRow.height = 28;
+
+        const subtitleRow = syntheseSheet.getRow(2);
+        subtitleRow.getCell(1).value = 'CSA 3e COMPAGNIE GSPM BOUAKÉ';
+        subtitleRow.getCell(1).font = { bold: true, size: 10, color: { argb: 'FF0F172A' } };
+        subtitleRow.getCell(1).alignment = { horizontal: 'center' };
+        subtitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+        subtitleRow.height = 18;
+
+        const subHeaderRow = syntheseSheet.getRow(3);
+        subHeaderRow.getCell(1).value = `Période du ${date_from} au ${date_to} — Généré le ${generatedAt.toLocaleDateString('fr-FR')} à ${generatedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+        subHeaderRow.getCell(1).font = { italic: true, size: 9, color: { argb: 'FF334155' } };
+        subHeaderRow.getCell(1).alignment = { horizontal: 'center' };
+        subHeaderRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+        subHeaderRow.height = 18;
+
+        const kpiRows = [
+            ['Factures validées', stats.totalFacturesValidees],
+            ['Total facturé net', stats.totalFactureNet],
+            ['Total encaissé', stats.totalEncaisse],
+            ['Reste à recouvrer', stats.totalResteAPayer],
+            ['Consultations', stats.totalConsultations],
+            ['Nouveaux patients', stats.nouveauxPatients],
+            ['Moyenne facture', stats.moyenneFactureNet],
+            ['Taux recouvrement', `${(stats.tauxRecouvrement || 0).toFixed(0)} %`]
+        ];
+
+        syntheseSheet.getCell('A5').value = 'Indicateur';
+        syntheseSheet.getCell('B5').value = 'Valeur';
+        syntheseSheet.getCell('A5').font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        syntheseSheet.getCell('B5').font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        syntheseSheet.getCell('A5').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+        syntheseSheet.getCell('B5').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+        syntheseSheet.getColumn(1).width = 30;
+        syntheseSheet.getColumn(2).width = 24;
+
+        kpiRows.forEach((metric, index) => {
+            const row = index + 6;
+            const keyCell = syntheseSheet.getCell(row, 1);
+            const valueCell = syntheseSheet.getCell(row, 2);
+            keyCell.value = metric[0];
+            valueCell.value = metric[1];
+            keyCell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+            valueCell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+            keyCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: index % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } };
+            valueCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: index % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } };
+            valueCell.font = { bold: true, color: { argb: 'FF0F172A' } };
+            if (typeof metric[1] === 'number') {
+                valueCell.numFmt = '# ##0 "FCFA"';
+            }
+        });
+
+        const facturesSheet = workbook.addWorksheet('Factures', {
+            pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
+        });
+
+        facturesSheet.mergeCells('A1:K1');
+        const factHeader = facturesSheet.getRow(1);
+        factHeader.getCell(1).value = 'DÉTAIL DES FACTURES';
+        factHeader.getCell(1).font = { bold: true, size: 13, color: { argb: 'FFFFFFFF' } };
+        factHeader.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+        factHeader.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+        factHeader.height = 24;
+        facturesSheet.getCell('A2').value = `Période : ${date_from} au ${date_to}`;
+        facturesSheet.getCell('A2').font = { italic: true, color: { argb: 'FF475569' } };
+
+        const factureHeaders = [
+            'N° Facture', 'Date', 'N° Dossier', 'Patient', 'Statut', 'Total Brut', 'Remise', 'Total Net', 'Montant Payé', 'Reste à Payer'
+        ];
+        const factureHeaderRow = facturesSheet.getRow(4);
+        factureHeaders.forEach((label, index) => {
+            const cell = factureHeaderRow.getCell(index + 1);
+            cell.value = label;
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+            facturesSheet.getColumn(index + 1).width = [18, 14, 14, 26, 18, 15, 12, 15, 15, 18][index];
+        });
+
+        (factures || []).forEach((f, idx) => {
+            const row = facturesSheet.getRow(idx + 5);
+            const patient = f.patients ? `${f.patients.nom} ${f.patients.prenom}`.trim() : '-';
+            const dossier = f.patients ? f.patients.numero_dossier : '-';
+            const values = [
+                f.numero_facture || '-',
+                f.date_facture ? new Date(f.date_facture).toLocaleDateString('fr-FR') : '-',
+                dossier,
+                patient,
+                f.statut || '-',
+                Number(f.total || 0),
+                Number(f.remise || 0),
+                Number(f.total_net || 0),
+                Number(f.montant_paye || 0),
+                Number(f.reste_a_payer || 0)
+            ];
+
+            values.forEach((value, colIdx) => {
+                const cell = row.getCell(colIdx + 1);
+                cell.value = value;
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: idx % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } };
+                cell.border = { all: { style: 'thin', color: { argb: 'FFDDDDDD' } } };
+                if (typeof value === 'number' && colIdx >= 5) {
+                    cell.numFmt = '# ##0 "FCFA"';
+                }
+            });
+        });
+
+        const encaissementsSheet = workbook.addWorksheet('Encaissements', {
+            pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
+        });
+
+        encaissementsSheet.mergeCells('A1:F1');
+        const encHeader = encaissementsSheet.getRow(1);
+        encHeader.getCell(1).value = 'DÉTAIL DES ENCAISSEMENTS';
+        encHeader.getCell(1).font = { bold: true, size: 13, color: { argb: 'FFFFFFFF' } };
+        encHeader.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+        encHeader.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+        encHeader.height = 24;
+        encaissementsSheet.getCell('A2').value = `Période : ${date_from} au ${date_to}`;
+        encaissementsSheet.getCell('A2').font = { italic: true, color: { argb: 'FF475569' } };
+
+        const encHeaders = ['Date', 'N° Facture', 'Patient', 'Mode', 'Référence', 'Montant'];
+        const encHeaderRow = encaissementsSheet.getRow(4);
+        encHeaders.forEach((label, index) => {
+            const cell = encHeaderRow.getCell(index + 1);
+            cell.value = label;
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+            encaissementsSheet.getColumn(index + 1).width = [16, 18, 28, 18, 26, 18][index];
+        });
+
+        (paiements || []).forEach((p, idx) => {
+            const row = encaissementsSheet.getRow(idx + 5);
+            const patient = p.factures && p.factures.patients ? `${p.factures.patients.nom} ${p.factures.patients.prenom}`.trim() : '-';
+            const values = [
+                p.date_paiement ? new Date(p.date_paiement).toLocaleString('fr-FR') : '-',
+                p.factures ? p.factures.numero_facture : '-',
+                patient,
+                p.mode_paiement || 'especes',
+                p.reference || '-',
+                Number(p.montant || 0)
+            ];
+
+            values.forEach((value, colIdx) => {
+                const cell = row.getCell(colIdx + 1);
+                cell.value = value;
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: idx % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } };
+                cell.border = { all: { style: 'thin', color: { argb: 'FFDDDDDD' } } };
+                if (typeof value === 'number') {
+                    cell.numFmt = '# ##0 "FCFA"';
+                }
+            });
+        });
+
+        const totalEncaisseRow = encaissementsSheet.getRow((paiements || []).length + 6);
+        totalEncaisseRow.getCell(1).value = 'TOTAL ENCAISSE';
+        totalEncaisseRow.getCell(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        totalEncaisseRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+        totalEncaisseRow.getCell(6).value = (paiements || []).reduce((sum, p) => sum + Number(p.montant || 0), 0);
+        totalEncaisseRow.getCell(6).numFmt = '# ##0 "FCFA"';
+        totalEncaisseRow.getCell(6).font = { bold: true, color: { argb: 'FF0F172A' } };
+        totalEncaisseRow.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+        totalEncaisseRow.getCell(6).border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+
+        const paymentBreakdownSheet = workbook.addWorksheet('Répartition paiements', {
+            pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
+        });
+
+        paymentBreakdownSheet.mergeCells('A1:D1');
+        const paymentHeader = paymentBreakdownSheet.getRow(1);
+        paymentHeader.getCell(1).value = 'RÉPARTITION DES MODES DE PAIEMENT';
+        paymentHeader.getCell(1).font = { bold: true, size: 13, color: { argb: 'FFFFFFFF' } };
+        paymentHeader.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+        paymentHeader.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+        paymentHeader.height = 24;
+        paymentBreakdownSheet.getCell('A2').value = `Période : ${date_from} au ${date_to}`;
+        paymentBreakdownSheet.getCell('A2').font = { italic: true, color: { argb: 'FF475569' } };
+
+        const modeLabels = {
+            especes: 'Espèces',
+            carte: 'Carte',
+            mobile_money: 'Mobile Money',
+            virement: 'Virement',
+            cheque: 'Chèque'
+        };
+        const paymentSummary = Object.entries(stats.modesPaiement || {}).filter(([, total]) => Number(total) > 0);
+        const totalPaiements = paymentSummary.reduce((sum, [, total]) => sum + Number(total || 0), 0);
+
+        const paymentHeaderRow = paymentBreakdownSheet.getRow(4);
+        ['Mode', 'Montant', 'Part (%)'].forEach((label, index) => {
+            const cell = paymentHeaderRow.getCell(index + 1);
+            cell.value = label;
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+        });
+
+        paymentSummary.forEach(([mode, total], idx) => {
+            const row = paymentBreakdownSheet.getRow(idx + 5);
+            const amount = Number(total || 0);
+            const percent = totalPaiements > 0 ? (amount / totalPaiements) * 100 : 0;
+            row.getCell(1).value = modeLabels[mode] || mode;
+            row.getCell(2).value = amount;
+            row.getCell(3).value = percent;
+            row.getCell(2).numFmt = '# ##0 "FCFA"';
+            row.getCell(3).numFmt = '0.0%';
+            row.getCell(1).border = { all: { style: 'thin', color: { argb: 'FFDDDDDD' } } };
+            row.getCell(2).border = { all: { style: 'thin', color: { argb: 'FFDDDDDD' } } };
+            row.getCell(3).border = { all: { style: 'thin', color: { argb: 'FFDDDDDD' } } };
+            row.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: idx % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } };
+            row.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: idx % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } };
+            row.getCell(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: idx % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } };
+        });
+
+        const filename = `Rapports_Activite_Financiers_${date_from}_au_${date_to}.xlsx`;
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error('Erreur export Excel rapports:', error);
+        req.flash('error', 'Erreur lors de la génération du fichier Excel');
         res.redirect('/rapports');
     }
 });

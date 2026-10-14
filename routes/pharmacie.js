@@ -165,6 +165,78 @@ router.get('/export/excel', async (req, res) => {
         workbook.created = new Date();
         workbook.modified = new Date();
 
+        const totalValeurStock = exportProduits.reduce((sum, p) => sum + (Number(p.stock_actuel || 0) * Number(p.prix_vente || 0)), 0);
+        const totalAlertes = exportProduits.filter(p => Number(p.stock_actuel || 0) <= Number(p.stock_minimum || 0)).length;
+        const totalRuptures = exportProduits.filter(p => Number(p.stock_actuel || 0) <= 0).length;
+        const totalPerimes = exportProduits.filter(p => p.date_peremption && p.date_peremption < today).length;
+
+        const syntheseSheet = workbook.addWorksheet('Synthèse', {
+            pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
+        });
+
+        syntheseSheet.mergeCells('A1:K1');
+        syntheseSheet.mergeCells('A2:K2');
+        syntheseSheet.mergeCells('A3:K3');
+
+        const syntheseTitleRow = syntheseSheet.getRow(1);
+        syntheseTitleRow.getCell(1).value = 'RAPPORTS D\'ACTIVITÉ & FINANCIERS';
+        syntheseTitleRow.getCell(1).font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
+        syntheseTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+        syntheseTitleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+        syntheseTitleRow.height = 28;
+
+        const syntheseSubtitleRow = syntheseSheet.getRow(2);
+        syntheseSubtitleRow.getCell(1).value = 'MINISTÈRE DE LA DÉFENSE — GROUPEMENT DE SAPEURS-POMPIERS MILITAIRES';
+        syntheseSubtitleRow.getCell(1).font = { bold: true, size: 10, color: { argb: 'FF0F172A' } };
+        syntheseSubtitleRow.getCell(1).alignment = { horizontal: 'center' };
+        syntheseSubtitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+        syntheseSubtitleRow.height = 18;
+
+        const syntheseInstitutionRow = syntheseSheet.getRow(3);
+        const generatedAt = new Date();
+        syntheseInstitutionRow.getCell(1).value = `CSA 3e COMPAGNIE GSPM BOUAKÉ — Pharmacie | Rapport généré le ${generatedAt.toLocaleDateString('fr-FR')} à ${generatedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+        syntheseInstitutionRow.getCell(1).font = { italic: true, size: 10, color: { argb: 'FF334155' } };
+        syntheseInstitutionRow.getCell(1).alignment = { horizontal: 'center' };
+        syntheseInstitutionRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+        syntheseInstitutionRow.height = 18;
+
+        const metrics = [
+            ['Produits actifs', exportProduits.length],
+            ['Valeur stock', `${totalValeurStock.toLocaleString('fr-FR')} FCFA`],
+            ['Alertes stock', totalAlertes],
+            ['Ruptures', totalRuptures],
+            ['Produits périmés', totalPerimes],
+            ['Moyenne prix vente', `${(exportProduits.reduce((sum, p) => sum + Number(p.prix_vente || 0), 0) / Math.max(exportProduits.length, 1)).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA`]
+        ];
+
+        syntheseSheet.getCell('A5').value = 'Indicateur';
+        syntheseSheet.getCell('B5').value = 'Valeur';
+        syntheseSheet.getCell('A5').font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        syntheseSheet.getCell('B5').font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        syntheseSheet.getCell('A5').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+        syntheseSheet.getCell('B5').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+        syntheseSheet.getCell('A5').border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+        syntheseSheet.getCell('B5').border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+        syntheseSheet.getColumn(1).width = 28;
+        syntheseSheet.getColumn(2).width = 28;
+
+        metrics.forEach((metric, index) => {
+            const row = index + 6;
+            const keyCell = syntheseSheet.getCell(row, 1);
+            const valueCell = syntheseSheet.getCell(row, 2);
+            keyCell.value = metric[0];
+            valueCell.value = metric[1];
+            keyCell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+            valueCell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+            keyCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: index % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } };
+            valueCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: index % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } };
+            valueCell.font = { bold: true, color: { argb: 'FF0F172A' } };
+        });
+
+        const noteCell = syntheseSheet.getCell('A' + (metrics.length + 7));
+        noteCell.value = 'Note : ce rapport constitue un état de synthèse pour le suivi du stock et des activités pharmaceutiques.';
+        noteCell.font = { italic: true, color: { argb: 'FF475569' } };
+
         const sheet = workbook.addWorksheet('Stock Pharmacie', {
             pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
         });
@@ -182,17 +254,11 @@ router.get('/export/excel', async (req, res) => {
         titleRow.height = 24;
 
         const subtitleRow = sheet.getRow(2);
-        const generatedAt = new Date();
         subtitleRow.getCell(1).value = `CSA 3e COMPAGNIE GSPM BOUAKÉ — STOCK PHARMACIE | Rapport généré le ${generatedAt.toLocaleDateString('fr-FR')} à ${generatedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
         subtitleRow.getCell(1).font = { italic: true, size: 9, color: { argb: 'FF374151' } };
         subtitleRow.getCell(1).alignment = { horizontal: 'center' };
         subtitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
         subtitleRow.height = 18;
-
-        const totalValeurStock = exportProduits.reduce((sum, p) => sum + (Number(p.stock_actuel || 0) * Number(p.prix_vente || 0)), 0);
-        const totalAlertes = exportProduits.filter(p => Number(p.stock_actuel || 0) <= Number(p.stock_minimum || 0)).length;
-        const totalRuptures = exportProduits.filter(p => Number(p.stock_actuel || 0) <= 0).length;
-        const totalPerimes = exportProduits.filter(p => p.date_peremption && p.date_peremption < today).length;
 
         const summaryLabels = ['Produits', 'Valeur stock', 'Alertes', 'Ruptures', 'Périmés'];
         const summaryValues = [exportProduits.length, totalValeurStock, totalAlertes, totalRuptures, totalPerimes];
@@ -302,6 +368,16 @@ router.get('/export/excel', async (req, res) => {
                 }
             });
         });
+
+        const totalRowNumber = exportProduits.length + 7;
+        const totalRow = sheet.getRow(totalRowNumber);
+        const totalSummary = `Total général : ${exportProduits.length} produit(s) | Valeur totale : ${totalValeurStock.toLocaleString('fr-FR')} FCFA`;
+        sheet.mergeCells(`A${totalRowNumber}:N${totalRowNumber}`);
+        totalRow.getCell(1).value = totalSummary;
+        totalRow.getCell(1).font = { bold: true, size: 10, color: { argb: 'FF0F172A' } };
+        totalRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9F99D' } };
+        totalRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+        totalRow.height = 20;
 
         sheet.getRow(1).height = 26;
         sheet.getRow(2).height = 18;
