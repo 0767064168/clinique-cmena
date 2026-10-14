@@ -232,7 +232,7 @@ app.use((req, res) => {
   // Rendu de la vue 404
   res.render('errors/404', {
     title: 'Page non trouvée - 404 | CMENA',
-    layout: 'layouts/main',
+    layout: false,
     url: req.originalUrl
   }, (err, html) => {
     if (err) {
@@ -277,7 +277,7 @@ app.use((err, req, res, next) => {
   // Rendu de la vue 500
   res.render('errors/500', {
     title: 'Erreur Serveur - 500 | CMENA',
-    layout: 'layouts/main',
+    layout: false,
     error: !isProd ? err : {}
   }, (renderErr, html) => {
     if (renderErr) {
@@ -306,14 +306,16 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Démarrage de l'écoute du serveur
-app.listen(PORT, () => {
-  console.log(`====================================================`);
-  console.log(`🚒 GROUPEMENT DE SAPEURS POMPIERS MILITAIRES (GSPM)`);
-  console.log(`🏥 CSA 3e COMPAGNIE - BOUAKÉ`);
-  console.log(`🚀 Serveur actif sur : http://localhost:${PORT}`);
-  console.log(`⚙️  Environnement     : ${process.env.NODE_ENV || 'development'}`);
-  console.log(`====================================================`);
-});
+// Démarrage de l'écoute du serveur (uniquement en local / standalone, pas en environnement Serverless Vercel)
+if (process.env.VERCEL !== '1' && !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`====================================================`);
+    console.log(`🚒 GROUPEMENT DE SAPEURS POMPIERS MILITAIRES (GSPM)`);
+    console.log(`🏥 CSA 3e COMPAGNIE - BOUAKÉ`);
+    console.log(`🚀 Serveur actif sur : http://localhost:${PORT}`);
+    console.log(`⚙️  Environnement     : ${process.env.NODE_ENV || 'development'}`);
+    console.log(`====================================================`);
+  });
+}
 
 module.exports = app;

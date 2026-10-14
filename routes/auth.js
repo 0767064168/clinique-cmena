@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../config/supabase');
+const bcrypt = require('bcryptjs');
+const { supabase, supabaseAdmin } = require('../config/supabase');
 
 router.get('/login', (req, res) => {
     if (req.session && req.session.user) {
@@ -56,7 +57,11 @@ router.post('/login', async (req, res) => {
             delete req.session.returnTo;
 
             req.flash('success', `Bienvenue ${req.session.user.prenom} ${req.session.user.nom}`);
-            return res.redirect(returnTo);
+
+            return req.session.save((err) => {
+                if (err) console.error('Erreur sauvegarde session:', err);
+                res.redirect(returnTo);
+            });
         } else {
             req.flash('error', 'Identifiants invalides');
             return res.redirect('/auth/login');
@@ -67,9 +72,6 @@ router.post('/login', async (req, res) => {
         res.redirect('/auth/login');
     }
 });
-
-const bcrypt = require('bcryptjs');
-const { supabaseAdmin } = require('../config/supabase');
 
 router.get('/logout', async (req, res) => {
     try {

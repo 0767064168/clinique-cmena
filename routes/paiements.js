@@ -28,6 +28,8 @@ router.get('/', async (req, res) => {
         req.flash('error', 'Erreur lors de la récupération des paiements');
         res.redirect('/dashboard');
     }
+});
+
 // GET /paiements/:id/print — Reçu de caisse imprimable
 router.get('/:id/print', async (req, res) => {
     try {
