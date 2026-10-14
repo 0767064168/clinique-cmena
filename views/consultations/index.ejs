@@ -76,8 +76,11 @@
                                     <%= consultation.statut === 'en_cours' ? 'En cours' : (consultation.statut === 'termine' ? 'Terminé' : 'Annulé') %>
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
-                                <a href="/consultations/<%= consultation.id %>" class="text-blue-600 hover:text-blue-900">Voir</a>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex items-center gap-3">
+                                <a href="/consultations/<%= consultation.id %>" class="text-blue-600 hover:text-blue-900" title="Consulter le dossier">Voir</a>
+                                <a href="/consultations/<%= consultation.id %>/ordonnance" target="_blank" class="text-teal-600 hover:text-teal-800 font-semibold inline-flex items-center gap-1" title="Imprimer l'ordonnance">
+                                    <i class="fas fa-file-prescription text-xs"></i> Ordonnance
+                                </a>
                                 <a href="/consultations/<%= consultation.id %>/edit" class="text-indigo-600 hover:text-indigo-900">Modifier</a>
                             </td>
                         </tr>

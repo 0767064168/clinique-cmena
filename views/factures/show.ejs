@@ -182,15 +182,22 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mode</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Référence</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant</th>
+                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Reçu</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 <% paiements.forEach(p => { %>
                     <tr>
                         <td class="px-6 py-4 text-sm text-gray-600"><%= new Date(p.date_paiement).toLocaleDateString('fr-FR') %></td>
-                        <td class="px-6 py-4 text-sm text-gray-600"><%= p.mode_paiement %></td>
-                        <td class="px-6 py-4 text-sm text-gray-500"><%= p.reference || '—' %></td>
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900"><%= (p.montant || 0).toLocaleString('fr-FR') %> FCFA</td>
+                        <td class="px-6 py-4 text-sm text-gray-600 capitalize"><%= p.mode_paiement %></td>
+                        <td class="px-6 py-4 text-sm text-gray-500 font-mono"><%= p.reference || '—' %></td>
+                        <td class="px-6 py-4 text-sm font-bold text-emerald-700"><%= (p.montant || 0).toLocaleString('fr-FR') %> FCFA</td>
+                        <td class="px-6 py-4 text-sm text-center">
+                            <a href="/paiements/<%= p.id %>/print" target="_blank" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded text-xs font-semibold shadow-sm transition" title="Imprimer le reçu client">
+                                <i class="fas fa-print text-gray-600"></i>
+                                <span>Reçu</span>
+                            </a>
+                        </td>
                     </tr>
                 <% }); %>
             </tbody>

@@ -265,9 +265,18 @@ router.get('/:id', async (req, res) => {
             .eq('patient_id', id)
             .order('date_facture', { ascending: false });
 
+        // Calcul du bilan financier du patient (hors factures annulées)
+        const facturesActives = (factures || []).filter(f => f.statut !== 'annulee');
+        const bilanPatient = {
+            totalFacture: facturesActives.reduce((acc, f) => acc + (parseFloat(f.total_net) || 0), 0),
+            totalPaye: facturesActives.reduce((acc, f) => acc + (parseFloat(f.montant_paye) || 0), 0),
+            resteTotal: facturesActives.reduce((acc, f) => acc + (parseFloat(f.reste_a_payer) || 0), 0)
+        };
+
         res.render('patients/show', {
             title: 'Détails du Patient',
             patient,
+            bilanPatient,
             consultations: consultations || [],
             factures: factures || []
         });

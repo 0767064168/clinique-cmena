@@ -158,6 +158,45 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// GET /consultations/:id/ordonnance — Impression de l'ordonnance médicale
+router.get('/:id/ordonnance', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { data: consultation, error } = await supabase
+            .from('consultations')
+            .select('*, patients(*), praticiens(*)')
+            .eq('id', id)
+            .single();
+
+        if (error || !consultation) {
+            req.flash('error', 'Consultation introuvable');
+            return res.redirect('/consultations');
+        }
+
+        const patient = consultation.patients || null;
+        if (consultation.praticiens) {
+            consultation.praticien_nom = `${consultation.praticiens.nom} ${consultation.praticiens.prenom}`;
+            consultation.praticien_specialite = consultation.praticiens.specialite;
+            consultation.praticien_matricule = consultation.praticiens.matricule;
+        }
+
+        const unpacked = unpackVitals(consultation.observations);
+        consultation.vitals = unpacked;
+        consultation.observations_clean = unpacked.cleanObservations;
+
+        res.render('consultations/ordonnance', {
+            layout: false,
+            title: `Ordonnance - ${patient ? patient.nom : 'Patient'}`,
+            consultation,
+            patient
+        });
+    } catch (err) {
+        console.error('Erreur ordonnance:', err);
+        req.flash('error', 'Erreur lors de la génération de l\'ordonnance');
+        res.redirect(`/consultations/${req.params.id}`);
+    }
+});
+
 router.get('/:id/edit', async (req, res) => {
     try {
         const { data: consultation, error } = await supabase

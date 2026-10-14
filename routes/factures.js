@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
 const { numberToFrenchWords } = require('../utils/helpers');
+const { logAudit } = require('../utils/audit');
 const PDFDocument = require('pdfkit');
 const path = require('path');
 
@@ -530,6 +531,14 @@ router.put('/:id/valider', async (req, res) => {
 
         if (error) throw error;
 
+        await logAudit({
+            req,
+            action: 'FACTURE_VALIDEE',
+            entite: 'facture',
+            entite_id: req.params.id,
+            description: `Validation de la facture ID ${req.params.id}`
+        });
+
         req.flash('success', 'Facture validée');
         res.redirect(`/factures/${req.params.id}`);
     } catch (error) {
@@ -549,7 +558,7 @@ router.put('/:id/brouillon', async (req, res) => {
 
         const { data: facture, error: errGet } = await supabase
             .from('factures')
-            .select('montant_paye, statut')
+            .select('numero_facture, montant_paye, statut')
             .eq('id', req.params.id)
             .single();
 
@@ -569,6 +578,14 @@ router.put('/:id/brouillon', async (req, res) => {
             .eq('id', req.params.id);
 
         if (error) throw error;
+
+        await logAudit({
+            req,
+            action: 'FACTURE_RETOUR_BROUILLON',
+            entite: 'facture',
+            entite_id: req.params.id,
+            description: `Facture N° ${facture.numero_facture || req.params.id} repassée en brouillon par l'administrateur`
+        });
 
         req.flash('success', 'Facture repassée en brouillon avec succès');
         res.redirect(`/factures/${req.params.id}`);
@@ -637,6 +654,15 @@ router.put('/:id/marquer-payee', async (req, res) => {
 
         if (errUpdate) throw errUpdate;
 
+        await logAudit({
+            req,
+            action: 'FACTURE_SOLDEE_ADMIN',
+            entite: 'facture',
+            entite_id: req.params.id,
+            description: `Facture N° ${facture.numero_facture || req.params.id} marquée comme PAYÉE par l'administrateur (${reste} FCFA soldés)`,
+            details: { mode_paiement, reference, solde_regle: reste }
+        });
+
         req.flash('success', 'Facture marquée comme PAYÉE avec succès');
         res.redirect(`/factures/${req.params.id}`);
     } catch (error) {
@@ -656,6 +682,12 @@ router.post('/:id/annuler', async (req, res) => {
 
         const { motif } = req.body;
 
+        const { data: facture } = await supabase
+            .from('factures')
+            .select('numero_facture')
+            .eq('id', req.params.id)
+            .single();
+
         const { error } = await supabase
             .from('factures')
             .update({ 
@@ -665,6 +697,15 @@ router.post('/:id/annuler', async (req, res) => {
             .eq('id', req.params.id);
 
         if (error) throw error;
+
+        await logAudit({
+            req,
+            action: 'FACTURE_ANNULATION',
+            entite: 'facture',
+            entite_id: req.params.id,
+            description: `Annulation de la facture N° ${facture ? facture.numero_facture : req.params.id}. Motif: ${motif || 'Non précisé'}`,
+            details: { motif }
+        });
 
         req.flash('success', 'Facture annulée avec succès');
         res.redirect(`/factures/${req.params.id}`);

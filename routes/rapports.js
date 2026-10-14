@@ -139,4 +139,98 @@ router.get('/', async (req, res) => {
     }
 });
 
+// GET /rapports/export/csv — Export Excel / CSV du rapport financier et des encaissements
+router.get('/export/csv', async (req, res) => {
+    try {
+        const { date_from, date_to } = req.query;
+        if (!date_from || !date_to) {
+            req.flash('error', 'Veuillez spécifier une période pour l\'export');
+            return res.redirect('/rapports');
+        }
+
+        // Récupérer les factures de la période
+        const { data: factures, error: errFactures } = await supabase
+            .from('factures')
+            .select('*, patients(nom, prenom, numero_dossier)')
+            .gte('date_facture', date_from)
+            .lte('date_facture', date_to)
+            .neq('statut', 'annulee')
+            .order('date_facture', { ascending: false });
+
+        if (errFactures) throw errFactures;
+
+        // Récupérer les paiements de la période (exclure factures annulées)
+        const { data: paiements, error: errPaiements } = await supabase
+            .from('paiements')
+            .select('*, factures!inner(numero_facture, statut, patients(nom, prenom))')
+            .neq('factures.statut', 'annulee')
+            .gte('date_paiement', `${date_from}T00:00:00.000Z`)
+            .lte('date_paiement', `${date_to}T23:59:59.999Z`)
+            .order('date_paiement', { ascending: false });
+
+        if (errPaiements) throw errPaiements;
+
+        const filename = `Rapport_Financier_GSPM_${date_from}_au_${date_to}.csv`;
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+        // BOM UTF-8 pour ouverture parfaite dans Microsoft Excel
+        let csvContent = '\uFEFF';
+
+        csvContent += `RAPPORT FINANCIER & D'ACTIVITE - CSA 3e CIE GSPM BOUAKE\n`;
+        csvContent += `Periode du : ${date_from} au ${date_to}\n`;
+        csvContent += `Genere le : ${new Date().toLocaleString('fr-FR')}\n\n`;
+
+        // Section 1 : Détail des Factures
+        csvContent += `--- SECTION 1 : FACTURES EMISES SUR LA PERIODE ---\n`;
+        csvContent += `N° Facture;Date;N° Dossier;Patient;Statut;Total Brut (FCFA);Remise (FCFA);Total Net (FCFA);Montant Paye (FCFA);Reste a Payer (FCFA)\n`;
+
+        let sumFactureNet = 0;
+        let sumReste = 0;
+
+        (factures || []).forEach(f => {
+            const pat = f.patients ? `${f.patients.nom} ${f.patients.prenom}` : '-';
+            const numDos = f.patients ? f.patients.numero_dossier : '-';
+            const d = f.date_facture ? new Date(f.date_facture).toLocaleDateString('fr-FR') : '-';
+            const brut = Number(f.total || 0);
+            const remise = Number(f.remise || 0);
+            const net = Number(f.total_net || 0);
+            const paye = Number(f.montant_paye || 0);
+            const reste = Number(f.reste_a_payer || 0);
+
+            if (f.statut !== 'brouillon') {
+                sumFactureNet += net;
+                sumReste += reste;
+            }
+
+            csvContent += `"${f.numero_facture || '-'}";"${d}";"${numDos}";"${pat}";"${f.statut}";"${brut}";"${remise}";"${net}";"${paye}";"${reste}"\n`;
+        });
+
+        csvContent += `;;;;TOTAL FACTURE NET VALIDE;;;"${sumFactureNet}";;"${sumReste}"\n\n`;
+
+        // Section 2 : Détail des Encaissements Réels
+        csvContent += `--- SECTION 2 : ENCAISSEMENTS REELS SUR LA PERIODE ---\n`;
+        csvContent += `Date Paiement;N° Facture;Patient;Mode de Reglement;Reference;Montant Encaisse (FCFA)\n`;
+
+        let sumEncaisse = 0;
+        (paiements || []).forEach(p => {
+            const numFac = p.factures ? p.factures.numero_facture : '-';
+            const pat = (p.factures && p.factures.patients) ? `${p.factures.patients.nom} ${p.factures.patients.prenom}` : '-';
+            const d = p.date_paiement ? new Date(p.date_paiement).toLocaleString('fr-FR') : '-';
+            const montant = Number(p.montant || 0);
+            sumEncaisse += montant;
+
+            csvContent += `"${d}";"${numFac}";"${pat}";"${p.mode_paiement || 'especes'}";"${p.reference || '-'}";"${montant}"\n`;
+        });
+
+        csvContent += `;;;;TOTAL ENCAISSE REEL;"${sumEncaisse}"\n`;
+
+        res.send(csvContent);
+    } catch (error) {
+        console.error('Erreur export CSV:', error);
+        req.flash('error', 'Erreur lors de la génération du fichier Excel/CSV');
+        res.redirect('/rapports');
+    }
+});
+
 module.exports = router;

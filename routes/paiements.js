@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
+const { logAudit } = require('../utils/audit');
 
 router.get('/', async (req, res) => {
     try {
@@ -26,6 +27,36 @@ router.get('/', async (req, res) => {
         console.error(error);
         req.flash('error', 'Erreur lors de la récupération des paiements');
         res.redirect('/dashboard');
+    }
+// GET /paiements/:id/print — Reçu de caisse imprimable
+router.get('/:id/print', async (req, res) => {
+    try {
+        const { data: paiement, error: errPaiement } = await supabase
+            .from('paiements')
+            .select('*, factures(*, patients(*))')
+            .eq('id', req.params.id)
+            .single();
+
+        if (errPaiement || !paiement) {
+            req.flash('error', 'Reçu de paiement introuvable');
+            return res.redirect('/paiements');
+        }
+
+        const facture = paiement.factures || null;
+        const patient = facture ? facture.patients : null;
+
+        res.render('paiements/print', {
+            layout: false,
+            title: `Reçu de paiement RC-${paiement.id.slice(0, 8).toUpperCase()}`,
+            paiement,
+            facture,
+            patient,
+            user: (req.session && req.session.user) ? req.session.user : null
+        });
+    } catch (error) {
+        console.error('Erreur impression reçu:', error);
+        req.flash('error', 'Erreur lors de la génération du reçu');
+        res.redirect('/paiements');
     }
 });
 
@@ -65,6 +96,15 @@ router.post('/', async (req, res) => {
             .from('factures')
             .update({ montant_paye: nouveau_montant_paye, reste_a_payer: nouveau_reste_a_payer, statut })
             .eq('id', facture_id);
+
+        await logAudit({
+            req,
+            action: 'PAIEMENT_ENCAISSE',
+            entite: 'paiement',
+            entite_id: facture_id,
+            description: `Encaissement de ${montantFloat.toLocaleString('fr-FR')} FCFA par ${mode_paiement}`,
+            details: { facture_id, montant: montantFloat, mode_paiement, reference }
+        });
 
         req.flash('success', 'Paiement enregistré avec succès');
         res.redirect(`/factures/${facture_id}`);

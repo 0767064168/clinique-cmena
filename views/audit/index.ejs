@@ -1,0 +1,117 @@
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+    <!-- En-tête -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Journal d'Audit & Traçabilité</h1>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800">
+                    <i class="fas fa-shield-alt mr-1"></i> Admin
+                </span>
+            </div>
+            <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Historique et traçabilité certifiée des opérations sensibles du CSA Bouaké</p>
+        </div>
+        <a href="/dashboard" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm transition">
+            Tableau de bord
+        </a>
+    </div>
+
+    <% if (typeof hasTableError !== 'undefined' && hasTableError) { %>
+        <div class="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6 rounded-r-lg">
+            <div class="flex items-center">
+                <i class="fas fa-info-circle text-amber-500 text-xl mr-3"></i>
+                <div>
+                    <h3 class="text-sm font-bold text-amber-800">Table journal_activites en attente</h3>
+                    <p class="text-xs text-amber-700 mt-0.5">
+                        La table <code>journal_activites</code> s'activera automatiquement ou peut être créée dans votre console SQL Supabase.
+                    </p>
+                </div>
+            </div>
+        </div>
+    <% } %>
+
+    <!-- Filtres -->
+    <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm mb-6 border border-gray-200">
+        <form action="/audit" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Recherche</label>
+                <input type="text" name="search" placeholder="Utilisateur, description..." value="<%= filters.search || '' %>" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Date Début</label>
+                <input type="date" name="date_from" value="<%= filters.date_from || '' %>" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Date Fin</label>
+                <input type="date" name="date_to" value="<%= filters.date_to || '' %>" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex items-end gap-2">
+                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm shadow">
+                    <i class="fas fa-filter mr-1"></i> Filtrer
+                </button>
+                <a href="/audit" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-sm font-medium">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table du Journal -->
+    <div class="bg-white shadow rounded-xl border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date & Heure</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Opérateur</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Entité</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Description</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <% if (logs && logs.length > 0) { %>
+                        <% logs.forEach(log => { %>
+                            <% 
+                                let actionBadge = 'bg-gray-100 text-gray-800';
+                                if (log.action.includes('ANNULATION')) actionBadge = 'bg-red-100 text-red-800 border border-red-200';
+                                else if (log.action.includes('VALIDEE') || log.action.includes('SOLDEE')) actionBadge = 'bg-green-100 text-green-800 border border-green-200';
+                                else if (log.action.includes('BROUILLON')) actionBadge = 'bg-amber-100 text-amber-800 border border-amber-200';
+                                else if (log.action.includes('PAIEMENT')) actionBadge = 'bg-blue-100 text-blue-800 border border-blue-200';
+                            %>
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-mono">
+                                    <%= new Date(log.created_at).toLocaleString('fr-FR') %>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                    <div class="flex items-center gap-1.5">
+                                        <i class="fas fa-user-circle text-gray-400"></i>
+                                        <span><%= log.utilisateur_nom || 'Système' %></span>
+                                    </div>
+                                    <span class="text-[10px] text-gray-400 block font-normal capitalize">Rôle: <%= log.utilisateur_role || '-' %></span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-xs">
+                                    <span class="px-2 py-0.5 rounded-full font-bold <%= actionBadge %>">
+                                        <%= log.action %>
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-xs uppercase font-bold text-gray-600">
+                                    <%= log.entite %>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-gray-800">
+                                    <%= log.description %>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="5" class="px-6 py-10 text-center text-gray-400">
+                                <i class="fas fa-clipboard-list text-3xl mb-2 text-gray-300 block"></i>
+                                Aucun événement d'audit enregistré sur cette sélection
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

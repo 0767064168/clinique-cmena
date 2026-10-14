@@ -2,6 +2,10 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Détail Consultation</h1>
         <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+            <a href="/consultations/<%= consultation.id %>/ordonnance" target="_blank" class="flex-1 sm:flex-none text-center bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5" title="Imprimer l'ordonnance médicale">
+                <i class="fas fa-file-prescription"></i>
+                <span>Ordonnance</span>
+            </a>
             <a href="/consultations/<%= consultation.id %>/edit" class="flex-1 sm:flex-none text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Modifier</a>
             <a href="/factures/create?consultation_id=<%= consultation.id %>" class="flex-1 sm:flex-none text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Facturer</a>
             <a href="/consultations" class="flex-1 sm:flex-none text-center bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Retour</a>

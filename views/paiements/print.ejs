@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reçu de Caisse N° <%= paiement.id.slice(0, 8).toUpperCase() %> — GSPM</title>
+    <link href="/css/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @media print {
+            body { 
+                padding: 0;
+                margin: 0;
+                background: white;
+                font-size: 11px;
+            }
+            .no-print { 
+                display: none !important; 
+            }
+            .receipt-box { 
+                border: 1px dashed #666 !important; 
+                box-shadow: none !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
+            }
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+    </style>
+</head>
+<body class="py-6 px-2 sm:px-4">
+    <!-- Barre d'actions non imprimable -->
+    <div class="max-w-md mx-auto mb-4 flex justify-between items-center no-print bg-white p-3 rounded-lg shadow-sm border border-gray-200">
+        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-xs inline-flex items-center gap-2 shadow">
+            <i class="fas fa-print"></i> Imprimer le Reçu
+        </button>
+        <button onclick="window.close()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3 rounded text-xs">
+            Fermer
+        </button>
+    </div>
+
+    <!-- Ticket Reçu de Caisse -->
+    <div class="receipt-box max-w-md mx-auto bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+        <!-- En-tête officiel GSPM -->
+        <div class="text-center border-b pb-4 mb-4">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <img src="/images/logo_gspm.jpg" alt="Logo GSPM" class="h-12 w-12 object-contain" onerror="this.style.display='none'">
+                <div>
+                    <h2 class="text-xs font-black tracking-wider uppercase text-gray-800">RÉPUBLIQUE DE CÔTE D'IVOIRE</h2>
+                    <p class="text-[10px] uppercase font-bold text-gray-600">MINISTÈRE DE LA DÉFENSE</p>
+                    <p class="text-[10px] uppercase font-black text-red-700">GROUPEMENT DE SAPEURS-POMPIERS MILITAIRES</p>
+                    <p class="text-[9px] font-bold text-gray-700">CSA 3<sup>e</sup> COMPAGNIE — BOUAKÉ</p>
+                </div>
+                <img src="/images/logo_defense.jpg" alt="Logo Défense" class="h-12 w-12 object-contain" onerror="this.style.display='none'">
+            </div>
+            
+            <div class="mt-2 py-1 bg-gray-50 border-y border-dashed border-gray-300">
+                <h1 class="text-sm font-black tracking-widest uppercase text-gray-900">REÇU D'ENCAISSEMENT</h1>
+                <p class="text-[10px] text-gray-500 font-mono">N° RC-<%= (paiement.id || '').slice(0, 8).toUpperCase() %></p>
+            </div>
+        </div>
+
+        <!-- Détails Patient & Facture -->
+        <div class="text-xs space-y-2 mb-4 border-b pb-4">
+            <div class="flex justify-between">
+                <span class="text-gray-500">Date & Heure :</span>
+                <span class="font-bold text-gray-800">
+                    <%= new Date(paiement.created_at || paiement.date_paiement).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %>
+                </span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Patient :</span>
+                <strong class="text-gray-900 font-bold uppercase"><%= patient ? (patient.nom + ' ' + patient.prenom) : '-' %></strong>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">N° Dossier Patient :</span>
+                <span class="font-mono text-gray-800"><%= patient ? patient.numero_dossier : '-' %></span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Facture de Référence :</span>
+                <span class="font-bold text-blue-700">N° <%= facture ? facture.numero_facture : '-' %></span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Mode de Règlement :</span>
+                <span class="font-bold uppercase text-gray-800">
+                    <%= paiement.mode_paiement || 'Espèces' %>
+                </span>
+            </div>
+            <% if (paiement.reference) { %>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Réf. Transaction :</span>
+                    <span class="font-mono text-gray-800"><%= paiement.reference %></span>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Cadre Montant Encaissé -->
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-center mb-4">
+            <p class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">MONTANT VERSÉ / ENCAISSÉ</p>
+            <p class="text-2xl font-black text-emerald-700 mt-0.5">
+                <%= Number(paiement.montant || 0).toLocaleString('fr-FR') %> <span class="text-sm font-semibold">FCFA</span>
+            </p>
+            <p class="text-[10px] text-emerald-600 mt-1 italic">
+                (Soit environ <%= (Number(paiement.montant || 0) / 655.957).toFixed(2).replace('.', ',') %> €)
+            </p>
+        </div>
+
+        <!-- Situation du Compte Facture -->
+        <div class="text-xs space-y-1.5 bg-gray-50 p-3 rounded-lg border border-gray-200 mb-6">
+            <div class="flex justify-between">
+                <span class="text-gray-600">Total Net Facture :</span>
+                <span class="font-semibold text-gray-800"><%= (facture ? Number(facture.total_net || 0) : 0).toLocaleString('fr-FR') %> FCFA</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">Total Déjà Encaissé :</span>
+                <span class="font-semibold text-emerald-700"><%= (facture ? Number(facture.montant_paye || 0) : 0).toLocaleString('fr-FR') %> FCFA</span>
+            </div>
+            <div class="flex justify-between font-bold border-t border-gray-300 pt-1 text-gray-900">
+                <span>Reste à Payer :</span>
+                <span class="<%= (facture && Number(facture.reste_a_payer || 0) > 0) ? 'text-red-700' : 'text-emerald-700' %>">
+                    <%= (facture ? Number(facture.reste_a_payer || 0) : 0).toLocaleString('fr-FR') %> FCFA
+                </span>
+            </div>
+        </div>
+
+        <!-- Signatures & Cachet -->
+        <div class="grid grid-cols-2 gap-4 text-center text-[10px] font-bold pt-2 border-t border-dashed border-gray-300">
+            <div>
+                <p class="text-gray-500 uppercase">Le Déposant</p>
+                <div class="h-10"></div>
+                <p class="text-gray-400 font-normal italic">(Signature)</p>
+            </div>
+            <div>
+                <p class="text-gray-500 uppercase">Le Caissier / CSA</p>
+                <div class="h-10"></div>
+                <p class="text-gray-800 font-semibold"><%= user ? (user.nom || user.email) : 'Caisse CSA' %></p>
+            </div>
+        </div>
+
+        <!-- Devise GSPM -->
+        <div class="text-center text-[9px] text-gray-500 uppercase tracking-widest mt-6 border-t pt-2">
+            SAUVER OU PÉRIR — CSA 3e CIE GSPM BOUAKÉ
+        </div>
+    </div>
+</body>
+</html>
