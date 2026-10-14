@@ -169,39 +169,73 @@ router.get('/export/excel', async (req, res) => {
             pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
         });
 
-        sheet.mergeCells('A1:N1');
+        sheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 6 }];
+        sheet.autoFilter = { from: 'A6', to: 'O6' };
+        sheet.mergeCells('A1:O1');
+        sheet.mergeCells('A2:O2');
+
         const titleRow = sheet.getRow(1);
-        titleRow.getCell(1).value = 'CSA 3e COMPAGNIE GSPM BOUAKÉ — STOCK PHARMACIE';
+        titleRow.getCell(1).value = 'RAPPORTS D\'ACTIVITÉ & FINANCIERS';
         titleRow.getCell(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
         titleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
         titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
         titleRow.height = 24;
 
-        sheet.mergeCells('A2:N2');
         const subtitleRow = sheet.getRow(2);
-        subtitleRow.getCell(1).value = `Exporté le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-        subtitleRow.getCell(1).font = { italic: true, size: 9, color: { argb: 'FF555555' } };
+        const generatedAt = new Date();
+        subtitleRow.getCell(1).value = `CSA 3e COMPAGNIE GSPM BOUAKÉ — STOCK PHARMACIE | Rapport généré le ${generatedAt.toLocaleDateString('fr-FR')} à ${generatedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+        subtitleRow.getCell(1).font = { italic: true, size: 9, color: { argb: 'FF374151' } };
         subtitleRow.getCell(1).alignment = { horizontal: 'center' };
-        subtitleRow.height = 16;
+        subtitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+        subtitleRow.height = 18;
+
+        const totalValeurStock = exportProduits.reduce((sum, p) => sum + (Number(p.stock_actuel || 0) * Number(p.prix_vente || 0)), 0);
+        const totalAlertes = exportProduits.filter(p => Number(p.stock_actuel || 0) <= Number(p.stock_minimum || 0)).length;
+        const totalRuptures = exportProduits.filter(p => Number(p.stock_actuel || 0) <= 0).length;
+        const totalPerimes = exportProduits.filter(p => p.date_peremption && p.date_peremption < today).length;
+
+        const summaryLabels = ['Produits', 'Valeur stock', 'Alertes', 'Ruptures', 'Périmés'];
+        const summaryValues = [exportProduits.length, totalValeurStock, totalAlertes, totalRuptures, totalPerimes];
+
+        summaryLabels.forEach((label, index) => {
+            const cellLabel = sheet.getCell(4, index * 3 + 1);
+            const cellValue = sheet.getCell(4, index * 3 + 2);
+            cellLabel.value = label;
+            cellLabel.font = { bold: true, size: 10, color: { argb: 'FF334155' } };
+            cellLabel.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+            cellLabel.alignment = { horizontal: 'center' };
+            cellLabel.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+
+            cellValue.value = summaryValues[index];
+            cellValue.font = { bold: true, size: 10, color: { argb: index === 1 ? 'FF0F766E' : 'FF1E293B' } };
+            cellValue.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+            cellValue.alignment = { horizontal: 'center' };
+            cellValue.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+
+            if (index === 1) {
+                cellValue.numFmt = '# ##0 "FCFA"';
+            }
+        });
 
         const headers = [
             { label: 'Code', key: 'code', width: 16 },
-            { label: 'Désignation', key: 'designation', width: 26 },
+            { label: 'Désignation', key: 'designation', width: 30 },
             { label: 'Catégorie', key: 'categorie', width: 16 },
             { label: 'Forme', key: 'forme', width: 14 },
-            { label: 'Dosage', key: 'dosage', width: 14 },
+            { label: 'Dosage', key: 'dosage', width: 16 },
             { label: 'Unité', key: 'unite', width: 12 },
             { label: 'Stock actuel', key: 'stock_actuel', width: 12 },
             { label: 'Stock min.', key: 'stock_minimum', width: 12 },
             { label: 'Prix achat', key: 'prix_achat', width: 12 },
             { label: 'Prix vente', key: 'prix_vente', width: 12 },
-            { label: 'Valeur stock', key: 'valeur_stock', width: 14 },
+            { label: 'Valeur stock', key: 'valeur_stock', width: 15 },
             { label: 'Emplacement', key: 'emplacement', width: 18 },
             { label: 'Fournisseur', key: 'fournisseur', width: 18 },
-            { label: 'Date péremption', key: 'date_peremption', width: 16 }
+            { label: 'Date péremption', key: 'date_peremption', width: 16 },
+            { label: 'Statut', key: 'statut', width: 14 }
         ];
 
-        const headerRow = sheet.getRow(4);
+        const headerRow = sheet.getRow(6);
         headers.forEach((h, index) => {
             const cell = headerRow.getCell(index + 1);
             cell.value = h.label;
@@ -219,8 +253,14 @@ router.get('/export/excel', async (req, res) => {
         headerRow.height = 22;
 
         exportProduits.forEach((p, rowIdx) => {
-            const row = sheet.getRow(rowIdx + 5);
+            const row = sheet.getRow(rowIdx + 7);
             const isEven = rowIdx % 2 === 0;
+            const stockActuel = Number(p.stock_actuel || 0);
+            const stockMinimum = Number(p.stock_minimum || 0);
+            const prixVente = Number(p.prix_vente || 0);
+            const prixAchat = Number(p.prix_achat || 0);
+            const valeurStock = stockActuel * prixVente;
+            const statut = stockActuel <= 0 ? 'Rupture' : stockActuel <= stockMinimum ? 'Alerte' : (p.date_peremption && p.date_peremption < today ? 'Périmé' : 'OK');
 
             const values = [
                 p.code || '',
@@ -229,14 +269,15 @@ router.get('/export/excel', async (req, res) => {
                 p.forme || '',
                 p.dosage || '',
                 p.unite || '',
-                Number(p.stock_actuel || 0),
-                Number(p.stock_minimum || 0),
-                Number(p.prix_achat || 0),
-                Number(p.prix_vente || 0),
-                Number((Number(p.stock_actuel || 0) * Number(p.prix_vente || 0))),
+                stockActuel,
+                stockMinimum,
+                prixAchat,
+                prixVente,
+                valeurStock,
                 p.emplacement || '',
                 p.fournisseur || '',
-                p.date_peremption ? new Date(p.date_peremption).toLocaleDateString('fr-FR') : ''
+                p.date_peremption ? new Date(p.date_peremption).toLocaleDateString('fr-FR') : '',
+                statut
             ];
 
             values.forEach((value, colIdx) => {
@@ -249,8 +290,21 @@ router.get('/export/excel', async (req, res) => {
                     left: { style: 'thin', color: { argb: 'FFDDDDDD' } },
                     right: { style: 'thin', color: { argb: 'FFDDDDDD' } }
                 };
+                cell.alignment = { vertical: 'middle', wrapText: true };
+
+                if (typeof value === 'number' && (colIdx === 6 || colIdx === 7 || colIdx === 8 || colIdx === 9 || colIdx === 10)) {
+                    cell.numFmt = colIdx === 10 ? '# ##0 "FCFA"' : '# ##0';
+                    cell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
+                }
+
+                if (colIdx === 14 && (statut === 'Alerte' || statut === 'Rupture' || statut === 'Périmé')) {
+                    cell.font = { bold: true, color: { argb: statut === 'OK' ? 'FF15803D' : 'FFB91C1C' } };
+                }
             });
         });
+
+        sheet.getRow(1).height = 26;
+        sheet.getRow(2).height = 18;
 
         const filename = `stock_pharmacie_${new Date().toISOString().slice(0, 10)}.xlsx`;
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

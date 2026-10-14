@@ -187,7 +187,7 @@ CREATE TABLE parametres_clinique (
     devise VARCHAR(20) DEFAULT 'FCFA',
     taux_euro DECIMAL(10,5) DEFAULT 655.957
 );
-
+ 
 -- 12. produits_pharmacie
 CREATE TABLE produits_pharmacie (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
