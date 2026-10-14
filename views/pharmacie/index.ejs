@@ -17,7 +17,7 @@
     </div>
 
     <!-- Cartes statistiques -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+    <div class="grid grid-cols-2 xl:grid-cols-5 gap-3 mb-6">
         <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <div class="flex items-center gap-3">
                 <div class="flex-shrink-0 h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -53,6 +53,17 @@
         </div>
         <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <div class="flex items-center gap-3">
+                <div class="flex-shrink-0 h-10 w-10 rounded-lg <%= stats.produitsEnRupture > 0 ? 'bg-red-100' : 'bg-gray-100' %> flex items-center justify-center">
+                    <i class="fas fa-times-circle <%= stats.produitsEnRupture > 0 ? 'text-red-600' : 'text-gray-400' %>"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] uppercase font-semibold text-gray-500 tracking-wider">Ruptures</p>
+                    <p class="text-xl font-black <%= stats.produitsEnRupture > 0 ? 'text-red-600' : 'text-gray-900' %>"><%= stats.produitsEnRupture %></p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3">
                 <div class="flex-shrink-0 h-10 w-10 rounded-lg <%= stats.produitsPerimes > 0 ? 'bg-red-100' : 'bg-gray-100' %> flex items-center justify-center">
                     <i class="fas fa-calendar-times <%= stats.produitsPerimes > 0 ? 'text-red-600' : 'text-gray-400' %>"></i>
                 </div>
@@ -66,7 +77,7 @@
 
     <!-- Filtres -->
     <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm mb-6 border border-gray-100">
-        <form action="/pharmacie" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <form action="/pharmacie" method="GET" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
             <div class="relative">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-search text-xs"></i></span>
                 <input type="text" name="search" placeholder="Rechercher par désignation ou code..." value="<%= filters.search || '' %>"
@@ -87,6 +98,12 @@
                     <option value="oui" <%= filters.stock_alert === 'oui' ? 'selected' : '' %>>⚠️ Alertes stock uniquement</option>
                 </select>
             </div>
+            <div>
+                <select name="perime" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="">Tous les produits</option>
+                    <option value="oui" <%= filters.perime === 'oui' ? 'selected' : '' %>>📅 Périmés uniquement</option>
+                </select>
+            </div>
             <div class="flex items-end gap-2">
                 <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm shadow transition">
                     <i class="fas fa-filter mr-1"></i> Filtrer
@@ -94,10 +111,27 @@
                 <a href="/pharmacie" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-sm font-medium transition">Reset</a>
             </div>
         </form>
+        <div class="mt-3 flex justify-end gap-2">
+            <a href="/pharmacie/export/csv?<%= buildQueryString(filters) %>" class="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-700 text-white font-semibold py-2 px-3 rounded-lg text-sm shadow-sm transition">
+                <i class="fas fa-file-csv"></i> CSV
+            </a>
+            <a href="/pharmacie/export/excel?<%= buildQueryString(filters) %>" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-3 rounded-lg text-sm shadow-sm transition">
+                <i class="fas fa-file-excel"></i> Excel
+            </a>
+        </div>
     </div>
 
     <%
     const today = new Date().toISOString().split('T')[0];
+    const buildQueryString = (filters) => {
+        const params = new URLSearchParams();
+        Object.entries(filters || {}).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && String(value).trim() !== '') {
+                params.append(key, value);
+            }
+        });
+        return params.toString();
+    };
     const getCatBadge = (cat) => {
         const c = (cat || '').toLowerCase();
         if (c === 'medicament') return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -115,6 +149,8 @@
         return cat;
     };
     const getStockBadge = (p) => {
+        const isExpired = p.date_peremption && p.date_peremption < today;
+        if (isExpired) return { label: 'Périmé', cls: 'bg-red-100 text-red-800 border-red-200' };
         if (p.stock_actuel <= 0) return { label: 'Rupture', cls: 'bg-red-100 text-red-800 border-red-200' };
         if (p.stock_actuel <= p.stock_minimum) return { label: 'Alerte', cls: 'bg-amber-100 text-amber-800 border-amber-200' };
         return { label: 'OK', cls: 'bg-green-100 text-green-800 border-green-200' };
