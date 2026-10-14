@@ -188,6 +188,42 @@ CREATE TABLE parametres_clinique (
     taux_euro DECIMAL(10,5) DEFAULT 655.957
 );
 
+-- 12. produits_pharmacie
+CREATE TABLE produits_pharmacie (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    code VARCHAR(50) UNIQUE,
+    designation VARCHAR(255) NOT NULL,
+    categorie VARCHAR(100) NOT NULL DEFAULT 'medicament' CHECK (categorie IN ('medicament', 'consommable', 'materiel', 'dispositif_medical')),
+    forme VARCHAR(100),
+    dosage VARCHAR(100),
+    unite VARCHAR(50) DEFAULT 'unite',
+    prix_achat DECIMAL(12,2) DEFAULT 0,
+    prix_vente DECIMAL(12,2) NOT NULL DEFAULT 0,
+    stock_actuel INTEGER DEFAULT 0 CHECK (stock_actuel >= 0),
+    stock_minimum INTEGER DEFAULT 5 CHECK (stock_minimum >= 0),
+    emplacement VARCHAR(100),
+    fournisseur VARCHAR(255),
+    date_peremption DATE,
+    actif BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 13. mouvements_stock
+CREATE TABLE mouvements_stock (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    produit_id UUID NOT NULL REFERENCES produits_pharmacie(id) ON DELETE CASCADE,
+    type_mouvement VARCHAR(20) NOT NULL CHECK (type_mouvement IN ('entree', 'sortie')),
+    quantite INTEGER NOT NULL CHECK (quantite > 0),
+    stock_avant INTEGER NOT NULL CHECK (stock_avant >= 0),
+    stock_apres INTEGER NOT NULL CHECK (stock_apres >= 0),
+    motif VARCHAR(255),
+    reference VARCHAR(100),
+    utilisateur_id UUID REFERENCES utilisateurs(id) ON DELETE SET NULL,
+    utilisateur_nom VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ==========================================
 -- 3. INDEXES
 -- ==========================================
@@ -198,10 +234,56 @@ CREATE INDEX idx_factures_patient_id ON factures(patient_id);
 CREATE INDEX idx_factures_numero_facture ON factures(numero_facture);
 CREATE INDEX idx_facture_lignes_facture_id ON facture_lignes(facture_id);
 CREATE INDEX idx_paiements_facture_id ON paiements(facture_id);
+CREATE INDEX idx_produits_pharmacie_code ON produits_pharmacie(code);
+CREATE INDEX idx_produits_pharmacie_categorie ON produits_pharmacie(categorie);
+CREATE INDEX idx_produits_pharmacie_stock ON produits_pharmacie(stock_actuel);
+CREATE INDEX idx_produits_pharmacie_actif ON produits_pharmacie(actif);
+CREATE INDEX idx_mouvements_stock_produit ON mouvements_stock(produit_id);
+CREATE INDEX idx_mouvements_stock_type ON mouvements_stock(type_mouvement);
+CREATE INDEX idx_mouvements_stock_created ON mouvements_stock(created_at DESC);
 
 -- ==========================================
 -- 4. FONCTIONS ET TRIGGERS
 -- ==========================================
+
+-- Fonction pour mettre à jour le timestamp d'un produit pharmaceutique
+CREATE OR REPLACE FUNCTION update_produits_pharmacie_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_produits_pharmacie_timestamp
+BEFORE UPDATE ON produits_pharmacie
+FOR EACH ROW
+EXECUTE FUNCTION update_produits_pharmacie_timestamp();
+
+-- Fonction pour valider les mouvements de stock
+CREATE OR REPLACE FUNCTION validate_stock_mouvement()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.quantite <= 0 THEN
+        RAISE EXCEPTION 'La quantité du mouvement doit être supérieure à 0';
+    END IF;
+
+    IF NEW.type_mouvement = 'sortie' AND NEW.stock_apres > NEW.stock_avant THEN
+        RAISE EXCEPTION 'Un mouvement de sortie ne peut pas augmenter le stock';
+    END IF;
+
+    IF NEW.stock_apres < 0 THEN
+        RAISE EXCEPTION 'Le stock final ne peut pas être négatif';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_validate_stock_mouvement
+BEFORE INSERT OR UPDATE ON mouvements_stock
+FOR EACH ROW
+EXECUTE FUNCTION validate_stock_mouvement();
 
 -- Fonction pour générer le matricule patient
 CREATE OR REPLACE FUNCTION generer_matricule_patient()
@@ -350,7 +432,7 @@ INSERT INTO actes_medicaux (code, libelle, categorie, prix_unitaire) VALUES
 ('SOINS_J', 'SOINS D''UN JOUR', 'soins', 15000),
 ('MEO_06', 'Mise en Observation MEO -06h de temps', 'hospitalisation', 10000);
 
--- ==========================================
+  -- ==========================================
 -- 6. POLITIQUES RLS (Row Level Security)
 -- ==========================================
 
@@ -366,6 +448,8 @@ ALTER TABLE factures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE facture_lignes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE paiements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE parametres_clinique ENABLE ROW LEVEL SECURITY;
+ALTER TABLE produits_pharmacie ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mouvements_stock ENABLE ROW LEVEL SECURITY;
 
 -- Politiques de base (à affiner selon les besoins de l'application)
 CREATE POLICY "Allow all for authenticated users" ON utilisateurs FOR ALL USING (true);
@@ -379,3 +463,5 @@ CREATE POLICY "Allow all for authenticated users" ON factures FOR ALL USING (tru
 CREATE POLICY "Allow all for authenticated users" ON facture_lignes FOR ALL USING (true);
 CREATE POLICY "Allow all for authenticated users" ON paiements FOR ALL USING (true);
 CREATE POLICY "Allow all for authenticated users" ON parametres_clinique FOR ALL USING (true);
+CREATE POLICY "Allow all for authenticated users" ON produits_pharmacie FOR ALL USING (true);
+CREATE POLICY "Allow all for authenticated users" ON mouvements_stock FOR ALL USING (true);

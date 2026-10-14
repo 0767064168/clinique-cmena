@@ -1,0 +1,247 @@
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+    <!-- En-tête -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <div>
+            <a href="/pharmacie" class="text-sm text-emerald-600 hover:text-emerald-800 font-semibold mb-1 inline-flex items-center gap-1">
+                <i class="fas fa-arrow-left text-xs"></i> Retour à la pharmacie
+            </a>
+            <div class="flex items-center gap-3 flex-wrap">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight"><%= produit.designation %></h1>
+                <% if (produit.code) { %>
+                    <span class="font-mono text-xs font-bold px-2 py-0.5 bg-gray-100 text-gray-700 rounded border border-gray-200"><%= produit.code %></span>
+                <% } %>
+            </div>
+            <% if (produit.forme || produit.dosage) { %>
+                <p class="text-xs sm:text-sm text-gray-500 mt-0.5"><%= [produit.forme, produit.dosage].filter(Boolean).join(' — ') %></p>
+            <% } %>
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+            <a href="/pharmacie/<%= produit.id %>/edit" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm transition">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+        </div>
+    </div>
+
+    <% 
+    const today = new Date().toISOString().split('T')[0];
+    const isExpired = produit.date_peremption && produit.date_peremption < today;
+    const isLowStock = produit.stock_actuel <= produit.stock_minimum;
+    const isOutOfStock = produit.stock_actuel <= 0;
+    const valeurStock = (produit.stock_actuel || 0) * parseFloat(produit.prix_vente || 0);
+    %>
+
+    <!-- Alertes -->
+    <% if (isExpired) { %>
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-red-500 text-xl mr-3"></i>
+                <div>
+                    <h3 class="text-sm font-bold text-red-800">Attention : Produit Périmé</h3>
+                    <p class="text-xs text-red-700 mt-0.5">La date de péremption (<%= formatDate(produit.date_peremption) %>) est dépassée. Ce produit ne doit plus être dispensé.</p>
+                </div>
+            </div>
+        </div>
+    <% } %>
+
+    <% if (isOutOfStock) { %>
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg">
+            <div class="flex items-center">
+                <i class="fas fa-times-circle text-red-500 text-xl mr-3"></i>
+                <div>
+                    <h3 class="text-sm font-bold text-red-800">Rupture de Stock</h3>
+                    <p class="text-xs text-red-700 mt-0.5">Le stock actuel est épuisé (0 <%= produit.unite %>). Veuillez effectuer un réapprovisionnement.</p>
+                </div>
+            </div>
+        </div>
+    <% } else if (isLowStock) { %>
+        <div class="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6 rounded-r-lg">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle text-amber-500 text-xl mr-3"></i>
+                <div>
+                    <h3 class="text-sm font-bold text-amber-800">Alerte Stock Bas</h3>
+                    <p class="text-xs text-amber-700 mt-0.5">Le stock actuel (<%= produit.stock_actuel %> <%= produit.unite %>) est inférieur ou égal au seuil minimum d'alerte (<%= produit.stock_minimum %> <%= produit.unite %>).</p>
+                </div>
+            </div>
+        </div>
+    <% } %>
+
+    <!-- Cartes d'informations -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Informations Produit -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-4">
+            <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2 border-b pb-2">
+                <i class="fas fa-pills text-emerald-600"></i> Fiche Produit
+            </h2>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                    <span class="text-xs text-gray-500 block uppercase font-medium">Catégorie</span>
+                    <span class="font-semibold text-gray-800 capitalize"><%= produit.categorie %></span>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500 block uppercase font-medium">Forme / Dosage</span>
+                    <span class="font-semibold text-gray-800"><%= [produit.forme, produit.dosage].filter(Boolean).join(' ') || '-' %></span>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500 block uppercase font-medium">Unité de mesure</span>
+                    <span class="font-semibold text-gray-800 capitalize"><%= produit.unite %></span>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500 block uppercase font-medium">Emplacement</span>
+                    <span class="font-semibold text-gray-800"><%= produit.emplacement || 'Non spécifié' %></span>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500 block uppercase font-medium">Fournisseur</span>
+                    <span class="font-semibold text-gray-800"><%= produit.fournisseur || 'Non spécifié' %></span>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-500 block uppercase font-medium">Date de péremption</span>
+                    <span class="font-semibold <%= isExpired ? 'text-red-600 font-bold' : 'text-gray-800' %>">
+                        <%= produit.date_peremption ? formatDate(produit.date_peremption) : '-' %>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations Stock & Finances -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-4">
+            <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2 border-b pb-2">
+                <i class="fas fa-chart-bar text-emerald-600"></i> Situation du Stock & Tarifs
+            </h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-slate-50 p-3 rounded-lg">
+                    <span class="text-xs text-gray-500 block uppercase font-medium">Stock Actuel</span>
+                    <span class="text-2xl font-black <%= isOutOfStock ? 'text-red-600' : (isLowStock ? 'text-amber-600' : 'text-emerald-700') %>">
+                        <%= produit.stock_actuel %>
+                    </span>
+                    <span class="text-xs font-semibold text-gray-500"><%= produit.unite %></span>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-lg">
+                    <span class="text-xs text-gray-500 block uppercase font-medium">Seuil Minimum</span>
+                    <span class="text-2xl font-black text-gray-700"><%= produit.stock_minimum %></span>
+                    <span class="text-xs font-semibold text-gray-500"><%= produit.unite %></span>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-lg">
+                    <span class="text-xs text-gray-500 block uppercase font-medium">Prix d'Achat</span>
+                    <span class="text-base font-bold text-gray-800"><%= formatMoney(produit.prix_achat) %></span>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-lg">
+                    <span class="text-xs text-gray-500 block uppercase font-medium">Prix de Vente</span>
+                    <span class="text-base font-bold text-emerald-700"><%= formatMoney(produit.prix_vente) %></span>
+                </div>
+            </div>
+            <div class="pt-2 border-t flex justify-between items-center text-sm">
+                <span class="text-gray-600 font-medium">Valeur totale en stock :</span>
+                <span class="text-lg font-black text-emerald-700"><%= formatMoney(valeurStock) %></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulaire d'enregistrement d'un mouvement de stock -->
+    <div class="bg-white rounded-xl shadow-md border-t-4 border-emerald-600 p-5 mb-8">
+        <h2 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <i class="fas fa-exchange-alt text-emerald-600"></i> Enregistrer un Mouvement de Stock
+        </h2>
+        <form action="/pharmacie/<%= produit.id %>/mouvement" method="POST" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Type de Mouvement <span class="text-red-500">*</span></label>
+                    <select name="type_mouvement" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <option value="entree">📥 Entrée (Approvisionnement)</option>
+                        <option value="sortie">📤 Sortie (Dispensation / Utilisation)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Quantité (<%= produit.unite %>) <span class="text-red-500">*</span></label>
+                    <input type="number" name="quantite" required min="1" placeholder="Ex: 20" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Motif</label>
+                    <input type="text" name="motif" placeholder="Approvisionnement, Soins, Dispensation..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Référence / Patient</label>
+                    <input type="text" name="reference" placeholder="N° Bon, Nom patient..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none">
+                </div>
+            </div>
+            <div class="flex justify-end pt-2">
+                <button type="submit" class="w-full sm:w-auto px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm shadow-sm transition">
+                    <i class="fas fa-check mr-1"></i> Valider le Mouvement
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Historique des Mouvements de Stock -->
+    <div class="bg-white shadow rounded-xl border border-gray-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+            <div class="flex items-center gap-2">
+                <h3 class="font-bold text-gray-900 text-sm sm:text-base">Historique des Mouvements</h3>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-800">
+                    <%= mouvements ? mouvements.length : 0 %>
+                </span>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50 text-xs text-gray-500 uppercase font-semibold">
+                    <tr>
+                        <th class="px-4 py-3 text-left">Date & Heure</th>
+                        <th class="px-4 py-3 text-left">Type</th>
+                        <th class="px-4 py-3 text-right">Quantité</th>
+                        <th class="px-4 py-3 text-center">Évolution Stock</th>
+                        <th class="px-4 py-3 text-left">Motif</th>
+                        <th class="px-4 py-3 text-left">Référence</th>
+                        <th class="px-4 py-3 text-left">Opérateur</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 bg-white">
+                    <% if (mouvements && mouvements.length > 0) { %>
+                        <% mouvements.forEach(m => { %>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-600">
+                                    <%= formatDateTime(m.created_at) %>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <% if (m.type_mouvement === 'entree') { %>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                                            <i class="fas fa-arrow-up text-[10px]"></i> Entrée
+                                        </span>
+                                    <% } else { %>
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">
+                                            <i class="fas fa-arrow-down text-[10px]"></i> Sortie
+                                        </span>
+                                    <% } %>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-right font-extrabold <%= m.type_mouvement === 'entree' ? 'text-green-600' : 'text-red-600' %>">
+                                    <%= m.type_mouvement === 'entree' ? '+' : '-' %><%= m.quantite %> <%= produit.unite %>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center text-xs font-semibold text-gray-600">
+                                    <span class="text-gray-400"><%= m.stock_avant %></span>
+                                    <i class="fas fa-arrow-right text-[10px] text-gray-400 mx-1"></i>
+                                    <span class="text-gray-900 font-bold"><%= m.stock_apres %></span>
+                                </td>
+                                <td class="px-4 py-3 text-gray-800 text-xs">
+                                    <%= m.motif || '-' %>
+                                </td>
+                                <td class="px-4 py-3 text-gray-600 text-xs">
+                                    <%= m.reference || '-' %>
+                                </td>
+                                <td class="px-4 py-3 text-gray-700 text-xs whitespace-nowrap font-medium">
+                                    <%= m.utilisateur_nom || 'Système' %>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="7" class="px-4 py-8 text-center text-gray-400">
+                                <i class="fas fa-history text-2xl mb-1 block text-gray-300"></i>
+                                Aucun mouvement de stock enregistré
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

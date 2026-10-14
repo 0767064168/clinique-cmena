@@ -64,8 +64,14 @@
             </li>
             <li>
                 <a href="/actes" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/actes') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-pills w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/actes') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    <i class="fas fa-file-medical-alt w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/actes') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
                     Actes Médicaux
+                </a>
+            </li>
+            <li>
+                <a href="/pharmacie" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/pharmacie') ? 'bg-primary text-white border-l-4 border-emerald-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-pills w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/pharmacie') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Pharmacie & Stock
                 </a>
             </li>
             <li>

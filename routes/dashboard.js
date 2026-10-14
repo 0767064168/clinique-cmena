@@ -42,6 +42,31 @@ router.get('/', async (req, res) => {
 
         const revenueMois = (monthFactures || []).reduce((acc, curr) => acc + (parseFloat(curr.montant_paye) || 0), 0);
 
+        // Pharmacie & stock : produits actifs, alertes et valeur
+        const { data: stockProduits, error: errStock } = await supabase
+            .from('produits_pharmacie')
+            .select('id, designation, stock_actuel, stock_minimum, prix_vente, date_peremption, categorie')
+            .eq('actif', true);
+        if (errStock) throw errStock;
+
+        const pharmacieTotal = (stockProduits || []).length;
+        const pharmacieAlerte = (stockProduits || []).filter(p => Number(p.stock_actuel || 0) <= Number(p.stock_minimum || 0)).length;
+        const pharmacieValeur = (stockProduits || []).reduce((acc, p) => acc + ((Number(p.stock_actuel || 0) * Number(p.prix_vente || 0)) || 0), 0);
+        const produitsPerimes = (stockProduits || []).filter(p => p.date_peremption && new Date(p.date_peremption) < new Date(today)).length;
+        const stockAlerts = (stockProduits || [])
+            .filter(p => Number(p.stock_actuel || 0) <= Number(p.stock_minimum || 0))
+            .sort((a, b) => (Number(a.stock_actuel || 0) - Number(a.stock_minimum || 0)) - (Number(b.stock_actuel || 0) - Number(b.stock_minimum || 0)))
+            .slice(0, 5)
+            .map(p => ({
+                ...p,
+                stock_disponible: Number(p.stock_actuel || 0),
+                seuil: Number(p.stock_minimum || 0)
+            }));
+
+        const recentProducts = (stockProduits || [])
+            .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+            .slice(0, 5);
+
         // Patients récents (5 derniers)
         const { data: recentPatients } = await supabase
             .from('patients')
@@ -69,8 +94,14 @@ router.get('/', async (req, res) => {
                 facturesImpayees: facturesImpayees || 0,
                 totalMontantImpaye: totalMontantImpaye || 0,
                 revenueMois: revenueMois,
-                revenusMois: revenueMois
+                revenusMois: revenueMois,
+                pharmacieTotal: pharmacieTotal || 0,
+                pharmacieAlerte: pharmacieAlerte || 0,
+                pharmacieValeur: pharmacieValeur || 0,
+                produitsPerimes: produitsPerimes || 0
             },
+            stockAlerts,
+            recentProducts: recentProducts || [],
             recentPatients: recentPatients || [],
             recentFactures: recentFactures || []
         });
@@ -79,7 +110,20 @@ router.get('/', async (req, res) => {
         req.flash('error', 'Erreur lors du chargement du tableau de bord');
         res.render('dashboard', {
             title: 'Tableau de Bord',
-            stats: { totalPatients: 0, consultationsToday: 0, facturesImpayees: 0, totalMontantImpaye: 0, revenueMois: 0, revenusMois: 0 },
+            stats: {
+                totalPatients: 0,
+                consultationsToday: 0,
+                facturesImpayees: 0,
+                totalMontantImpaye: 0,
+                revenueMois: 0,
+                revenusMois: 0,
+                pharmacieTotal: 0,
+                pharmacieAlerte: 0,
+                pharmacieValeur: 0,
+                produitsPerimes: 0
+            },
+            stockAlerts: [],
+            recentProducts: [],
             recentPatients: [],
             recentFactures: []
         });

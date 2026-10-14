@@ -1,5 +1,5 @@
-<!-- Dashboard Quick Actions -->
-<div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+<!-- Quick actions -->
+<div class="mb-6 grid grid-cols-1 sm:grid-cols-4 gap-3">
     <a href="/patients/create" class="inline-flex items-center justify-center gap-x-2 rounded-md bg-primary px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-light">
         <i class="fas fa-plus-circle"></i>
         Nouveau Patient
@@ -12,10 +12,14 @@
         <i class="fas fa-file-invoice text-red-500"></i>
         Nouvelle Facture
     </a>
+    <a href="/pharmacie/create" class="inline-flex items-center justify-center gap-x-2 rounded-md bg-emerald-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">
+        <i class="fas fa-pills"></i>
+        Nouveau Produit
+    </a>
 </div>
 
 <!-- Stats Grid -->
-<dl class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+<dl class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5 mb-8">
     <!-- Stat 1 -->
     <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6 border-t-4 border-blue-500">
         <dt>
@@ -104,10 +108,105 @@
             </div>
         </dd>
     </div>
+
+    <!-- Stat 5 -->
+    <div class="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6 border-t-4 border-emerald-500">
+        <dt>
+            <div class="absolute rounded-md bg-emerald-50 p-3">
+                <i class="fas fa-pills text-emerald-500 text-xl w-6 text-center"></i>
+            </div>
+            <p class="ml-16 truncate text-sm font-medium text-gray-500">Pharmacie & Stock</p>
+        </dt>
+        <dd class="ml-16 pb-6 sm:pb-7">
+            <div class="flex flex-col gap-2">
+                <p class="text-2xl font-semibold text-gray-900">
+                    <%= typeof stats !== 'undefined' ? stats.pharmacieTotal : 0 %> produits
+                </p>
+                <% if (typeof stats !== 'undefined') { %>
+                    <p class="text-xs text-gray-500">
+                        Valeur stock : <%= new Intl.NumberFormat('fr-FR').format(stats.pharmacieValeur || 0) %> FCFA
+                    </p>
+                <% } %>
+                <% if (typeof stats !== 'undefined' && stats.pharmacieAlerte > 0) { %>
+                    <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 w-fit">
+                        <%= stats.pharmacieAlerte %> alertes
+                    </span>
+                <% } %>
+                <% if (typeof stats !== 'undefined' && stats.produitsPerimes > 0) { %>
+                    <span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700 w-fit">
+                        <%= stats.produitsPerimes %> périmés
+                    </span>
+                <% } %>
+            </div>
+            <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
+                <div class="text-sm">
+                    <a href="/pharmacie" class="font-medium text-emerald-600 hover:text-emerald-700">Gérer le stock</a>
+                </div>
+            </div>
+        </dd>
+    </div>
 </dl>
+
+<!-- Alertes stock -->
+<% if (typeof stockAlerts !== 'undefined' && stockAlerts.length > 0) { %>
+<div class="mb-8 bg-white shadow rounded-xl border border-amber-200 p-5">
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h3 class="text-lg font-semibold text-gray-900">Alertes de stock</h3>
+            <p class="text-sm text-gray-500">Produits sous le seuil d'alerte</p>
+        </div>
+        <a href="/pharmacie?stock_alert=oui" class="text-sm font-semibold text-amber-700 hover:text-amber-800">Voir tout</a>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+        <% stockAlerts.forEach(item => { %>
+            <a href="/pharmacie/<%= item.id %>" class="block rounded-lg border border-amber-200 bg-amber-50 p-3 hover:bg-amber-100 transition">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase tracking-wide text-amber-700">Alerte</span>
+                    <span class="text-xs font-semibold text-amber-800"><%= item.stock_disponible %> / <%= item.seuil %></span>
+                </div>
+                <p class="mt-2 text-sm font-semibold text-gray-900 truncate"><%= item.designation %></p>
+                <p class="mt-1 text-xs text-gray-600"><%= item.categorie %></p>
+            </a>
+        <% }) %>
+    </div>
+</div>
+<% } %>
 
 <!-- Tables Grid -->
 <div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+    <!-- Recent Products -->
+    <div class="bg-white shadow rounded-lg">
+        <div class="px-4 py-5 border-b border-gray-200 sm:px-6 flex justify-between items-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Produits récents</h3>
+            <a href="/pharmacie" class="text-sm text-emerald-600 hover:text-emerald-700">Voir tout</a>
+        </div>
+        <div class="overflow-hidden">
+            <ul role="list" class="divide-y divide-gray-200">
+                <% if (typeof recentProducts !== 'undefined' && recentProducts.length > 0) { %>
+                    <% recentProducts.forEach(product => { %>
+                        <li>
+                            <a href="/pharmacie/<%= product.id %>" class="block hover:bg-gray-50">
+                                <div class="px-4 py-4 sm:px-6">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-sm font-medium text-emerald-700 truncate"><%= product.designation %></p>
+                                        <span class="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                                            <%= product.stock_actuel %> <%= product.unite || 'unités' %>
+                                        </span>
+                                    </div>
+                                    <div class="mt-2 flex items-center justify-between text-sm text-gray-500">
+                                        <span><%= product.categorie || 'Produit' %></span>
+                                        <span><%= product.code || 'Sans code' %></span>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                    <% }) %>
+                <% } else { %>
+                    <li class="px-4 py-6 text-sm text-gray-500">Aucun produit récent enregistré.</li>
+                <% } %>
+            </ul>
+        </div>
+    </div>
     <!-- Recent Patients -->
     <div class="bg-white shadow rounded-lg">
         <div class="px-4 py-5 border-b border-gray-200 sm:px-6 flex justify-between items-center">

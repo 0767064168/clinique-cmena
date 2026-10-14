@@ -1,0 +1,251 @@
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+    <!-- En-tête -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Pharmacie & Consommables</h1>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                    <%= typeof produits !== 'undefined' ? produits.length : 0 %>
+                </span>
+            </div>
+            <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Gestion du stock pharmaceutique et des consommables médicaux</p>
+        </div>
+        <a href="/pharmacie/create" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold py-2.5 px-4 rounded-lg shadow-sm text-sm transition">
+            <i class="fas fa-plus text-xs"></i>
+            <span>Nouveau Produit</span>
+        </a>
+    </div>
+
+    <!-- Cartes statistiques -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="flex-shrink-0 h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                    <i class="fas fa-boxes text-blue-600"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] uppercase font-semibold text-gray-500 tracking-wider">Produits</p>
+                    <p class="text-xl font-black text-gray-900"><%= stats.totalProduits %></p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="flex-shrink-0 h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                    <i class="fas fa-coins text-emerald-600"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] uppercase font-semibold text-gray-500 tracking-wider">Valeur Stock</p>
+                    <p class="text-lg font-black text-emerald-700"><%= formatMoney(stats.totalValeurStock) %></p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="flex-shrink-0 h-10 w-10 rounded-lg <%= stats.produitsEnAlerte > 0 ? 'bg-amber-100' : 'bg-gray-100' %> flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle <%= stats.produitsEnAlerte > 0 ? 'text-amber-600' : 'text-gray-400' %>"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] uppercase font-semibold text-gray-500 tracking-wider">Alertes Stock</p>
+                    <p class="text-xl font-black <%= stats.produitsEnAlerte > 0 ? 'text-amber-600' : 'text-gray-900' %>"><%= stats.produitsEnAlerte %></p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="flex-shrink-0 h-10 w-10 rounded-lg <%= stats.produitsPerimes > 0 ? 'bg-red-100' : 'bg-gray-100' %> flex items-center justify-center">
+                    <i class="fas fa-calendar-times <%= stats.produitsPerimes > 0 ? 'text-red-600' : 'text-gray-400' %>"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] uppercase font-semibold text-gray-500 tracking-wider">Périmés</p>
+                    <p class="text-xl font-black <%= stats.produitsPerimes > 0 ? 'text-red-600' : 'text-gray-900' %>"><%= stats.produitsPerimes %></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm mb-6 border border-gray-100">
+        <form action="/pharmacie" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-search text-xs"></i></span>
+                <input type="text" name="search" placeholder="Rechercher par désignation ou code..." value="<%= filters.search || '' %>"
+                    class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+            </div>
+            <div>
+                <select name="categorie" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="">Toutes catégories</option>
+                    <option value="medicament" <%= filters.categorie === 'medicament' ? 'selected' : '' %>>Médicament</option>
+                    <option value="consommable" <%= filters.categorie === 'consommable' ? 'selected' : '' %>>Consommable</option>
+                    <option value="materiel" <%= filters.categorie === 'materiel' ? 'selected' : '' %>>Matériel</option>
+                    <option value="dispositif_medical" <%= filters.categorie === 'dispositif_medical' ? 'selected' : '' %>>Dispositif Médical</option>
+                </select>
+            </div>
+            <div>
+                <select name="stock_alert" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <option value="">Tous les stocks</option>
+                    <option value="oui" <%= filters.stock_alert === 'oui' ? 'selected' : '' %>>⚠️ Alertes stock uniquement</option>
+                </select>
+            </div>
+            <div class="flex items-end gap-2">
+                <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-sm shadow transition">
+                    <i class="fas fa-filter mr-1"></i> Filtrer
+                </button>
+                <a href="/pharmacie" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-sm font-medium transition">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <%
+    const today = new Date().toISOString().split('T')[0];
+    const getCatBadge = (cat) => {
+        const c = (cat || '').toLowerCase();
+        if (c === 'medicament') return 'bg-blue-100 text-blue-800 border-blue-200';
+        if (c === 'consommable') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+        if (c === 'materiel') return 'bg-purple-100 text-purple-800 border-purple-200';
+        if (c === 'dispositif_medical') return 'bg-rose-100 text-rose-800 border-rose-200';
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+    };
+    const getCatLabel = (cat) => {
+        const c = (cat || '').toLowerCase();
+        if (c === 'medicament') return 'Médicament';
+        if (c === 'consommable') return 'Consommable';
+        if (c === 'materiel') return 'Matériel';
+        if (c === 'dispositif_medical') return 'Disp. Médical';
+        return cat;
+    };
+    const getStockBadge = (p) => {
+        if (p.stock_actuel <= 0) return { label: 'Rupture', cls: 'bg-red-100 text-red-800 border-red-200' };
+        if (p.stock_actuel <= p.stock_minimum) return { label: 'Alerte', cls: 'bg-amber-100 text-amber-800 border-amber-200' };
+        return { label: 'OK', cls: 'bg-green-100 text-green-800 border-green-200' };
+    };
+    %>
+
+    <!-- Vue Mobile -->
+    <div class="block md:hidden space-y-3">
+        <% if (produits && produits.length > 0) { %>
+            <% produits.forEach(p => { %>
+                <% const sb = getStockBadge(p); const isExpired = p.date_peremption && p.date_peremption < today; %>
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex-grow">
+                            <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                <% if (p.code) { %>
+                                    <span class="font-mono text-xs font-bold px-2 py-0.5 bg-gray-100 text-gray-700 rounded border border-gray-200"><%= p.code %></span>
+                                <% } %>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded border <%= getCatBadge(p.categorie) %>"><%= getCatLabel(p.categorie) %></span>
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded border <%= sb.cls %>"><%= sb.label %></span>
+                                <% if (isExpired) { %>
+                                    <span class="text-xs font-bold px-2 py-0.5 rounded bg-red-600 text-white">Périmé</span>
+                                <% } %>
+                            </div>
+                            <h3 class="text-sm font-bold text-gray-900 leading-snug"><%= p.designation %></h3>
+                            <% if (p.forme || p.dosage) { %>
+                                <p class="text-xs text-gray-500"><%= [p.forme, p.dosage].filter(Boolean).join(' — ') %></p>
+                            <% } %>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <div class="flex gap-4">
+                            <div>
+                                <span class="text-[11px] text-gray-500 block uppercase font-medium">Stock</span>
+                                <span class="text-base font-extrabold <%= p.stock_actuel <= p.stock_minimum ? 'text-amber-600' : 'text-gray-900' %>"><%= p.stock_actuel %> <span class="text-xs font-medium text-gray-500"><%= p.unite %></span></span>
+                            </div>
+                            <div>
+                                <span class="text-[11px] text-gray-500 block uppercase font-medium">Prix</span>
+                                <span class="text-base font-extrabold text-emerald-700"><%= formatMoney(p.prix_vente) %></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a href="/pharmacie/<%= p.id %>" class="inline-flex items-center justify-center h-8 px-3 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition">
+                                <i class="fas fa-eye mr-1"></i> Voir
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <div class="bg-white p-8 rounded-xl text-center text-gray-500 shadow-sm border border-gray-100">
+                <i class="fas fa-box-open text-3xl text-gray-300 mb-2 block"></i>
+                Aucun produit en stock
+            </div>
+        <% } %>
+    </div>
+
+    <!-- Vue Desktop -->
+    <div class="hidden md:block bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Code</th>
+                        <th class="px-4 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Désignation</th>
+                        <th class="px-4 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Catégorie</th>
+                        <th class="px-4 py-3.5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Stock</th>
+                        <th class="px-4 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Prix Vente</th>
+                        <th class="px-4 py-3.5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Statut</th>
+                        <th class="px-4 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <% if (produits && produits.length > 0) { %>
+                        <% produits.forEach(p => { %>
+                            <% const sb = getStockBadge(p); const isExpired = p.date_peremption && p.date_peremption < today; %>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                    <% if (p.code) { %>
+                                        <span class="font-mono bg-gray-100 px-2 py-0.5 rounded text-xs border border-gray-200 font-semibold"><%= p.code %></span>
+                                    <% } else { %>
+                                        <span class="text-gray-400">-</span>
+                                    <% } %>
+                                </td>
+                                <td class="px-4 py-3 text-sm font-medium text-gray-900">
+                                    <div><%= p.designation %></div>
+                                    <% if (p.forme || p.dosage) { %>
+                                        <div class="text-xs text-gray-500"><%= [p.forme, p.dosage].filter(Boolean).join(' — ') %></div>
+                                    <% } %>
+                                    <% if (isExpired) { %>
+                                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-600 text-white ml-1">Périmé</span>
+                                    <% } %>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold border <%= getCatBadge(p.categorie) %>"><%= getCatLabel(p.categorie) %></span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-center">
+                                    <span class="font-bold <%= p.stock_actuel <= 0 ? 'text-red-600' : (p.stock_actuel <= p.stock_minimum ? 'text-amber-600' : 'text-gray-900') %>"><%= p.stock_actuel %></span>
+                                    <span class="text-gray-400">/</span>
+                                    <span class="text-xs text-gray-500"><%= p.stock_minimum %></span>
+                                    <span class="text-xs text-gray-400 ml-1"><%= p.unite %></span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-emerald-700"><%= formatMoney(p.prix_vente) %></td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center">
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold border <%= sb.cls %>"><%= sb.label %></span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                    <a href="/pharmacie/<%= p.id %>" class="text-emerald-600 hover:text-emerald-900 mr-2 inline-flex items-center gap-1 font-semibold">
+                                        <i class="fas fa-eye text-xs"></i> Voir
+                                    </a>
+                                    <a href="/pharmacie/<%= p.id %>/edit" class="text-indigo-600 hover:text-indigo-900 mr-2 inline-flex items-center gap-1 font-semibold">
+                                        <i class="fas fa-edit text-xs"></i>
+                                    </a>
+                                    <form action="/pharmacie/<%= p.id %>?_method=DELETE" method="POST" class="inline" onsubmit="return confirm('Supprimer ce produit ?');">
+                                        <button type="submit" class="text-red-600 hover:text-red-900 inline-flex items-center gap-1 font-semibold">
+                                            <i class="fas fa-trash-alt text-xs"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                                <i class="fas fa-box-open text-3xl text-gray-300 mb-2 block"></i>
+                                Aucun produit en stock
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

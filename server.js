@@ -26,6 +26,7 @@ const rapportsRoutes = require('./routes/rapports');
 const utilisateursRoutes = require('./routes/utilisateurs');
 const settingsRoutes = require('./routes/settings');
 const auditRoutes = require('./routes/audit');
+const pharmacieRoutes = require('./routes/pharmacie');
 const authRoutes = require('./routes/auth');
 const { requireAuth, requireAdmin } = require('./middleware/auth');
 
@@ -210,6 +211,7 @@ app.use('/praticiens', requireAuth, praticiensRoutes);
 app.use('/factures', requireAuth, facturesRoutes);
 app.use('/consultations', requireAuth, consultationsRoutes);
 app.use('/actes', requireAuth, actesRoutes);
+app.use('/pharmacie', requireAuth, pharmacieRoutes);
 app.use('/assurances', requireAuth, assurancesRoutes);
 app.use('/paiements', requireAuth, paiementsRoutes);
 app.use('/rapports', requireAuth, rapportsRoutes);

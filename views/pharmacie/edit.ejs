@@ -1,0 +1,115 @@
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+    <!-- En-tête -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <div>
+            <a href="/pharmacie/<%= produit.id %>" class="text-sm text-emerald-600 hover:text-emerald-800 font-semibold mb-1 inline-flex items-center gap-1">
+                <i class="fas fa-arrow-left text-xs"></i> Retour à la fiche produit
+            </a>
+            <h1 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Modifier le Produit</h1>
+            <p class="text-xs sm:text-sm text-gray-500 mt-0.5"><%= produit.designation %></p>
+        </div>
+    </div>
+
+    <!-- Formulaire -->
+    <div class="bg-white p-4 sm:p-6 rounded-xl shadow-md border-t-4 border-indigo-600">
+        <form action="/pharmacie/<%= produit.id %>?_method=PUT" method="POST" class="space-y-6">
+
+            <!-- Identification -->
+            <div>
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fas fa-tag text-indigo-600"></i> Identification
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Code</label>
+                        <input type="text" name="code" value="<%= produit.code || '' %>" placeholder="MED-001" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Désignation <span class="text-red-500">*</span></label>
+                        <input type="text" name="designation" required value="<%= produit.designation %>" placeholder="Paracétamol 500mg" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Catégorie</label>
+                        <select name="categorie" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <option value="medicament" <%= produit.categorie === 'medicament' ? 'selected' : '' %>>Médicament</option>
+                            <option value="consommable" <%= produit.categorie === 'consommable' ? 'selected' : '' %>>Consommable</option>
+                            <option value="materiel" <%= produit.categorie === 'materiel' ? 'selected' : '' %>>Matériel</option>
+                            <option value="dispositif_medical" <%= produit.categorie === 'dispositif_medical' ? 'selected' : '' %>>Dispositif Médical</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Forme pharmaceutique</label>
+                        <input type="text" name="forme" value="<%= produit.forme || '' %>" placeholder="Comprimé, Sirop, Injectable..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Dosage</label>
+                        <input type="text" name="dosage" value="<%= produit.dosage || '' %>" placeholder="500mg, 10ml..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stock et Prix -->
+            <div>
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fas fa-boxes text-indigo-600"></i> Stock & Tarification
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Unité de mesure</label>
+                        <select name="unite" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                            <option value="unité" <%= produit.unite === 'unité' ? 'selected' : '' %>>Unité</option>
+                            <option value="boîte" <%= produit.unite === 'boîte' ? 'selected' : '' %>>Boîte</option>
+                            <option value="flacon" <%= produit.unite === 'flacon' ? 'selected' : '' %>>Flacon</option>
+                            <option value="tube" <%= produit.unite === 'tube' ? 'selected' : '' %>>Tube</option>
+                            <option value="sachet" <%= produit.unite === 'sachet' ? 'selected' : '' %>>Sachet</option>
+                            <option value="plaquette" <%= produit.unite === 'plaquette' ? 'selected' : '' %>>Plaquette</option>
+                            <option value="ampoule" <%= produit.unite === 'ampoule' ? 'selected' : '' %>>Ampoule</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Prix d'achat (FCFA)</label>
+                        <input type="number" name="prix_achat" min="0" value="<%= produit.prix_achat || 0 %>" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Prix de vente (FCFA) <span class="text-red-500">*</span></label>
+                        <input type="number" name="prix_vente" required min="0" value="<%= produit.prix_vente %>" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Seuil d'alerte minimum</label>
+                        <input type="number" name="stock_minimum" min="0" value="<%= produit.stock_minimum || 5 %>" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Date de péremption</label>
+                        <% const peremptionVal = produit.date_peremption ? new Date(produit.date_peremption).toISOString().split('T')[0] : ''; %>
+                        <input type="date" name="date_peremption" value="<%= peremptionVal %>" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations complémentaires -->
+            <div>
+                <h2 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <i class="fas fa-info-circle text-indigo-600"></i> Informations complémentaires
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Emplacement de stockage</label>
+                        <input type="text" name="emplacement" value="<%= produit.emplacement || '' %>" placeholder="Étagère A, Armoire 2..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Fournisseur</label>
+                        <input type="text" name="fournisseur" value="<%= produit.fournisseur || '' %>" placeholder="Nom du fournisseur" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boutons -->
+            <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4 border-t border-gray-100">
+                <a href="/pharmacie" class="w-full sm:w-auto px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-sm text-center transition">Annuler</a>
+                <button type="submit" class="w-full sm:w-auto px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-sm shadow-sm text-center transition">
+                    <i class="fas fa-check mr-1"></i> Mettre à jour
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
