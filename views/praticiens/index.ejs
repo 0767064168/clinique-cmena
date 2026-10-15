@@ -6,6 +6,19 @@
         </a>
     </div>
 
+    <form action="/praticiens" method="GET" class="bg-white p-3 sm:p-4 rounded-lg shadow mb-6 flex flex-col sm:flex-row gap-3">
+        <div class="flex-1">
+            <label for="praticiens-search" class="sr-only">Rechercher un praticien</label>
+            <input id="praticiens-search" type="search" name="search" value="<%= search || '' %>" placeholder="Nom, prénom ou spécialité..."
+                class="w-full border rounded-md px-3 py-2 text-sm">
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded text-sm">Rechercher</button>
+            <a href="/praticiens" class="text-sm text-gray-500 hover:underline px-2 py-2">Réinitialiser</a>
+        </div>
+    </form>
+
+    <p class="text-sm text-gray-600 mb-3"><%= totalCount %> praticien(s)</p>
     <% if (typeof praticiens !== 'undefined' && praticiens.length > 0) { %>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <% praticiens.forEach(praticien => { %>
@@ -56,4 +69,5 @@
             <a href="/praticiens/create" class="text-blue-600 hover:underline">Ajouter un nouveau praticien</a>
         </div>
     <% } %>
+    <%- include('../partials/pagination', { currentPage, totalPages, totalCount, pageSize, baseUrl, paginationFilters }) %>
 </div>

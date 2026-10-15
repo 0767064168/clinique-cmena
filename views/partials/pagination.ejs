@@ -1,14 +1,32 @@
-<% if (typeof totalPages !== 'undefined' && totalPages > 1) { %>
+<%
+const paginationHref = page => {
+  const params = Object.entries(paginationFilters || {})
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+  params.push(`page=${page}`);
+  return `${baseUrl}?${params.join('&')}`;
+};
+%>
+<% if (typeof totalCount !== 'undefined' && totalCount > 0) { %>
 <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4 rounded-md shadow-sm">
+  <p class="hidden sm:block text-sm text-gray-700">
+    Affichage de <span class="font-medium"><%= (currentPage - 1) * pageSize + 1 %></span>
+    à <span class="font-medium"><%= Math.min(currentPage * pageSize, totalCount) %></span>
+    sur <span class="font-medium"><%= totalCount %></span> résultat(s)
+  </p>
+  <p class="sm:hidden text-xs text-gray-700">
+    <%= (currentPage - 1) * pageSize + 1 %>–<%= Math.min(currentPage * pageSize, totalCount) %> sur <%= totalCount %>
+  </p>
+  <% if (totalPages > 1) { %>
   <div class="flex flex-1 justify-between sm:hidden">
     <% if (currentPage > 1) { %>
-      <a href="<%= baseUrl %>?page=<%= currentPage - 1 %>" class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Précédent</a>
+      <a href="<%= paginationHref(currentPage - 1) %>" class="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Précédent</a>
     <% } else { %>
       <span class="relative inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-400 cursor-not-allowed">Précédent</span>
     <% } %>
     
     <% if (currentPage < totalPages) { %>
-      <a href="<%= baseUrl %>?page=<%= currentPage + 1 %>" class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Suivant</a>
+      <a href="<%= paginationHref(currentPage + 1) %>" class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Suivant</a>
     <% } else { %>
       <span class="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-medium text-gray-400 cursor-not-allowed">Suivant</span>
     <% } %>
@@ -22,7 +40,7 @@
     <div>
       <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
         <% if (currentPage > 1) { %>
-          <a href="<%= baseUrl %>?page=<%= currentPage - 1 %>" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
+          <a href="<%= paginationHref(currentPage - 1) %>" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
             <span class="sr-only">Précédent</span>
             <i class="fas fa-chevron-left h-4 w-4"></i>
           </a>
@@ -37,7 +55,7 @@
         let endPage = Math.min(totalPages, currentPage + 2);
         
         if (startPage > 1) { %>
-          <a href="<%= baseUrl %>?page=1" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">1</a>
+          <a href="<%= paginationHref(1) %>" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">1</a>
           <% if (startPage > 2) { %>
             <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">...</span>
           <% } %>
@@ -45,9 +63,9 @@
 
         <% for (let i = startPage; i <= endPage; i++) { %>
           <% if (i === currentPage) { %>
-            <a href="<%= baseUrl %>?page=<%= i %>" aria-current="page" class="relative z-10 inline-flex items-center bg-primary px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><%= i %></a>
+            <a href="<%= paginationHref(i) %>" aria-current="page" class="relative z-10 inline-flex items-center bg-primary px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"><%= i %></a>
           <% } else { %>
-            <a href="<%= baseUrl %>?page=<%= i %>" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"><%= i %></a>
+            <a href="<%= paginationHref(i) %>" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"><%= i %></a>
           <% } %>
         <% } %>
 
@@ -55,11 +73,11 @@
           <% if (endPage < totalPages - 1) { %>
             <span class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">...</span>
           <% } %>
-          <a href="<%= baseUrl %>?page=<%= totalPages %>" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"><%= totalPages %></a>
+          <a href="<%= paginationHref(totalPages) %>" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"><%= totalPages %></a>
         <% } %>
 
         <% if (currentPage < totalPages) { %>
-          <a href="<%= baseUrl %>?page=<%= currentPage + 1 %>" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
+          <a href="<%= paginationHref(currentPage + 1) %>" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
             <span class="sr-only">Suivant</span>
             <i class="fas fa-chevron-right h-4 w-4"></i>
           </a>
@@ -71,5 +89,6 @@
       </nav>
     </div>
   </div>
+  <% } %>
 </div>
 <% } %>

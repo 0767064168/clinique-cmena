@@ -9,27 +9,55 @@ const path = require('path');
 // GET /factures — liste
 router.get('/', async (req, res) => {
     try {
-        const { statut, date_from, date_to, search } = req.query;
-        let query = supabase.from('factures').select('*, patients!inner(nom, prenom)');
+        const { statut, date_from, date_to } = req.query;
+        const search = typeof req.query.search === 'string'
+            ? req.query.search.trim().replace(/[^a-zA-Z0-9À-ÿ\s-]/g, ' ').replace(/\s+/g, ' ').trim()
+            : '';
+        const pageValue = Number.parseInt(req.query.page, 10);
+        const requestedPage = Number.isSafeInteger(pageValue) && pageValue > 0 && pageValue <= 1000000 ? pageValue : 1;
+        const pageSize = 25;
 
-        if (statut) query = query.eq('statut', statut);
-        if (date_from) query = query.gte('date_facture', date_from);
-        if (date_to) query = query.lte('date_facture', date_to);
+        const buildQuery = () => {
+            let query = supabase.from('factures').select('*, patients!inner(nom, prenom)', { count: 'exact' });
 
-        if (search) {
-            query = query.or(
-                `nom.ilike.%${search}%,prenom.ilike.%${search}%`,
-                { foreignTable: 'patients' }
-            );
-        }
+            if (statut) query = query.eq('statut', statut);
+            if (date_from) query = query.gte('date_facture', date_from);
+            if (date_to) query = query.lte('date_facture', date_to);
+            if (search) {
+                query = query.or(
+                    `nom.ilike.%${search}%,prenom.ilike.%${search}%`,
+                    { foreignTable: 'patients' }
+                );
+            }
 
-        const { data: factures, error } = await query.order('date_facture', { ascending: false });
+            return query;
+        };
+        const fetchPage = page => buildQuery()
+            .order('date_facture', { ascending: false })
+            .range((page - 1) * pageSize, page * pageSize - 1);
+
+        let currentPage = requestedPage;
+        let { data: factures, count, error } = await fetchPage(currentPage);
         if (error) throw error;
+
+        const totalCount = count || 0;
+        const totalPages = Math.ceil(totalCount / pageSize);
+        currentPage = totalPages ? Math.min(currentPage, totalPages) : 1;
+        if (currentPage !== requestedPage) {
+            ({ data: factures, error } = await fetchPage(currentPage));
+            if (error) throw error;
+        }
 
         res.render('factures/index', {
             title: 'Factures',
             factures: factures || [],
-            filters: { statut, date_from, date_to, search }
+            filters: { statut, date_from, date_to, search },
+            currentPage,
+            totalPages,
+            totalCount,
+            pageSize,
+            baseUrl: '/factures',
+            paginationFilters: { statut, date_from, date_to, search }
         });
     } catch (error) {
         console.error(error);

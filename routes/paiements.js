@@ -5,13 +5,56 @@ const { logAudit } = require('../utils/audit');
 
 router.get('/', async (req, res) => {
     try {
-        const { data: paiements, error } = await supabase
-            .from('paiements')
-            .select('*, factures(numero_facture, patients(nom, prenom))')
+        const reference = typeof req.query.reference === 'string'
+            ? req.query.reference.trim().replace(/[^a-zA-Z0-9À-ÿ\s-]/g, ' ').replace(/\s+/g, ' ').trim()
+            : '';
+        const patient = typeof req.query.patient === 'string'
+            ? req.query.patient.trim().replace(/[^a-zA-Z0-9À-ÿ\s-]/g, ' ').replace(/\s+/g, ' ').trim()
+            : '';
+        const invoiceNumberValue = typeof req.query.invoice_number === 'string' ? req.query.invoice_number.trim() : '';
+        const parsedInvoiceNumber = /^\d+$/.test(invoiceNumberValue) ? Number(invoiceNumberValue) : null;
+        const invoiceNumber = Number.isSafeInteger(parsedInvoiceNumber) ? parsedInvoiceNumber : null;
+        const mode = typeof req.query.mode === 'string' ? req.query.mode : '';
+        const date_from = typeof req.query.date_from === 'string' ? req.query.date_from : '';
+        const date_to = typeof req.query.date_to === 'string' ? req.query.date_to : '';
+        const pageValue = Number.parseInt(req.query.page, 10);
+        const requestedPage = Number.isSafeInteger(pageValue) && pageValue > 0 && pageValue <= 1000000 ? pageValue : 1;
+        const pageSize = 25;
+
+        const buildQuery = () => {
+            let query = supabase.from('paiements')
+                .select('*, factures!inner(numero_facture, patients!inner(nom, prenom))', { count: 'exact' });
+            if (mode) query = query.eq('mode_paiement', mode);
+            if (date_from) query = query.gte('date_paiement', date_from);
+            if (date_to) query = query.lte('date_paiement', `${date_to}T23:59:59`);
+            if (reference) query = query.ilike('reference', `%${reference}%`);
+            if (patient) {
+                query = query.or(
+                    `nom.ilike.%${patient}%,prenom.ilike.%${patient}%`,
+                    { referencedTable: 'factures.patients' }
+                );
+            }
+            if (invoiceNumber !== null) {
+                query = query.eq('numero_facture', invoiceNumber, { referencedTable: 'factures' });
+            }
+            return query;
+        };
+        const fetchPage = page => buildQuery()
             .order('date_paiement', { ascending: false })
-            .limit(100);
+            .range((page - 1) * pageSize, page * pageSize - 1);
+
+        let currentPage = requestedPage;
+        let { data: paiements, count, error } = await fetchPage(currentPage);
 
         if (error) throw error;
+
+        const totalCount = count || 0;
+        const totalPages = Math.ceil(totalCount / pageSize);
+        currentPage = totalPages ? Math.min(currentPage, totalPages) : 1;
+        if (currentPage !== requestedPage) {
+            ({ data: paiements, error } = await fetchPage(currentPage));
+            if (error) throw error;
+        }
 
         const formattedPaiements = (paiements || []).map(p => ({
             ...p,
@@ -21,7 +64,14 @@ router.get('/', async (req, res) => {
 
         res.render('paiements/index', {
             title: 'Historique des Paiements',
-            paiements: formattedPaiements
+            paiements: formattedPaiements,
+            filters: { reference, patient, invoice_number: invoiceNumberValue, mode, date_from, date_to },
+            currentPage,
+            totalPages,
+            totalCount,
+            pageSize,
+            baseUrl: '/paiements',
+            paginationFilters: { reference, patient, invoice_number: invoiceNumberValue, mode, date_from, date_to }
         });
     } catch (error) {
         console.error(error);

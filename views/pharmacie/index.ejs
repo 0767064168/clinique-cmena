@@ -5,7 +5,7 @@
             <div class="flex items-center gap-2">
                 <h1 class="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Pharmacie & Consommables</h1>
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
-                    <%= typeof produits !== 'undefined' ? produits.length : 0 %>
+                    <%= typeof totalCount !== 'undefined' ? totalCount : 0 %>
                 </span>
             </div>
             <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Gestion du stock pharmaceutique et des consommables médicaux</p>
@@ -291,4 +291,5 @@
             </table>
         </div>
     </div>
+    <%- include('../partials/pagination', { currentPage, totalPages, totalCount, pageSize, baseUrl, paginationFilters }) %>
 </div>

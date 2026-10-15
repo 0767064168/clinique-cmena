@@ -5,32 +5,57 @@ const { packVitals, unpackVitals } = require('../utils/vitals');
 
 router.get('/', async (req, res) => {
     try {
-        const { date_from, date_to, praticien_id, statut, search } = req.query;
-        let query = supabase.from('consultations').select('*, patients(nom, prenom), praticiens(nom, prenom)');
+        const { date_from, date_to, praticien_id, statut } = req.query;
+        const search = typeof req.query.search === 'string'
+            ? req.query.search.trim().replace(/[^a-zA-Z0-9À-ÿ\s-]/g, ' ').replace(/\s+/g, ' ').trim()
+            : '';
+        const motif = typeof req.query.motif === 'string'
+            ? req.query.motif.trim().replace(/[^a-zA-Z0-9À-ÿ\s-]/g, ' ').replace(/\s+/g, ' ').trim()
+            : '';
+        const pageValue = Number.parseInt(req.query.page, 10);
+        const requestedPage = Number.isSafeInteger(pageValue) && pageValue > 0 && pageValue <= 1000000 ? pageValue : 1;
+        const pageSize = 25;
 
-        if (date_from) query = query.gte('date_entree', `${date_from}T00:00:00`);
-        if (date_to) query = query.lte('date_entree', `${date_to}T23:59:59`);
-        if (praticien_id) query = query.eq('praticien_id', praticien_id);
-        if (statut) query = query.eq('statut', statut);
+        const buildQuery = () => {
+            let query = supabase.from('consultations')
+                .select('*, patients!inner(nom, prenom), praticiens(nom, prenom)', { count: 'exact' });
 
-        const { data: rawConsultations, error } = await query.order('date_entree', { ascending: false });
+            if (date_from) query = query.gte('date_entree', `${date_from}T00:00:00`);
+            if (date_to) query = query.lte('date_entree', `${date_to}T23:59:59`);
+            if (praticien_id) query = query.eq('praticien_id', praticien_id);
+            if (statut) query = query.eq('statut', statut);
+            if (search) {
+                query = query.or(
+                    `nom.ilike.%${search}%,prenom.ilike.%${search}%`,
+                    { foreignTable: 'patients' }
+                );
+            }
+            if (motif) query = query.ilike('motif', `%${motif}%`);
+
+            return query;
+        };
+        const fetchPage = page => buildQuery()
+            .order('date_entree', { ascending: false })
+            .range((page - 1) * pageSize, page * pageSize - 1);
+
+        let currentPage = requestedPage;
+        let { data: rawConsultations, count, error } = await fetchPage(currentPage);
         if (error) throw error;
 
-        let consultations = (rawConsultations || []).map(c => ({
+        const totalCount = count || 0;
+        const totalPages = Math.ceil(totalCount / pageSize);
+        currentPage = totalPages ? Math.min(currentPage, totalPages) : 1;
+        if (currentPage !== requestedPage) {
+            ({ data: rawConsultations, error } = await fetchPage(currentPage));
+            if (error) throw error;
+        }
+
+        const consultations = (rawConsultations || []).map(c => ({
             ...c,
             patient_nom: c.patients ? c.patients.nom : '-',
             patient_prenom: c.patients ? c.patients.prenom : '',
             praticien_nom: c.praticiens ? `${c.praticiens.nom} ${c.praticiens.prenom}` : '-'
         }));
-
-        if (search) {
-            const s = search.toLowerCase();
-            consultations = consultations.filter(c => 
-                (c.patient_nom && c.patient_nom.toLowerCase().includes(s)) ||
-                (c.patient_prenom && c.patient_prenom.toLowerCase().includes(s)) ||
-                (c.motif && c.motif.toLowerCase().includes(s))
-            );
-        }
 
         const { data: praticiens } = await supabase.from('praticiens').select('id, nom, prenom').eq('actif', true);
 
@@ -38,7 +63,13 @@ router.get('/', async (req, res) => {
             title: 'Consultations',
             consultations: consultations || [],
             praticiens: praticiens || [],
-            query: req.query
+            query: { date_from, date_to, praticien_id, statut, search, motif },
+            currentPage,
+            totalPages,
+            totalCount,
+            pageSize,
+            baseUrl: '/consultations',
+            paginationFilters: { date_from, date_to, praticien_id, statut, search, motif }
         });
     } catch (error) {
         console.error('Erreur consultations:', error);

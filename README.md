@@ -96,6 +96,10 @@ enregistrement ; le compte PostgreSQL doit donc pouvoir créer et gérer cette t
 En développement, si `DATABASE_URL` n'est pas défini, le stockage mémoire est utilisé.
 Pour une base déjà installée, exécutez `database/migrations/20261015_private_sessions.sql`
 dans Supabase avant de lancer la version qui utilise ce stockage.
+Pour activer la pagination et les statistiques globales de la pharmacie sur une base
+existante, exécutez également `database/migrations/20261015_pharmacy_pagination.sql`
+dans Supabase. Cette fonction SQL s'exécute avec les droits de l'appelant et respecte
+les politiques RLS existantes.
 
 ### 3. Lancement de l'application
 ```bash
@@ -115,4 +119,5 @@ Accédez ensuite à l'application dans votre navigateur :
 - **Format de Facture Conforme CMENA** : En-tête avec coordonnées de Bouaké, mentions d'assurance, matricule calculé, décomposition par acte (Consultation, Laboratoire, Pharmacie, Soins d'un jour), part assureur et part assuré.
 - **Conversion et arrêtés de factures** : Calcul automatique de la contre-valeur en Euro (€) et conversion du montant total en toutes lettres en Francs CFA (ex: *CINQUANTE MILLE SOIXANTE-QUINZE FRANCS CFA*).
 - **Gestion des Patients** : N° de dossier unique, génération de matricule (ex: `KOAn2026091816152679`), historique médical, antécédents, groupe sanguin et couverture d'assurance.
+- **Listes paginées** : Patients, praticiens, consultations, factures, paiements et produits de pharmacie chargés par pages de 25 résultats. Les filtres actifs restent appliqués pendant la navigation ; les statistiques de stock sont calculées en base sur l'ensemble des produits concernés.
 - **Impression A4 directe** : Page dédiée `/factures/:id/print` prête à être imprimée ou sauvegardée en PDF avec tampons et visas.

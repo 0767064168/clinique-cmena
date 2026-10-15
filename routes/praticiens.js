@@ -4,20 +4,46 @@ const { supabase } = require('../config/supabase');
 
 router.get('/', async (req, res) => {
     try {
-        const search = req.query.search || '';
-        let query = supabase.from('praticiens').select('*').eq('actif', true);
+        const search = typeof req.query.search === 'string'
+            ? req.query.search.trim().replace(/[^a-zA-Z0-9À-ÿ\s-]/g, ' ').replace(/\s+/g, ' ').trim()
+            : '';
+        const pageValue = Number.parseInt(req.query.page, 10);
+        const requestedPage = Number.isSafeInteger(pageValue) && pageValue > 0 && pageValue <= 1000000 ? pageValue : 1;
+        const pageSize = 25;
 
-        if (search) {
-            query = query.or(`nom.ilike.%${search}%,prenom.ilike.%${search}%,specialite.ilike.%${search}%`);
-        }
+        const buildQuery = () => {
+            let query = supabase.from('praticiens').select('*', { count: 'exact' }).eq('actif', true);
+            if (search) {
+                query = query.or(`nom.ilike.%${search}%,prenom.ilike.%${search}%,specialite.ilike.%${search}%`);
+            }
+            return query;
+        };
+        const fetchPage = page => buildQuery()
+            .order('nom')
+            .range((page - 1) * pageSize, page * pageSize - 1);
 
-        const { data: praticiens, error } = await query.order('nom');
+        let currentPage = requestedPage;
+        let { data: praticiens, count, error } = await fetchPage(currentPage);
         if (error) throw error;
+
+        const totalCount = count || 0;
+        const totalPages = Math.ceil(totalCount / pageSize);
+        currentPage = totalPages ? Math.min(currentPage, totalPages) : 1;
+        if (currentPage !== requestedPage) {
+            ({ data: praticiens, error } = await fetchPage(currentPage));
+            if (error) throw error;
+        }
 
         res.render('praticiens/index', {
             title: 'Liste des Praticiens',
             praticiens: praticiens || [],
-            search
+            search,
+            currentPage,
+            totalPages,
+            totalCount,
+            pageSize,
+            baseUrl: '/praticiens',
+            paginationFilters: { search }
         });
     } catch (error) {
         console.error(error);

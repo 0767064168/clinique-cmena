@@ -7,50 +7,54 @@ const { logAudit } = require('../utils/audit');
 // GET /pharmacie — Liste des produits avec filtres et statistiques
 router.get('/', async (req, res) => {
     try {
-        const { search, categorie, stock_alert, perime } = req.query;
+        const search = typeof req.query.search === 'string'
+            ? req.query.search.trim().replace(/[^a-zA-Z0-9À-ÿ\s-]/g, ' ').replace(/\s+/g, ' ').trim()
+            : '';
+        const categorie = typeof req.query.categorie === 'string' ? req.query.categorie : '';
+        const stock_alert = req.query.stock_alert === 'oui' ? 'oui' : '';
+        const perime = req.query.perime === 'oui' ? 'oui' : '';
         const today = new Date().toISOString().split('T')[0];
-
-        let query = supabase
-            .from('produits_pharmacie')
-            .select('*')
-            .eq('actif', true)
-            .order('designation', { ascending: true })
-            .limit(200);
-
-        if (search) {
-            query = query.or(`designation.ilike.%${search}%,code.ilike.%${search}%`);
-        }
-        if (categorie) {
-            query = query.eq('categorie', categorie);
-        }
-
-        const { data: produits, error } = await query;
+        const pageValue = Number.parseInt(req.query.page, 10);
+        const requestedPage = Number.isSafeInteger(pageValue) && pageValue > 0 && pageValue <= 1000000 ? pageValue : 1;
+        const pageSize = 25;
+        const fetchPage = page => supabase.rpc('get_pharmacy_products_page', {
+                p_search: search || null,
+                p_category: categorie || null,
+                p_stock_alert: stock_alert === 'oui',
+                p_expired: perime === 'oui',
+                p_today: today,
+                p_page: page,
+                p_page_size: pageSize
+            });
+        let { data: result, error } = await fetchPage(requestedPage);
         if (error) throw error;
-
-        const allProduits = produits || [];
-
-        // Filtrage côté serveur pour les alertes et produits périmés
-        let filteredProduits = allProduits;
-        if (stock_alert === 'oui') {
-            filteredProduits = filteredProduits.filter(p => p.stock_actuel <= p.stock_minimum);
-        }
-        if (perime === 'oui') {
-            filteredProduits = filteredProduits.filter(p => p.date_peremption && p.date_peremption < today);
+        if (!result || !Array.isArray(result.products) || !result.stats) {
+            throw new Error('Réponse invalide de get_pharmacy_products_page');
         }
 
-        const stats = {
-            totalProduits: allProduits.length,
-            totalValeurStock: allProduits.reduce((sum, p) => sum + (p.stock_actuel * parseFloat(p.prix_vente || 0)), 0),
-            produitsEnAlerte: allProduits.filter(p => p.stock_actuel <= p.stock_minimum).length,
-            produitsEnRupture: allProduits.filter(p => p.stock_actuel <= 0).length,
-            produitsPerimes: allProduits.filter(p => p.date_peremption && p.date_peremption < today).length
-        };
+        const totalCount = Number(result.total_count || 0);
+        const totalPages = Math.ceil(totalCount / pageSize);
+        const currentPage = totalPages ? Math.min(requestedPage, totalPages) : 1;
+        if (currentPage !== requestedPage) {
+            ({ data: result, error } = await fetchPage(currentPage));
+            if (error) throw error;
+            if (!result || !Array.isArray(result.products) || !result.stats) {
+                throw new Error('Réponse invalide de get_pharmacy_products_page');
+            }
+        }
+        const stats = result.stats;
 
         res.render('pharmacie/index', {
             title: 'Pharmacie & Consommables',
-            produits: filteredProduits,
+            produits: result.products || [],
             filters: { search, categorie, stock_alert, perime },
-            stats
+            stats,
+            currentPage,
+            totalPages,
+            totalCount,
+            pageSize,
+            baseUrl: '/pharmacie',
+            paginationFilters: { search, categorie, stock_alert, perime }
         });
     } catch (error) {
         console.error('Erreur pharmacie:', error);

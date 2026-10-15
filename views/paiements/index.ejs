@@ -5,7 +5,7 @@
             <div class="flex items-center gap-2">
                 <h1 class="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Historique des Paiements</h1>
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
-                    <%= typeof paiements !== 'undefined' ? paiements.length : 0 %>
+                    <%= typeof totalCount !== 'undefined' ? totalCount : 0 %>
                 </span>
             </div>
             <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Journal des règlements et encaissements enregistrés</p>
@@ -17,36 +17,59 @@
     </div>
 
     <!-- Barre de recherche et filtre rapide -->
-    <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm mb-6 border border-gray-100">
-        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
+    <form action="/paiements" method="GET" class="bg-white p-3 sm:p-4 rounded-xl shadow-sm mb-6 border border-gray-100">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-3">
             <div class="relative flex-grow">
-                <label for="searchPaiements" class="sr-only">Rechercher un paiement</label>
+                <label for="searchPaiements" class="block text-sm text-gray-600 mb-1">Référence</label>
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                     <i class="fas fa-search text-xs" aria-hidden="true"></i>
                 </span>
                 <input 
                     type="text" 
                     id="searchPaiements" 
-                    placeholder="Rechercher par patient, numéro facture, référence..." 
-                    class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    onkeyup="filterPaiements()">
+                    name="reference"
+                    value="<%= filters.reference || '' %>"
+                    placeholder="Référence de transaction..."
+                    class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
             </div>
-            <div class="w-full sm:w-48">
-                <label for="filterMode" class="sr-only">Filtrer par mode de paiement</label>
+            <div>
+                <label for="filterMode" class="block text-sm text-gray-600 mb-1">Mode de paiement</label>
                 <select 
                     id="filterMode" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    onchange="filterPaiements()">
+                    name="mode"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
                     <option value="">Tous les modes</option>
-                    <option value="especes">Espèces</option>
-                    <option value="mobile_money">Mobile Money</option>
-                    <option value="carte">Carte Bancaire</option>
-                    <option value="virement">Virement</option>
-                    <option value="cheque">Chèque</option>
+                    <option value="especes" <%= filters.mode === 'especes' ? 'selected' : '' %>>Espèces</option>
+                    <option value="mobile_money" <%= filters.mode === 'mobile_money' ? 'selected' : '' %>>Mobile Money</option>
+                    <option value="carte" <%= filters.mode === 'carte' ? 'selected' : '' %>>Carte Bancaire</option>
+                    <option value="virement" <%= filters.mode === 'virement' ? 'selected' : '' %>>Virement</option>
+                    <option value="cheque" <%= filters.mode === 'cheque' ? 'selected' : '' %>>Chèque</option>
                 </select>
             </div>
+            <div>
+                <label for="paiements-patient" class="block text-sm text-gray-600 mb-1">Patient</label>
+                <input id="paiements-patient" type="search" name="patient" value="<%= filters.patient || '' %>"
+                    placeholder="Nom ou prénom..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
+            <div>
+                <label for="paiements-invoice-number" class="block text-sm text-gray-600 mb-1">N° facture</label>
+                <input id="paiements-invoice-number" type="number" min="1" name="invoice_number" value="<%= filters.invoice_number || '' %>"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
+            <div>
+                <label for="paiements-date-from" class="block text-sm text-gray-600 mb-1">Du</label>
+                <input id="paiements-date-from" type="date" name="date_from" value="<%= filters.date_from || '' %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
+            <div>
+                <label for="paiements-date-to" class="block text-sm text-gray-600 mb-1">Au</label>
+                <input id="paiements-date-to" type="date" name="date_to" value="<%= filters.date_to || '' %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
+            <div class="flex items-end gap-2 sm:col-span-2 xl:col-span-6">
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm">Filtrer</button>
+                <a href="/paiements" class="text-sm text-gray-500 hover:underline px-2 py-2">Réinitialiser</a>
+            </div>
         </div>
-    </div>
+    </form>
 
     <% 
     const getModeBadge = (mode) => {
@@ -64,11 +87,7 @@
     <div class="block md:hidden space-y-3" id="paiementsMobileList">
         <% if (typeof paiements !== 'undefined' && paiements.length > 0) { %>
             <% paiements.forEach(paiement => { %>
-                <div class="paiement-card bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-2.5"
-                     data-patient="<%= String(paiement.patient_nom || '').toLowerCase() %>"
-                     data-facture="<%= String(paiement.facture_numero || '').toLowerCase() %>"
-                     data-ref="<%= String(paiement.reference || '').toLowerCase() %>"
-                     data-mode="<%= String(paiement.mode_paiement || '').toLowerCase() %>">
+                <div class="paiement-card bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-2.5">
                     
                     <div class="flex items-start justify-between gap-2">
                         <div>
@@ -139,11 +158,7 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     <% if (typeof paiements !== 'undefined' && paiements.length > 0) { %>
                         <% paiements.forEach(paiement => { %>
-                            <tr class="paiement-row hover:bg-slate-50 transition"
-                                data-patient="<%= String(paiement.patient_nom || '').toLowerCase() %>"
-                                data-facture="<%= String(paiement.facture_numero || '').toLowerCase() %>"
-                                data-ref="<%= String(paiement.reference || '').toLowerCase() %>"
-                                data-mode="<%= String(paiement.mode_paiement || '').toLowerCase() %>">
+                            <tr class="paiement-row hover:bg-slate-50 transition">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <%= new Date(paiement.created_at || paiement.date_paiement).toLocaleString('fr-FR') %>
                                 </td>
@@ -187,60 +202,5 @@
         </div>
     </div>
 
-    <!-- Message aucun résultat après filtre -->
-    <div id="noPaiementsResult" class="hidden bg-white p-6 rounded-xl text-center text-gray-500 shadow-sm border border-gray-100 mt-3">
-        <i class="fas fa-search text-2xl text-gray-300 mb-2 block"></i>
-        Aucun paiement ne correspond à votre recherche
-    </div>
+    <%- include('../partials/pagination', { currentPage, totalPages, totalCount, pageSize, baseUrl, paginationFilters }) %>
 </div>
-
-<script>
-    function filterPaiements() {
-        const query = (document.getElementById('searchPaiements').value || '').toLowerCase().trim();
-        const mode = (document.getElementById('filterMode').value || '').toLowerCase().trim();
-
-        const cards = document.querySelectorAll('.paiement-card');
-        const rows = document.querySelectorAll('.paiement-row');
-        let visibleCount = 0;
-
-        cards.forEach(card => {
-            const patient = card.getAttribute('data-patient') || '';
-            const facture = card.getAttribute('data-facture') || '';
-            const ref = card.getAttribute('data-ref') || '';
-            const cardMode = card.getAttribute('data-mode') || '';
-
-            const matchQuery = !query || patient.includes(query) || facture.includes(query) || ref.includes(query);
-            const matchMode = !mode || cardMode.includes(mode);
-
-            if (matchQuery && matchMode) {
-                card.classList.remove('hidden');
-                visibleCount++;
-            } else {
-                card.classList.add('hidden');
-            }
-        });
-
-        rows.forEach(row => {
-            const patient = row.getAttribute('data-patient') || '';
-            const facture = row.getAttribute('data-facture') || '';
-            const ref = row.getAttribute('data-ref') || '';
-            const rowMode = row.getAttribute('data-mode') || '';
-
-            const matchQuery = !query || patient.includes(query) || facture.includes(query) || ref.includes(query);
-            const matchMode = !mode || rowMode.includes(mode);
-
-            if (matchQuery && matchMode) {
-                row.classList.remove('hidden');
-            } else {
-                row.classList.add('hidden');
-            }
-        });
-
-        const noResults = document.getElementById('noPaiementsResult');
-        if (visibleCount === 0 && (cards.length > 0 || rows.length > 0)) {
-            noResults.classList.remove('hidden');
-        } else {
-            noResults.classList.add('hidden');
-        }
-    }
-</script>
