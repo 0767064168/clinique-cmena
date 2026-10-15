@@ -10,6 +10,17 @@ let supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+const createAuthClient = () => createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false
+    }
+  }
+);
+
 // Si l'URL fournie est une chaîne de connexion PostgreSQL, extraire l'URL d'API HTTPS Supabase
 if (supabaseUrl && (supabaseUrl.startsWith('postgres://') || supabaseUrl.startsWith('postgresql://'))) {
   const match = supabaseUrl.match(/@db\.([a-z0-9_-]+)\.supabase\.co/i);
@@ -53,3 +64,4 @@ const supabaseAdmin = supabaseServiceRoleKey
 module.exports = supabase;
 module.exports.supabase = supabase;
 module.exports.supabaseAdmin = supabaseAdmin;
+module.exports.createAuthClient = createAuthClient;

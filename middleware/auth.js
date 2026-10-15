@@ -7,6 +7,7 @@ const { supabase } = require('../config/supabase');
 
 // Intervalle de re-vérification du statut actif (toutes les 5 minutes)
 const ACTIVE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+const VALID_ROLES = new Set(['admin', 'medecin', 'receptionniste', 'comptable', 'pharmacien']);
 
 /**
  * Middleware vérifiant que l'utilisateur est authentifié en session
@@ -15,33 +16,45 @@ const ACTIVE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
  */
 const requireAuth = async (req, res, next) => {
   if (req.session && req.session.user) {
+    if (!VALID_ROLES.has(req.session.user.role)) {
+      return req.session.destroy((destroyError) => {
+        if (destroyError) console.error('Erreur suppression session invalide:', destroyError.message);
+        res.clearCookie('connect.sid');
+        return res.redirect('/auth/login');
+      });
+    }
+
     // Re-vérifier le statut actif toutes les 5 minutes
     const now = Date.now();
     const lastCheck = req.session._lastActiveCheck || 0;
 
     if (now - lastCheck > ACTIVE_CHECK_INTERVAL_MS) {
       try {
-        const { data: profil } = await supabase
+        const { data: profil, error: profileError } = await supabase
           .from('utilisateurs')
           .select('actif, role')
           .eq('id', req.session.user.id)
-          .single();
+          .maybeSingle();
 
-        if (profil && profil.actif === false) {
-          // Compte désactivé : détruire la session
-          req.session.destroy();
-          return res.redirect('/auth/login');
+        if (profileError) throw profileError;
+
+        if (!profil || profil.actif === false || !VALID_ROLES.has(profil.role)) {
+          return req.session.destroy((destroyError) => {
+            if (destroyError) console.error('Erreur suppression session désactivée:', destroyError.message);
+            res.clearCookie('connect.sid');
+            return res.redirect('/auth/login');
+          });
         }
 
         // Mettre à jour le rôle si changé par l'admin
-        if (profil && profil.role !== req.session.user.role) {
+        if (profil.role !== req.session.user.role) {
           req.session.user.role = profil.role;
         }
 
         req.session._lastActiveCheck = now;
       } catch (err) {
-        // En cas d'erreur DB, on laisse passer mais on log
         console.error('Erreur vérification statut actif:', err.message);
+        return res.status(503).send('Le service d’authentification est indisponible. Réessayez plus tard.');
       }
     }
 
@@ -138,6 +151,6 @@ module.exports = {
   requireAuth,
   optionalAuth,
   requireAdmin,
-  requireRole
+  requireRole,
+  VALID_ROLES
 };
-

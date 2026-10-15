@@ -34,15 +34,15 @@
                             </div>
                         </div>
                     </div>
-                    <div class="bg-gray-50 px-6 py-3 border-t flex justify-end items-center gap-4">
-                        <a href="/praticiens/<%= praticien.id %>" class="text-blue-600 hover:text-blue-900 text-sm inline-flex items-center gap-1 font-semibold">
+                    <div class="bg-gray-50 px-6 py-3 border-t flex flex-wrap justify-end items-center gap-x-4 gap-y-2">
+                        <a href="/praticiens/<%= praticien.id %>" class="text-blue-600 hover:text-blue-900 text-sm inline-flex min-h-[44px] items-center gap-1 font-semibold">
                             <i class="fas fa-eye text-xs"></i> Voir
                         </a>
-                        <a href="/praticiens/<%= praticien.id %>/edit" class="text-indigo-600 hover:text-indigo-900 text-sm inline-flex items-center gap-1 font-semibold">
+                        <a href="/praticiens/<%= praticien.id %>/edit" class="text-indigo-600 hover:text-indigo-900 text-sm inline-flex min-h-[44px] items-center gap-1 font-semibold">
                             <i class="fas fa-edit text-xs"></i> Modifier
                         </a>
                         <form action="/praticiens/<%= praticien.id %>?_method=DELETE" method="POST" class="inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce praticien ?');">
-                            <button type="submit" class="text-red-600 hover:text-red-900 text-sm inline-flex items-center gap-1 font-semibold">
+                            <button type="submit" class="text-red-600 hover:text-red-900 text-sm inline-flex min-h-[44px] items-center gap-1 font-semibold">
                                 <i class="fas fa-trash-alt text-xs"></i> Supprimer
                             </button>
                         </form>

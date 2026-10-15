@@ -1,6 +1,6 @@
 <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
     <!-- Mobile menu button -->
-    <button type="button" @click="sidebarOpen = true" class="-m-2.5 p-2.5 text-gray-700 md:hidden hover:text-primary">
+    <button type="button" @click="sidebarOpen = true" aria-controls="primary-navigation" :aria-expanded="sidebarOpen.toString()" x-ref="mobileMenuTrigger" class="-m-2.5 p-2.5 text-gray-700 md:hidden hover:text-primary">
         <span class="sr-only">Ouvrir la navigation</span>
         <i class="fas fa-bars text-xl"></i>
     </button>
@@ -38,8 +38,8 @@
             <div class="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200" aria-hidden="true"></div>
 
             <!-- Profile dropdown -->
-            <div class="relative" x-data="{ open: false }">
-                <button type="button" @click="open = !open" @click.away="open = false" class="-m-1.5 flex items-center p-1.5" id="user-menu-button" aria-expanded="false" aria-haspopup="true">
+            <div class="relative" x-data="{ open: false }" @keydown.escape="open = false; $refs.userMenuTrigger.focus()">
+                        <button type="button" @click="open = !open" @click.away="open = false" class="-m-1.5 flex items-center p-1.5" id="user-menu-button" x-ref="userMenuTrigger" :aria-expanded="open.toString()" aria-controls="user-menu">
                     <span class="sr-only">Ouvrir le menu utilisateur</span>
                     <div class="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white font-bold">
                         <%= (typeof user !== 'undefined' && user && (user.nom || user.email)) ? (user.nom || user.email).charAt(0).toUpperCase() : 'A' %>
@@ -60,10 +60,10 @@
                      x-transition:leave="transition ease-in duration-75"
                      x-transition:leave-start="transform opacity-100 scale-100"
                      x-transition:leave-end="transform opacity-0 scale-95"
-                     class="absolute right-0 z-10 mt-2.5 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabindex="-1">
-                    <a href="/profile" class="block px-3 py-1 text-sm leading-6 text-gray-900 hover:bg-gray-50" role="menuitem" tabindex="-1">Profil</a>
-                    <a href="/settings" class="block px-3 py-1 text-sm leading-6 text-gray-900 hover:bg-gray-50" role="menuitem" tabindex="-1">Paramètres</a>
-                    <a href="/logout" class="block px-3 py-1 text-sm leading-6 text-red-600 hover:bg-gray-50" role="menuitem" tabindex="-1">Déconnexion</a>
+                     id="user-menu" class="absolute right-0 z-10 mt-2.5 w-40 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none" aria-labelledby="user-menu-button">
+                    <a href="/profile" class="block px-3 py-2 text-sm leading-6 text-gray-900 hover:bg-gray-50">Profil</a>
+                    <a href="/settings" class="block px-3 py-2 text-sm leading-6 text-gray-900 hover:bg-gray-50">Paramètres</a>
+                    <a href="/logout" class="block px-3 py-2 text-sm leading-6 text-red-600 hover:bg-gray-50">Déconnexion</a>
                 </div>
             </div>
         </div>

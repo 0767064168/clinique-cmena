@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
-const { supabase, supabaseAdmin } = require('../config/supabase');
+const { supabase, supabaseAdmin, createAuthClient } = require('../config/supabase');
+const { VALID_ROLES } = require('../middleware/auth');
 
 router.get('/login', (req, res) => {
     if (req.session && req.session.user) {
@@ -13,6 +14,7 @@ router.get('/login', (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         let { email, password } = req.body;
+        const authClient = createAuthClient();
         email = (email || '').trim();
 
         // Si l'utilisateur saisit un identifiant sans '@' (ex: 'admin' ou 'ADMIN'), convertir automatiquement
@@ -20,7 +22,7 @@ router.post('/login', async (req, res) => {
             email = `${email.toLowerCase()}@gspm.ci`;
         }
 
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await authClient.auth.signInWithPassword({
             email,
             password
         });
@@ -32,35 +34,52 @@ router.post('/login', async (req, res) => {
 
         if (data.session && data.user) {
             // Récupérer les informations du profil utilisateur
-            const { data: profil } = await supabase
+            const { data: profil, error: profileError } = await supabase
                 .from('utilisateurs')
                 .select('nom, prenom, role, actif')
                 .eq('id', data.user.id)
                 .single();
 
-            // Vérifier si le compte est actif
-            if (profil && profil.actif === false) {
-                await supabase.auth.signOut();
-                req.flash('error', 'Votre compte a été désactivé par l\'administrateur. Veuillez contacter l\'administration.');
+            if (profileError) {
+                console.error('Erreur chargement du profil après connexion:', profileError.message);
+                await authClient.auth.signOut();
+                req.flash('error', 'Impossible de vérifier votre profil. Veuillez contacter l\'administrateur.');
                 return res.redirect('/auth/login');
             }
 
-            req.session.user = {
-                id: data.user.id,
-                email: data.user.email,
-                nom: profil ? profil.nom : 'Utilisateur',
-                prenom: profil ? profil.prenom : 'GSPM',
-                role: profil ? profil.role : 'agent'
-            };
+            if (!profil || profil.actif === false || !VALID_ROLES.has(profil.role)) {
+                await authClient.auth.signOut();
+                req.flash('error', 'Ce compte est désactivé ou ne possède pas de profil autorisé.');
+                return res.redirect('/auth/login');
+            }
 
             const returnTo = req.session.returnTo || '/dashboard';
-            delete req.session.returnTo;
+            const safeReturnTo = returnTo.startsWith('/') && !returnTo.startsWith('//')
+                ? returnTo
+                : '/dashboard';
 
-            req.flash('success', `Bienvenue ${req.session.user.prenom} ${req.session.user.nom}`);
+            return req.session.regenerate((regenerateError) => {
+                if (regenerateError) {
+                    console.error('Erreur renouvellement session après connexion:', regenerateError.message);
+                    return res.status(500).send('Impossible de créer votre session. Veuillez réessayer.');
+                }
 
-            return req.session.save((err) => {
-                if (err) console.error('Erreur sauvegarde session:', err);
-                res.redirect(returnTo);
+                req.session.user = {
+                    id: data.user.id,
+                    email: data.user.email,
+                    nom: profil.nom,
+                    prenom: profil.prenom,
+                    role: profil.role
+                };
+                req.flash('success', `Bienvenue ${req.session.user.prenom} ${req.session.user.nom}`);
+
+                return req.session.save((saveError) => {
+                    if (saveError) {
+                        console.error('Erreur sauvegarde session:', saveError.message);
+                        return res.status(500).send('Impossible de sauvegarder votre session. Veuillez réessayer.');
+                    }
+                    return res.redirect(safeReturnTo);
+                });
             });
         } else {
             req.flash('error', 'Identifiants invalides');
@@ -74,14 +93,14 @@ router.post('/login', async (req, res) => {
 });
 
 router.get('/logout', async (req, res) => {
-    try {
-        await supabase.auth.signOut();
-        req.session.destroy();
-        res.redirect('/auth/login');
-    } catch (error) {
-        console.error(error);
-        res.redirect('/dashboard');
-    }
+    req.session.destroy((error) => {
+        if (error) {
+            console.error('Erreur fermeture session:', error.message);
+            return res.status(500).send('Impossible de fermer la session. Veuillez réessayer.');
+        }
+        res.clearCookie('connect.sid');
+        return res.redirect('/auth/login');
+    });
 });
 
 // GET /profile — Fiche personnelle de l'agent connecté
@@ -133,7 +152,7 @@ router.post('/profile/password', async (req, res) => {
         }
 
         // Vérification de l'ancien mot de passe via Supabase Auth
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { error: signInError } = await createAuthClient().auth.signInWithPassword({
             email: req.session.user.email,
             password: current_password
         });

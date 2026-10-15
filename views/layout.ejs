@@ -23,7 +23,14 @@
         [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="h-full font-sans text-gray-900" x-data="{ sidebarOpen: false }">
+<body class="h-full font-sans text-gray-900"
+      x-data="{ sidebarOpen: false, isDesktop: window.matchMedia('(min-width: 768px)').matches }"
+      @resize.window.debounce.100ms="isDesktop = window.matchMedia('(min-width: 768px)').matches"
+      @keydown.escape.window="if (sidebarOpen) { sidebarOpen = false; $nextTick(() => $refs.mobileMenuTrigger.focus()) }">
+
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-gray-900 focus:shadow-lg">
+        Passer au contenu principal
+    </a>
 
     <!-- Sidebar -->
     <%- include('partials/sidebar') %>
@@ -34,7 +41,7 @@
         <%- include('partials/header') %>
 
         <!-- Main Area -->
-        <main class="flex-1 pb-8">
+        <main id="main-content" tabindex="-1" class="flex-1 pb-8">
             <div class="px-2 sm:px-6 lg:px-8 mt-4 sm:mt-8">
                 <!-- Flash Messages -->
                 <% if (typeof messages !== 'undefined') { %>

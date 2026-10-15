@@ -20,8 +20,9 @@
     <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm mb-6 border border-gray-100">
         <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <div class="relative flex-grow">
+                <label for="searchPaiements" class="sr-only">Rechercher un paiement</label>
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                    <i class="fas fa-search text-xs"></i>
+                    <i class="fas fa-search text-xs" aria-hidden="true"></i>
                 </span>
                 <input 
                     type="text" 
@@ -31,6 +32,7 @@
                     onkeyup="filterPaiements()">
             </div>
             <div class="w-full sm:w-48">
+                <label for="filterMode" class="sr-only">Filtrer par mode de paiement</label>
                 <select 
                     id="filterMode" 
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -103,7 +105,7 @@
                                 <%= Number(paiement.montant || 0).toLocaleString('fr-FR') %> <span class="text-xs font-semibold text-gray-500">FCFA</span>
                             </span>
                         </div>
-                        <a href="/paiements/<%= paiement.id %>/print" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-xs font-bold shadow-sm transition">
+                        <a href="/paiements/<%= paiement.id %>/print" target="_blank" rel="noopener" aria-label="Imprimer le reçu de <%= paiement.patient_nom %> (nouvel onglet)" class="inline-flex min-h-[44px] items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-xs font-bold shadow-sm transition">
                             <i class="fas fa-print text-gray-600"></i>
                             <span>Reçu</span>
                         </a>
@@ -120,17 +122,18 @@
 
     <!-- Vue Desktop / Tablette (Tableau avec overflow horizontal) -->
     <div class="hidden md:block bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto" role="region" aria-label="Historique des paiements" tabindex="0">
             <table class="min-w-full divide-y divide-gray-200" id="paiementsTable">
+                <caption class="sr-only">Historique des paiements enregistrés</caption>
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">N° Facture</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Patient</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mode</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Référence</th>
-                        <th class="px-6 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Montant</th>
-                        <th class="px-6 py-3.5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
+                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">N° Facture</th>
+                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Patient</th>
+                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mode</th>
+                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Référence</th>
+                        <th scope="col" class="px-6 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Montant</th>
+                        <th scope="col" class="px-6 py-3.5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -164,8 +167,8 @@
                                     <%= Number(paiement.montant || 0).toLocaleString('fr-FR') %> FCFA
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                    <a href="/paiements/<%= paiement.id %>/print" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded text-xs font-semibold shadow-sm transition" title="Imprimer le Reçu Patient">
-                                        <i class="fas fa-print text-gray-600"></i>
+                                    <a href="/paiements/<%= paiement.id %>/print" target="_blank" rel="noopener" aria-label="Imprimer le reçu de <%= paiement.patient_nom %> (nouvel onglet)" class="inline-flex min-h-[44px] items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded text-xs font-semibold shadow-sm transition" title="Imprimer le Reçu Patient">
+                                        <i class="fas fa-print text-gray-600" aria-hidden="true"></i>
                                         <span>Reçu</span>
                                     </a>
                                 </td>
@@ -173,7 +176,7 @@
                         <% }); %>
                     <% } else { %>
                         <tr>
-                            <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                            <td colspan="7" class="px-6 py-8 text-center text-gray-500">
                                 <i class="fas fa-receipt text-3xl text-gray-300 mb-2 block"></i>
                                 Aucun paiement trouvé
                             </td>

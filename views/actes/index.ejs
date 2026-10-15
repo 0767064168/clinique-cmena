@@ -32,16 +32,16 @@
         <form action="/actes" method="POST" class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Code</label>
-                    <input type="text" name="code" placeholder="Ex: CS-GEN" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
+                    <label for="acte-code" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Code</label>
+                    <input id="acte-code" type="text" name="code" placeholder="Ex: CS-GEN" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
                 </div>
                 <div class="sm:col-span-2 lg:col-span-2">
-                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Libellé <span class="text-red-500">*</span></label>
-                    <input type="text" name="libelle" required placeholder="Ex: Consultation Médecine Générale" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
+                    <label for="acte-libelle" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Libellé <span class="text-red-500">*</span></label>
+                    <input id="acte-libelle" type="text" name="libelle" required placeholder="Ex: Consultation Médecine Générale" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Catégorie</label>
-                    <select name="categorie" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
+                    <label for="acte-categorie" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Catégorie</label>
+                    <select id="acte-categorie" name="categorie" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
                         <option value="consultation">Consultation</option>
                         <option value="soins">Soins</option>
                         <option value="laboratoire">Laboratoire</option>
@@ -52,8 +52,8 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Prix Unitaire (FCFA) <span class="text-red-500">*</span></label>
-                    <input type="number" name="prix_unitaire" required min="0" placeholder="5000" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
+                    <label for="acte-prix" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Prix Unitaire (FCFA) <span class="text-red-500">*</span></label>
+                    <input id="acte-prix" type="number" name="prix_unitaire" required min="0" placeholder="5000" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none">
                 </div>
             </div>
 
@@ -152,8 +152,8 @@
                                 <i class="fas fa-edit mr-1"></i> Modifier
                             </a>
                             <form action="/actes/<%= acte.id %>?_method=DELETE" method="POST" class="inline" onsubmit="return confirm('Supprimer cet acte ?');">
-                                <button type="submit" class="inline-flex items-center justify-center h-8 w-8 rounded-lg text-xs bg-red-50 hover:bg-red-100 text-red-600 transition" title="Supprimer">
-                                    <i class="fas fa-trash-alt"></i>
+                                <button type="submit" class="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-xs bg-red-50 hover:bg-red-100 text-red-600 transition" aria-label="Supprimer l’acte <%= acte.libelle %>" title="Supprimer">
+                                    <i class="fas fa-trash-alt" aria-hidden="true"></i>
                                 </button>
                             </form>
                         </div>
@@ -170,15 +170,16 @@
 
     <!-- Vue Desktop / Tablette (Tableau avec overflow horizontal sécurisé) -->
     <div class="hidden md:block bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto" role="region" aria-label="Catalogue des actes médicaux" tabindex="0">
             <table class="min-w-full divide-y divide-gray-200" id="actesTable">
+                <caption class="sr-only">Catalogue des actes médicaux disponibles</caption>
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Code</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Libellé</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Catégorie</th>
-                        <th class="px-6 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Prix Unitaire</th>
-                        <th class="px-6 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Code</th>
+                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Libellé</th>
+                        <th scope="col" class="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Catégorie</th>
+                        <th scope="col" class="px-6 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Prix Unitaire</th>
+                        <th scope="col" class="px-6 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -205,11 +206,11 @@
                                     <%= Number(acte.prix_unitaire).toLocaleString('fr-FR') %> FCFA
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <a href="/actes/<%= acte.id %>/edit" class="text-indigo-600 hover:text-indigo-900 mr-3 inline-flex items-center gap-1 font-semibold">
+                                    <a href="/actes/<%= acte.id %>/edit" class="text-indigo-600 hover:text-indigo-900 mr-3 inline-flex min-h-[44px] items-center gap-1 font-semibold">
                                         <i class="fas fa-edit text-xs"></i> Modifier
                                     </a>
                                     <form action="/actes/<%= acte.id %>?_method=DELETE" method="POST" class="inline" onsubmit="return confirm('Supprimer cet acte ?');">
-                                        <button type="submit" class="text-red-600 hover:text-red-900 inline-flex items-center gap-1 font-semibold">
+                                        <button type="submit" class="text-red-600 hover:text-red-900 inline-flex min-h-[44px] items-center gap-1 font-semibold">
                                             <i class="fas fa-trash-alt text-xs"></i> Supprimer
                                         </button>
                                     </form>

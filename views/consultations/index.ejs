@@ -10,20 +10,20 @@
     <div class="bg-white p-3 sm:p-4 rounded-lg shadow mb-6">
         <form action="/consultations" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 items-end">
             <div class="sm:col-span-2 lg:col-span-1">
-                <label class="block text-sm text-gray-600 mb-1">Recherche</label>
-                <input type="text" name="search" placeholder="Patient, motif..." class="w-full border rounded-md px-3 py-2 text-sm" value="<%= typeof query !== 'undefined' ? query.search : '' %>">
+                <label for="consultations-search" class="block text-sm text-gray-600 mb-1">Recherche</label>
+                <input id="consultations-search" type="text" name="search" placeholder="Patient, motif..." class="w-full border rounded-md px-3 py-2 text-sm" value="<%= typeof query !== 'undefined' ? query.search : '' %>">
             </div>
             <div>
-                <label class="block text-sm text-gray-600 mb-1">Du</label>
-                <input type="date" name="date_from" class="w-full border rounded-md px-3 py-2 text-sm" value="<%= typeof query !== 'undefined' ? query.date_from : '' %>">
+                <label for="consultations-date-from" class="block text-sm text-gray-600 mb-1">Du</label>
+                <input id="consultations-date-from" type="date" name="date_from" class="w-full border rounded-md px-3 py-2 text-sm" value="<%= typeof query !== 'undefined' ? query.date_from : '' %>">
             </div>
             <div>
-                <label class="block text-sm text-gray-600 mb-1">Au</label>
-                <input type="date" name="date_to" class="w-full border rounded-md px-3 py-2 text-sm" value="<%= typeof query !== 'undefined' ? query.date_to : '' %>">
+                <label for="consultations-date-to" class="block text-sm text-gray-600 mb-1">Au</label>
+                <input id="consultations-date-to" type="date" name="date_to" class="w-full border rounded-md px-3 py-2 text-sm" value="<%= typeof query !== 'undefined' ? query.date_to : '' %>">
             </div>
             <div>
-                <label class="block text-sm text-gray-600 mb-1">Praticien</label>
-                <select name="praticien_id" class="w-full border rounded-md px-3 py-2 text-sm">
+                <label for="consultations-praticien" class="block text-sm text-gray-600 mb-1">Praticien</label>
+                <select id="consultations-praticien" name="praticien_id" class="w-full border rounded-md px-3 py-2 text-sm">
                     <option value="">Tous les praticiens</option>
                     <% if (typeof praticiens !== 'undefined') { %>
                         <% praticiens.forEach(p => { %>
@@ -33,8 +33,8 @@
                 </select>
             </div>
             <div>
-                <label class="block text-sm text-gray-600 mb-1">Statut</label>
-                <select name="statut" class="w-full border rounded-md px-3 py-2 text-sm">
+                <label for="consultations-statut" class="block text-sm text-gray-600 mb-1">Statut</label>
+                <select id="consultations-statut" name="statut" class="w-full border rounded-md px-3 py-2 text-sm">
                     <option value="">Tous les statuts</option>
                     <option value="en_cours" <%= typeof query !== 'undefined' && query.statut === 'en_cours' ? 'selected' : '' %>>En cours</option>
                     <option value="termine" <%= typeof query !== 'undefined' && query.statut === 'termine' ? 'selected' : '' %>>Terminé</option>
@@ -49,16 +49,18 @@
     </div>
 
     <!-- List -->
-    <div class="bg-white shadow rounded-lg overflow-x-auto">
+    <div class="bg-white shadow rounded-lg overflow-x-auto" role="region" aria-label="Liste des consultations" tabindex="0">
+        <p class="md:hidden px-4 py-2 text-xs text-gray-500" aria-hidden="true">Faites défiler horizontalement pour voir toutes les colonnes.</p>
         <table class="min-w-full divide-y divide-gray-200">
+            <caption class="sr-only">Consultations enregistrées</caption>
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Praticien</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motif</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Praticien</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motif</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -77,18 +79,18 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a href="/consultations/<%= consultation.id %>" class="text-blue-600 hover:text-blue-900 mr-3 inline-flex items-center gap-1 font-semibold" title="Consulter le dossier">
+                                <a href="/consultations/<%= consultation.id %>" class="text-blue-600 hover:text-blue-900 mr-3 inline-flex min-h-[44px] items-center gap-1 font-semibold" title="Consulter le dossier">
                                     <i class="fas fa-eye text-xs"></i> Voir
                                 </a>
-                                <a href="/consultations/<%= consultation.id %>/ordonnance" target="_blank" class="text-teal-600 hover:text-teal-800 mr-3 inline-flex items-center gap-1 font-semibold" title="Imprimer l'ordonnance">
+                                <a href="/consultations/<%= consultation.id %>/ordonnance" target="_blank" rel="noopener" aria-label="Imprimer l'ordonnance (nouvel onglet)" class="text-teal-600 hover:text-teal-800 mr-3 inline-flex min-h-[44px] items-center gap-1 font-semibold" title="Imprimer l'ordonnance">
                                     <i class="fas fa-file-prescription text-xs"></i> Ordonnance
                                 </a>
-                                <a href="/consultations/<%= consultation.id %>/edit" class="text-indigo-600 hover:text-indigo-900 mr-3 inline-flex items-center gap-1 font-semibold">
+                                <a href="/consultations/<%= consultation.id %>/edit" class="text-indigo-600 hover:text-indigo-900 mr-3 inline-flex min-h-[44px] items-center gap-1 font-semibold">
                                     <i class="fas fa-edit text-xs"></i> Modifier
                                 </a>
                                 <% if (consultation.statut !== 'annule') { %>
                                     <form action="/consultations/<%= consultation.id %>?_method=DELETE" method="POST" class="inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette consultation ? Elle sera annulée.');">
-                                        <button type="submit" class="text-red-600 hover:text-red-900 inline-flex items-center gap-1 font-semibold">
+                                        <button type="submit" class="text-red-600 hover:text-red-900 inline-flex min-h-[44px] items-center gap-1 font-semibold">
                                             <i class="fas fa-trash-alt text-xs"></i> Supprimer
                                         </button>
                                     </form>

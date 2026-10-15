@@ -4,12 +4,30 @@
  */
 
 require('dotenv').config();
+const isProd = process.env.NODE_ENV === 'production';
+const sessionSecret = process.env.SESSION_SECRET;
+const databaseUrl = process.env.DATABASE_URL;
+
+if (isProd && !sessionSecret) {
+  throw new Error('SESSION_SECRET doit être configurée en production.');
+}
+
+if (sessionSecret && Buffer.byteLength(sessionSecret, 'utf8') < 32) {
+  throw new Error('SESSION_SECRET doit contenir au moins 32 octets.');
+}
+
+if (isProd && !databaseUrl) {
+  throw new Error('DATABASE_URL doit être configurée en production pour stocker les sessions.');
+}
+
 const path = require('path');
+const crypto = require('crypto');
 const express = require('express');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const expressLayouts = require('express-ejs-layouts');
 const session = require('express-session');
+const PgSession = require('connect-pg-simple')(session);
 const methodOverride = require('method-override');
 const { numberToFrenchWords } = require('./utils/helpers');
 
@@ -33,7 +51,6 @@ const { requireAuth, requireAdmin } = require('./middleware/auth');
 // Initialisation de l'application Express
 const app = express();
 const PORT = process.env.PORT || 3000;
-const isProd = process.env.NODE_ENV === 'production';
 
 // Sécurité : Masquer la signature d'Express
 app.disable('x-powered-by');
@@ -67,10 +84,22 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Remplacement de méthode HTTP pour supporter PUT et DELETE via formulaires
 app.use(methodOverride('_method'));
 
+const sessionStore = databaseUrl
+  ? new PgSession({
+      conString: databaseUrl,
+      schemaName: 'private',
+      tableName: 'app_sessions',
+      createTableIfMissing: true,
+      ttl: 24 * 60 * 60,
+      pruneSessionInterval: 15 * 60
+    })
+  : undefined;
+
 // Configuration de la gestion de sessions sécurisée
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'cmena-secret-session-key-ci',
+    secret: sessionSecret || crypto.randomBytes(64).toString('hex'),
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {

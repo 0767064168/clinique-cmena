@@ -4,6 +4,11 @@
 -- Activer l'extension pour les UUID
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Espace privé utilisé pour les données internes du serveur (sessions, etc.)
+CREATE SCHEMA IF NOT EXISTS private;
+REVOKE ALL ON SCHEMA private FROM PUBLIC;
+REVOKE ALL ON SCHEMA private FROM anon, authenticated;
+
 -- ==========================================
 -- 1. ENUMS
 -- ==========================================

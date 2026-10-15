@@ -79,12 +79,14 @@
     <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm mb-6 border border-gray-100">
         <form action="/pharmacie" method="GET" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
             <div class="relative">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-search text-xs"></i></span>
-                <input type="text" name="search" placeholder="Rechercher par désignation ou code..." value="<%= filters.search || '' %>"
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400" aria-hidden="true"><i class="fas fa-search text-xs"></i></span>
+                <label for="pharmacie-search" class="sr-only">Rechercher un produit par désignation ou code</label>
+                <input id="pharmacie-search" type="text" name="search" placeholder="Rechercher par désignation ou code..." value="<%= filters.search || '' %>"
                     class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
             </div>
             <div>
-                <select name="categorie" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <label for="pharmacie-categorie" class="sr-only">Filtrer par catégorie</label>
+                <select id="pharmacie-categorie" name="categorie" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="">Toutes catégories</option>
                     <option value="medicament" <%= filters.categorie === 'medicament' ? 'selected' : '' %>>Médicament</option>
                     <option value="consommable" <%= filters.categorie === 'consommable' ? 'selected' : '' %>>Consommable</option>
@@ -93,13 +95,15 @@
                 </select>
             </div>
             <div>
-                <select name="stock_alert" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <label for="pharmacie-stock-alert" class="sr-only">Filtrer par niveau de stock</label>
+                <select id="pharmacie-stock-alert" name="stock_alert" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="">Tous les stocks</option>
                     <option value="oui" <%= filters.stock_alert === 'oui' ? 'selected' : '' %>>⚠️ Alertes stock uniquement</option>
                 </select>
             </div>
             <div>
-                <select name="perime" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <label for="pharmacie-perime" class="sr-only">Filtrer par date de péremption</label>
+                <select id="pharmacie-perime" name="perime" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     <option value="">Tous les produits</option>
                     <option value="oui" <%= filters.perime === 'oui' ? 'selected' : '' %>>📅 Périmés uniquement</option>
                 </select>
@@ -195,7 +199,7 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <a href="/pharmacie/<%= p.id %>" class="inline-flex items-center justify-center h-8 px-3 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition">
+                            <a href="/pharmacie/<%= p.id %>" class="inline-flex min-h-[44px] items-center justify-center px-3 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition">
                                 <i class="fas fa-eye mr-1"></i> Voir
                             </a>
                         </div>
@@ -212,17 +216,18 @@
 
     <!-- Vue Desktop -->
     <div class="hidden md:block bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto" role="region" aria-label="Liste des produits en stock" tabindex="0">
             <table class="min-w-full divide-y divide-gray-200">
+                <caption class="sr-only">Produits et niveaux de stock</caption>
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-4 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Code</th>
-                        <th class="px-4 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Désignation</th>
-                        <th class="px-4 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Catégorie</th>
-                        <th class="px-4 py-3.5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Stock</th>
-                        <th class="px-4 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Prix Vente</th>
-                        <th class="px-4 py-3.5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Statut</th>
-                        <th class="px-4 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th scope="col" class="px-4 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Code</th>
+                        <th scope="col" class="px-4 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Désignation</th>
+                        <th scope="col" class="px-4 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Catégorie</th>
+                        <th scope="col" class="px-4 py-3.5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Stock</th>
+                        <th scope="col" class="px-4 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Prix Vente</th>
+                        <th scope="col" class="px-4 py-3.5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Statut</th>
+                        <th scope="col" class="px-4 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -260,15 +265,15 @@
                                     <span class="px-2.5 py-1 rounded-full text-xs font-semibold border <%= sb.cls %>"><%= sb.label %></span>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                                    <a href="/pharmacie/<%= p.id %>" class="text-emerald-600 hover:text-emerald-900 mr-2 inline-flex items-center gap-1 font-semibold">
+                                    <a href="/pharmacie/<%= p.id %>" class="text-emerald-600 hover:text-emerald-900 mr-2 inline-flex min-h-[44px] items-center gap-1 font-semibold">
                                         <i class="fas fa-eye text-xs"></i> Voir
                                     </a>
-                                    <a href="/pharmacie/<%= p.id %>/edit" class="text-indigo-600 hover:text-indigo-900 mr-2 inline-flex items-center gap-1 font-semibold">
-                                        <i class="fas fa-edit text-xs"></i>
+                                    <a href="/pharmacie/<%= p.id %>/edit" class="text-indigo-600 hover:text-indigo-900 mr-2 inline-flex min-h-[44px] items-center gap-1 font-semibold" aria-label="Modifier <%= p.designation %>" title="Modifier">
+                                        <i class="fas fa-edit text-xs" aria-hidden="true"></i>
                                     </a>
                                     <form action="/pharmacie/<%= p.id %>?_method=DELETE" method="POST" class="inline" onsubmit="return confirm('Supprimer ce produit ?');">
-                                        <button type="submit" class="text-red-600 hover:text-red-900 inline-flex items-center gap-1 font-semibold">
-                                            <i class="fas fa-trash-alt text-xs"></i>
+                                        <button type="submit" class="text-red-600 hover:text-red-900 inline-flex min-h-[44px] min-w-[44px] items-center gap-1 font-semibold" aria-label="Supprimer <%= p.designation %>" title="Supprimer">
+                                            <i class="fas fa-trash-alt text-xs" aria-hidden="true"></i>
                                         </button>
                                     </form>
                                 </td>

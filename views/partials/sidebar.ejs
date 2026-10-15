@@ -2,6 +2,7 @@
 <div x-show="sidebarOpen" x-cloak 
      class="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 md:hidden"
      @click="sidebarOpen = false"
+     aria-hidden="true"
      x-transition:enter="transition-opacity ease-linear duration-300"
      x-transition:enter-start="opacity-0"
      x-transition:enter-end="opacity-100"
@@ -11,7 +12,11 @@
 </div>
 
 <!-- Sidebar -->
-<div :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'" 
+<div id="primary-navigation"
+     x-show="isDesktop || sidebarOpen"
+     :aria-hidden="(!isDesktop && !sidebarOpen).toString()"
+     :inert="!isDesktop && !sidebarOpen"
+     :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
      class="fixed inset-y-0 left-0 z-50 w-64 bg-primary-dark text-white transition-transform duration-300 ease-in-out md:translate-x-0 flex flex-col shadow-2xl md:shadow-none">
     
     <!-- Sidebar Header -->
@@ -24,13 +29,13 @@
             </div>
         </div>
         <!-- Close button for mobile -->
-        <button @click="sidebarOpen = false" class="md:hidden text-gray-300 hover:text-white">
-            <i class="fas fa-times text-xl"></i>
+        <button type="button" @click="sidebarOpen = false; $nextTick(() => $refs.mobileMenuTrigger.focus())" aria-label="Fermer la navigation" class="md:hidden text-gray-300 hover:text-white">
+            <i class="fas fa-times text-xl" aria-hidden="true"></i>
         </button>
     </div>
 
     <!-- Navigation -->
-    <nav class="flex flex-1 flex-col overflow-y-auto px-4 py-4 mt-2">
+    <nav aria-label="Navigation principale" class="flex flex-1 flex-col overflow-y-auto px-4 py-4 mt-2">
         <ul role="list" class="flex flex-1 flex-col gap-y-2">
             <li>
                 <a href="/" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath === '/' ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">

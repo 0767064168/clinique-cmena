@@ -77,13 +77,25 @@ Copiez `.env.example` vers `.env` à la racine, puis remplacez les valeurs d'exe
 ```env
 PORT=3000
 NODE_ENV=development
-SESSION_SECRET=remplacez-par-une-cle-aleatoire-longue
+SESSION_SECRET=cle_aleatoire_d_au_moins_32_octets
 
 # Supabase
 SUPABASE_URL=https://votre-projet.supabase.co
 SUPABASE_ANON_KEY=votre_cle_anon_ici
 SUPABASE_SERVICE_ROLE_KEY=votre_cle_service_role_ici
+
+# Connexion PostgreSQL Supabase (obligatoire en production pour les sessions)
+DATABASE_URL=postgresql://postgres:[MOT_DE_PASSE]@db.[PROJECT_REF].supabase.co:5432/postgres?sslmode=require
 ```
+
+Générez `SESSION_SECRET` avec une valeur aléatoire d'au moins 32 octets (par exemple
+`node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`). En production,
+l'application refuse de démarrer si cette clé ou `DATABASE_URL` manque. Les sessions
+sont conservées dans la table `private.app_sessions`, créée automatiquement au premier
+enregistrement ; le compte PostgreSQL doit donc pouvoir créer et gérer cette table.
+En développement, si `DATABASE_URL` n'est pas défini, le stockage mémoire est utilisé.
+Pour une base déjà installée, exécutez `database/migrations/20261015_private_sessions.sql`
+dans Supabase avant de lancer la version qui utilise ce stockage.
 
 ### 3. Lancement de l'application
 ```bash
