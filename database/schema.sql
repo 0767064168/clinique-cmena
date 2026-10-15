@@ -264,6 +264,7 @@ STABLE
 SECURITY INVOKER
 SET search_path = public, pg_temp
 AS $$
+    WITH
     stock_stats AS (
         SELECT
             COUNT(*) AS total_products,
