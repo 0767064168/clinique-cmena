@@ -24,25 +24,67 @@
 
     <% 
     const today = new Date().toISOString().split('T')[0];
-    const isExpired = produit.date_peremption && produit.date_peremption < today;
-    const isLowStock = produit.stock_actuel <= produit.stock_minimum;
-    const isOutOfStock = produit.stock_actuel <= 0;
+    let diffDays = null;
+    if (produit.date_peremption) {
+        const expDate = new Date(produit.date_peremption);
+        const curDate = new Date();
+        expDate.setHours(0, 0, 0, 0);
+        curDate.setHours(0, 0, 0, 0);
+        diffDays = Math.ceil((expDate - curDate) / (1000 * 60 * 60 * 24));
+    }
+    const isExpired = diffDays !== null && diffDays < 0;
+    const isExpiring30 = diffDays !== null && diffDays >= 0 && diffDays <= 30;
+    const isExpiring60 = diffDays !== null && diffDays > 30 && diffDays <= 60;
+    const isExpiring90 = diffDays !== null && diffDays > 60 && diffDays <= 90;
+    const isLowStock = (produit.stock_actuel || 0) <= (produit.stock_minimum || 0);
+    const isOutOfStock = (produit.stock_actuel || 0) <= 0;
     const valeurStock = (produit.stock_actuel || 0) * parseFloat(produit.prix_vente || 0);
     %>
 
-    <!-- Alertes -->
+    <!-- Alertes Péremption -->
     <% if (isExpired) { %>
-        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg">
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-4 rounded-r-lg">
             <div class="flex items-center">
                 <i class="fas fa-exclamation-triangle text-red-500 text-xl mr-3"></i>
                 <div>
-                    <h3 class="text-sm font-bold text-red-800">Attention : Produit Périmé</h3>
-                    <p class="text-xs text-red-700 mt-0.5">La date de péremption (<%= formatDate(produit.date_peremption) %>) est dépassée. Ce produit ne doit plus être dispensé.</p>
+                    <h3 class="text-sm font-bold text-red-800">Attention : Produit Périmé (<%= Math.abs(diffDays) %> jour<%= Math.abs(diffDays) > 1 ? 's' : '' %> de dépassement)</h3>
+                    <p class="text-xs text-red-700 mt-0.5">La date de péremption (<%= formatDate(produit.date_peremption) %>) est dépassée. Ce produit ne doit plus être dispensé et doit être isolé pour destruction/retour.</p>
+                </div>
+            </div>
+        </div>
+    <% } else if (isExpiring30) { %>
+        <div class="bg-rose-50 border-l-4 border-rose-500 p-4 mb-4 rounded-r-lg">
+            <div class="flex items-center">
+                <i class="fas fa-hourglass-end text-rose-500 text-xl mr-3"></i>
+                <div>
+                    <h3 class="text-sm font-bold text-rose-800">Alerte Critique : Péremption Imminente (<%= diffDays === 0 ? "Aujourd'hui" : `dans ${diffDays} jour${diffDays > 1 ? 's' : ''}` %>)</h3>
+                    <p class="text-xs text-rose-700 mt-0.5">Ce produit périme le <%= formatDate(produit.date_peremption) %>. Veuillez privilégier sa dispensation en priorité absolue (règle FEFO).</p>
+                </div>
+            </div>
+        </div>
+    <% } else if (isExpiring60) { %>
+        <div class="bg-amber-50 border-l-4 border-amber-500 p-4 mb-4 rounded-r-lg">
+            <div class="flex items-center">
+                <i class="fas fa-hourglass-half text-amber-500 text-xl mr-3"></i>
+                <div>
+                    <h3 class="text-sm font-bold text-amber-800">Avertissement : Péremption Proche (<%= diffDays %> jours restants)</h3>
+                    <p class="text-xs text-amber-700 mt-0.5">La date de péremption (<%= formatDate(produit.date_peremption) %>) approche (&le; 60 jours). À surveiller dans les prochaines commandes.</p>
+                </div>
+            </div>
+        </div>
+    <% } else if (isExpiring90) { %>
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 rounded-r-lg">
+            <div class="flex items-center">
+                <i class="fas fa-calendar-alt text-yellow-600 text-xl mr-3"></i>
+                <div>
+                    <h3 class="text-sm font-bold text-yellow-800">Information : Péremption dans <%= diffDays %> jours (&le; 90 jours)</h3>
+                    <p class="text-xs text-yellow-700 mt-0.5">La date de péremption est fixée au <%= formatDate(produit.date_peremption) %>.</p>
                 </div>
             </div>
         </div>
     <% } %>
 
+    <!-- Alertes Stock -->
     <% if (isOutOfStock) { %>
         <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg">
             <div class="flex items-center">
@@ -95,9 +137,34 @@
                 </div>
                 <div>
                     <span class="text-xs text-gray-500 block uppercase font-medium">Date de péremption</span>
-                    <span class="font-semibold <%= isExpired ? 'text-red-600 font-bold' : 'text-gray-800' %>">
+                    <span class="font-semibold <%= isExpired ? 'text-red-600 font-bold' : (isExpiring30 ? 'text-rose-600 font-bold' : (isExpiring60 ? 'text-amber-600 font-bold' : (isExpiring90 ? 'text-yellow-700 font-semibold' : 'text-gray-800'))) %>">
                         <%= produit.date_peremption ? formatDate(produit.date_peremption) : '-' %>
                     </span>
+                    <% if (produit.date_peremption) { %>
+                        <div class="mt-1">
+                            <% if (isExpired) { %>
+                                <span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-red-100 text-red-800">
+                                    <i class="fas fa-ban mr-1"></i> Périmé (<%= Math.abs(diffDays) %>j)
+                                </span>
+                            <% } else if (isExpiring30) { %>
+                                <span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-rose-100 text-rose-800">
+                                    <i class="fas fa-hourglass-end mr-1"></i> &le; 30j (<%= diffDays %>j)
+                                </span>
+                            <% } else if (isExpiring60) { %>
+                                <span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800">
+                                    <i class="fas fa-hourglass-half mr-1"></i> &le; 60j (<%= diffDays %>j)
+                                </span>
+                            <% } else if (isExpiring90) { %>
+                                <span class="inline-block px-2 py-0.5 text-xs font-bold rounded-full bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-calendar-alt mr-1"></i> &le; 90j (<%= diffDays %>j)
+                                </span>
+                            <% } else { %>
+                                <span class="inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                                    <i class="fas fa-check-circle mr-1"></i> Valide (<%= diffDays %>j)
+                                </span>
+                            <% } %>
+                        </div>
+                    <% } %>
                 </div>
             </div>
         </div>

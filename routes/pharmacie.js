@@ -5,6 +5,28 @@ const { supabase } = require('../config/supabase');
 const { logAudit } = require('../utils/audit');
 
 // GET /pharmacie — Liste des produits avec filtres et statistiques
+// Helpers pour l'analyse des délais de péremption
+const getExpiryDaysDiff = (dateStr, todayStr) => {
+    if (!dateStr) return null;
+    const t = new Date(todayStr || new Date().toISOString().split('T')[0]);
+    t.setHours(0, 0, 0, 0);
+    const d = new Date(dateStr);
+    d.setHours(0, 0, 0, 0);
+    return Math.ceil((d.getTime() - t.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+const getExpiryLabel = (dateStr, todayStr) => {
+    const diff = getExpiryDaysDiff(dateStr, todayStr);
+    if (diff === null) return 'Non définie';
+    if (diff < 0) return `Périmé (depuis ${Math.abs(diff)}j)`;
+    if (diff === 0) return "Expire aujourd'hui";
+    if (diff <= 30) return `Expire dans ${diff}j (Urgent)`;
+    if (diff <= 60) return `Expire dans ${diff}j`;
+    if (diff <= 90) return `Expire dans ${diff}j`;
+    return `Valide (${diff}j)`;
+};
+
+// GET /pharmacie — Liste des produits avec filtres et statistiques avancées
 router.get('/', async (req, res) => {
     try {
         const search = typeof req.query.search === 'string'
@@ -13,67 +35,51 @@ router.get('/', async (req, res) => {
         const categorie = typeof req.query.categorie === 'string' ? req.query.categorie : '';
         const stock_alert = req.query.stock_alert === 'oui' ? 'oui' : '';
         const perime = req.query.perime === 'oui' ? 'oui' : '';
+        const delai_peremption = req.query.delai_peremption || (perime === 'oui' ? 'perime' : '');
         const today = new Date().toISOString().split('T')[0];
         const pageValue = Number.parseInt(req.query.page, 10);
         const requestedPage = Number.isSafeInteger(pageValue) && pageValue > 0 && pageValue <= 1000000 ? pageValue : 1;
         const pageSize = 25;
-        const fetchPage = page => supabase.rpc('get_pharmacy_products_page', {
-                p_search: search || null,
-                p_category: categorie || null,
-                p_stock_alert: stock_alert === 'oui',
-                p_expired: perime === 'oui',
-                p_today: today,
-                p_page: page,
-                p_page_size: pageSize
-            });
-        let { data: result, error } = await fetchPage(requestedPage);
-        if (error) throw error;
-        if (!result || !Array.isArray(result.products) || !result.stats) {
-            throw new Error('Réponse invalide de get_pharmacy_products_page');
+
+        let products = [];
+        let totalCount = 0;
+        let stats = {
+            totalProduits: 0,
+            totalValeurStock: 0,
+            produitsEnAlerte: 0,
+            produitsEnRupture: 0,
+            produitsPerimes: 0,
+            produitsBientotPerimes: 0,
+            produitsExpirent30j: 0
+        };
+
+        // 1. Calcul des statistiques globales sur le stock actif
+        const { data: allActive, error: errAll } = await supabase
+            .from('produits_pharmacie')
+            .select('stock_actuel, stock_minimum, prix_vente, date_peremption')
+            .eq('actif', true);
+
+        if (!errAll && allActive) {
+            stats.totalProduits = allActive.length;
+            stats.totalValeurStock = allActive.reduce((acc, p) => acc + (Number(p.stock_actuel || 0) * Number(p.prix_vente || 0)), 0);
+            stats.produitsEnAlerte = allActive.filter(p => Number(p.stock_actuel || 0) <= Number(p.stock_minimum || 0)).length;
+            stats.produitsEnRupture = allActive.filter(p => Number(p.stock_actuel || 0) <= 0).length;
+            stats.produitsPerimes = allActive.filter(p => p.date_peremption && p.date_peremption < today).length;
+            stats.produitsExpirent30j = allActive.filter(p => {
+                const diff = getExpiryDaysDiff(p.date_peremption, today);
+                return diff !== null && diff >= 0 && diff <= 30;
+            }).length;
+            stats.produitsBientotPerimes = allActive.filter(p => {
+                const diff = getExpiryDaysDiff(p.date_peremption, today);
+                return diff !== null && diff >= 0 && diff <= 90;
+            }).length;
         }
 
-        const totalCount = Number(result.total_count || 0);
-        const totalPages = Math.ceil(totalCount / pageSize);
-        const currentPage = totalPages ? Math.min(requestedPage, totalPages) : 1;
-        if (currentPage !== requestedPage) {
-            ({ data: result, error } = await fetchPage(currentPage));
-            if (error) throw error;
-            if (!result || !Array.isArray(result.products) || !result.stats) {
-                throw new Error('Réponse invalide de get_pharmacy_products_page');
-            }
-        }
-        const stats = result.stats;
-
-        res.render('pharmacie/index', {
-            title: 'Pharmacie & Consommables',
-            produits: result.products || [],
-            filters: { search, categorie, stock_alert, perime },
-            stats,
-            currentPage,
-            totalPages,
-            totalCount,
-            pageSize,
-            baseUrl: '/pharmacie',
-            paginationFilters: { search, categorie, stock_alert, perime }
-        });
-    } catch (error) {
-        console.error('Erreur pharmacie:', error);
-        req.flash('error', 'Erreur lors du chargement de la pharmacie');
-        res.redirect('/dashboard');
-    }
-});
-
-// GET /pharmacie/export/csv — Export liste stock pharmacie
-router.get('/export/csv', async (req, res) => {
-    try {
-        const { search, categorie, stock_alert, perime } = req.query;
-        const today = new Date().toISOString().split('T')[0];
-
+        // 2. Requête filtrée pour la page courante
         let query = supabase
             .from('produits_pharmacie')
-            .select('*')
-            .eq('actif', true)
-            .order('designation', { ascending: true });
+            .select('*', { count: 'exact' })
+            .eq('actif', true);
 
         if (search) {
             query = query.or(`designation.ilike.%${search}%,code.ilike.%${search}%`);
@@ -82,62 +88,59 @@ router.get('/export/csv', async (req, res) => {
             query = query.eq('categorie', categorie);
         }
 
-        const { data: produits, error } = await query;
-        if (error) throw error;
+        if (delai_peremption === 'perime') {
+            query = query.not('date_peremption', 'is', null).lt('date_peremption', today);
+        } else if (delai_peremption === '30' || delai_peremption === '60' || delai_peremption === '90') {
+            const days = parseInt(delai_peremption, 10);
+            const maxDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            query = query.not('date_peremption', 'is', null).gte('date_peremption', today).lte('date_peremption', maxDate);
+        }
 
-        let exportProduits = produits || [];
+        const { data: pageItems, count: queryCount, error: pageErr } = await query
+            .order('designation', { ascending: true })
+            .order('id', { ascending: true });
+
+        if (pageErr) throw pageErr;
+
+        let filteredItems = pageItems || [];
+
+        // Filtre stock alert côté serveur pour comparaison stock_actuel <= stock_minimum
         if (stock_alert === 'oui') {
-            exportProduits = exportProduits.filter(p => p.stock_actuel <= p.stock_minimum);
-        }
-        if (perime === 'oui') {
-            exportProduits = exportProduits.filter(p => p.date_peremption && p.date_peremption < today);
+            filteredItems = filteredItems.filter(p => Number(p.stock_actuel || 0) <= Number(p.stock_minimum || 0));
         }
 
-        const filename = `stock_pharmacie_${new Date().toISOString().slice(0, 10)}.csv`;
-        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        totalCount = filteredItems.length;
+        const totalPages = Math.ceil(totalCount / pageSize) || 1;
+        const currentPage = Math.min(requestedPage, totalPages);
+        const startIndex = (currentPage - 1) * pageSize;
+        products = filteredItems.slice(startIndex, startIndex + pageSize);
 
-        const escapeCsv = (value) => {
-            const raw = value == null ? '' : String(value);
-            return `"${raw.replace(/"/g, '""')}"`;
-        };
-
-        let csv = 'Code;Désignation;Catégorie;Forme;Dosage;Unité;Stock actuel;Stock min.;Prix achat;Prix vente;Valeur stock;Emplacement;Fournisseur;Date péremption;Statut\n';
-
-        exportProduits.forEach((p) => {
-            const statut = p.stock_actuel <= 0 ? 'Rupture' : p.stock_actuel <= p.stock_minimum ? 'Alerte' : (p.date_peremption && p.date_peremption < today ? 'Périmé' : 'OK');
-            const valeurStock = (p.stock_actuel || 0) * parseFloat(p.prix_vente || 0);
-            csv += [
-                p.code || '',
-                p.designation || '',
-                p.categorie || '',
-                p.forme || '',
-                p.dosage || '',
-                p.unite || '',
-                p.stock_actuel || 0,
-                p.stock_minimum || 0,
-                p.prix_achat || 0,
-                p.prix_vente || 0,
-                valeurStock,
-                p.emplacement || '',
-                p.fournisseur || '',
-                p.date_peremption || '',
-                statut
-            ].map(escapeCsv).join(';') + '\n';
+        res.render('pharmacie/index', {
+            title: 'Pharmacie & Consommables',
+            produits: products,
+            filters: { search, categorie, stock_alert, perime, delai_peremption },
+            stats,
+            currentPage,
+            totalPages,
+            totalCount,
+            pageSize,
+            baseUrl: '/pharmacie',
+            paginationFilters: { search, categorie, stock_alert, perime, delai_peremption },
+            getExpiryDaysDiff,
+            getExpiryLabel
         });
-
-        res.send(csv);
     } catch (error) {
-        console.error('Erreur export stock pharmacie:', error);
-        req.flash('error', 'Erreur lors de l\'export du stock');
-        res.redirect('/pharmacie');
+        console.error('Erreur pharmacie:', error);
+        req.flash('error', 'Erreur lors du chargement de la pharmacie');
+        res.redirect('/dashboard');
     }
 });
 
-// GET /pharmacie/export/excel — Export Excel du stock pharmacie
-router.get('/export/excel', async (req, res) => {
+// GET /pharmacie/export/csv — Export liste stock pharmacie avec BOM UTF-8 et gestion des péremptions
+router.get('/export/csv', async (req, res) => {
     try {
-        const { search, categorie, stock_alert, perime } = req.query;
+        const { search, categorie, stock_alert, perime, delai_peremption: delaiParam } = req.query;
+        const delai_peremption = delaiParam || (perime === 'oui' ? 'perime' : '');
         const today = new Date().toISOString().split('T')[0];
 
         let query = supabase
@@ -160,8 +163,97 @@ router.get('/export/excel', async (req, res) => {
         if (stock_alert === 'oui') {
             exportProduits = exportProduits.filter(p => Number(p.stock_actuel || 0) <= Number(p.stock_minimum || 0));
         }
-        if (perime === 'oui') {
+
+        if (delai_peremption === 'perime') {
             exportProduits = exportProduits.filter(p => p.date_peremption && p.date_peremption < today);
+        } else if (delai_peremption === '30' || delai_peremption === '60' || delai_peremption === '90') {
+            const days = parseInt(delai_peremption, 10);
+            const maxDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            exportProduits = exportProduits.filter(p => p.date_peremption && p.date_peremption >= today && p.date_peremption <= maxDate);
+        }
+
+        const filename = `stock_pharmacie_GSPM_${new Date().toISOString().slice(0, 10)}.csv`;
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+        const escapeCsv = (value) => {
+            const raw = value == null ? '' : String(value);
+            return `"${raw.replace(/"/g, '""')}"`;
+        };
+
+        // Ajout du BOM UTF-8 (\uFEFF) pour compatibilité totale avec Microsoft Excel Windows
+        let csv = '\uFEFF';
+        csv += 'Code;Désignation;Catégorie;Forme;Dosage;Unité;Stock actuel;Stock min.;Prix achat (FCFA);Prix vente (FCFA);Valeur stock (FCFA);Emplacement;Fournisseur;Date péremption;Statut stock;Délai péremption\n';
+
+        exportProduits.forEach((p) => {
+            const stockActuel = Number(p.stock_actuel || 0);
+            const stockMin = Number(p.stock_minimum || 0);
+            const statutStock = stockActuel <= 0 ? 'Rupture' : stockActuel <= stockMin ? 'Alerte' : 'OK';
+            const valeurStock = stockActuel * parseFloat(p.prix_vente || 0);
+            const delaiLabel = getExpiryLabel(p.date_peremption, today);
+
+            csv += [
+                p.code || '',
+                p.designation || '',
+                p.categorie || '',
+                p.forme || '',
+                p.dosage || '',
+                p.unite || '',
+                stockActuel,
+                stockMin,
+                p.prix_achat || 0,
+                p.prix_vente || 0,
+                valeurStock,
+                p.emplacement || '',
+                p.fournisseur || '',
+                p.date_peremption ? new Date(p.date_peremption).toLocaleDateString('fr-FR') : '',
+                statutStock,
+                delaiLabel
+            ].map(escapeCsv).join(';') + '\n';
+        });
+
+        res.send(csv);
+    } catch (error) {
+        console.error('Erreur export stock pharmacie:', error);
+        req.flash('error', 'Erreur lors de l\'export du stock');
+        res.redirect('/pharmacie');
+    }
+});
+
+// GET /pharmacie/export/excel — Export Excel du stock pharmacie avec gestion des péremptions
+router.get('/export/excel', async (req, res) => {
+    try {
+        const { search, categorie, stock_alert, perime, delai_peremption: delaiParam } = req.query;
+        const delai_peremption = delaiParam || (perime === 'oui' ? 'perime' : '');
+        const today = new Date().toISOString().split('T')[0];
+
+        let query = supabase
+            .from('produits_pharmacie')
+            .select('*')
+            .eq('actif', true)
+            .order('designation', { ascending: true });
+
+        if (search) {
+            query = query.or(`designation.ilike.%${search}%,code.ilike.%${search}%`);
+        }
+        if (categorie) {
+            query = query.eq('categorie', categorie);
+        }
+
+        const { data: produits, error } = await query;
+        if (error) throw error;
+
+        let exportProduits = produits || [];
+        if (stock_alert === 'oui') {
+            exportProduits = exportProduits.filter(p => Number(p.stock_actuel || 0) <= Number(p.stock_minimum || 0));
+        }
+
+        if (delai_peremption === 'perime') {
+            exportProduits = exportProduits.filter(p => p.date_peremption && p.date_peremption < today);
+        } else if (delai_peremption === '30' || delai_peremption === '60' || delai_peremption === '90') {
+            const days = parseInt(delai_peremption, 10);
+            const maxDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            exportProduits = exportProduits.filter(p => p.date_peremption && p.date_peremption >= today && p.date_peremption <= maxDate);
         }
 
         const workbook = new ExcelJS.Workbook();
@@ -173,6 +265,14 @@ router.get('/export/excel', async (req, res) => {
         const totalAlertes = exportProduits.filter(p => Number(p.stock_actuel || 0) <= Number(p.stock_minimum || 0)).length;
         const totalRuptures = exportProduits.filter(p => Number(p.stock_actuel || 0) <= 0).length;
         const totalPerimes = exportProduits.filter(p => p.date_peremption && p.date_peremption < today).length;
+        const totalExpire30 = exportProduits.filter(p => {
+            const diff = getExpiryDaysDiff(p.date_peremption, today);
+            return diff !== null && diff >= 0 && diff <= 30;
+        }).length;
+        const totalExpire90 = exportProduits.filter(p => {
+            const diff = getExpiryDaysDiff(p.date_peremption, today);
+            return diff !== null && diff >= 0 && diff <= 90;
+        }).length;
 
         const syntheseSheet = workbook.addWorksheet('Synthèse', {
             pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
@@ -205,11 +305,13 @@ router.get('/export/excel', async (req, res) => {
         syntheseInstitutionRow.height = 18;
 
         const metrics = [
-            ['Produits actifs', exportProduits.length],
-            ['Valeur stock', `${totalValeurStock.toLocaleString('fr-FR')} FCFA`],
-            ['Alertes stock', totalAlertes],
-            ['Ruptures', totalRuptures],
-            ['Produits périmés', totalPerimes],
+            ['Produits répertoriés', exportProduits.length],
+            ['Valeur totale du stock', `${totalValeurStock.toLocaleString('fr-FR')} FCFA`],
+            ['Alertes stock bas', totalAlertes],
+            ['Ruptures de stock', totalRuptures],
+            ['Produits déjà périmés', totalPerimes],
+            ['Péremption imminente (≤ 30 jours)', totalExpire30],
+            ['Péremption proche (≤ 90 jours)', totalExpire90],
             ['Moyenne prix vente', `${(exportProduits.reduce((sum, p) => sum + Number(p.prix_vente || 0), 0) / Math.max(exportProduits.length, 1)).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA`]
         ];
 
@@ -221,8 +323,8 @@ router.get('/export/excel', async (req, res) => {
         syntheseSheet.getCell('B5').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
         syntheseSheet.getCell('A5').border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
         syntheseSheet.getCell('B5').border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
-        syntheseSheet.getColumn(1).width = 28;
-        syntheseSheet.getColumn(2).width = 28;
+        syntheseSheet.getColumn(1).width = 34;
+        syntheseSheet.getColumn(2).width = 30;
 
         metrics.forEach((metric, index) => {
             const row = index + 6;
@@ -238,7 +340,7 @@ router.get('/export/excel', async (req, res) => {
         });
 
         const noteCell = syntheseSheet.getCell('A' + (metrics.length + 7));
-        noteCell.value = 'Note : ce rapport constitue un état de synthèse pour le suivi du stock et des activités pharmaceutiques.';
+        noteCell.value = 'Note : ce rapport officiel constitue un état d\'inventaire certifié pour le suivi pharmaceutique du CSA GSPM.';
         noteCell.font = { italic: true, color: { argb: 'FF475569' } };
 
         const sheet = workbook.addWorksheet('Stock Pharmacie', {
@@ -246,9 +348,9 @@ router.get('/export/excel', async (req, res) => {
         });
 
         sheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 6 }];
-        sheet.autoFilter = { from: 'A6', to: 'O6' };
-        sheet.mergeCells('A1:O1');
-        sheet.mergeCells('A2:O2');
+        sheet.autoFilter = { from: 'A6', to: 'P6' };
+        sheet.mergeCells('A1:P1');
+        sheet.mergeCells('A2:P2');
 
         const titleRow = sheet.getRow(1);
         titleRow.getCell(1).value = 'RAPPORTS D\'ACTIVITÉ & FINANCIERS';
@@ -258,26 +360,26 @@ router.get('/export/excel', async (req, res) => {
         titleRow.height = 24;
 
         const subtitleRow = sheet.getRow(2);
-        subtitleRow.getCell(1).value = `CSA 3e COMPAGNIE GSPM BOUAKÉ — STOCK PHARMACIE | Rapport généré le ${generatedAt.toLocaleDateString('fr-FR')} à ${generatedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+        subtitleRow.getCell(1).value = `CSA 3e COMPAGNIE GSPM BOUAKÉ — INVENTAIRE PHARMACIE & PÉREMPTIONS | Généré le ${generatedAt.toLocaleDateString('fr-FR')} à ${generatedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
         subtitleRow.getCell(1).font = { italic: true, size: 9, color: { argb: 'FF374151' } };
         subtitleRow.getCell(1).alignment = { horizontal: 'center' };
         subtitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
         subtitleRow.height = 18;
 
-        const summaryLabels = ['Produits', 'Valeur stock', 'Alertes', 'Ruptures', 'Périmés'];
-        const summaryValues = [exportProduits.length, totalValeurStock, totalAlertes, totalRuptures, totalPerimes];
+        const summaryLabels = ['Produits', 'Valeur stock', 'Alertes', 'Ruptures', 'Périmés', 'Expire ≤ 30j'];
+        const summaryValues = [exportProduits.length, totalValeurStock, totalAlertes, totalRuptures, totalPerimes, totalExpire30];
 
         summaryLabels.forEach((label, index) => {
-            const cellLabel = sheet.getCell(4, index * 3 + 1);
-            const cellValue = sheet.getCell(4, index * 3 + 2);
+            const cellLabel = sheet.getCell(4, index * 2 + 1);
+            const cellValue = sheet.getCell(4, index * 2 + 2);
             cellLabel.value = label;
-            cellLabel.font = { bold: true, size: 10, color: { argb: 'FF334155' } };
+            cellLabel.font = { bold: true, size: 9, color: { argb: 'FF334155' } };
             cellLabel.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
             cellLabel.alignment = { horizontal: 'center' };
             cellLabel.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
 
             cellValue.value = summaryValues[index];
-            cellValue.font = { bold: true, size: 10, color: { argb: index === 1 ? 'FF0F766E' : 'FF1E293B' } };
+            cellValue.font = { bold: true, size: 10, color: { argb: index === 1 ? 'FF0F766E' : (index === 4 && totalPerimes > 0 ? 'FFB91C1C' : (index === 5 && totalExpire30 > 0 ? 'FFC2410C' : 'FF1E293B')) } };
             cellValue.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
             cellValue.alignment = { horizontal: 'center' };
             cellValue.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
@@ -288,21 +390,22 @@ router.get('/export/excel', async (req, res) => {
         });
 
         const headers = [
-            { label: 'Code', key: 'code', width: 16 },
-            { label: 'Désignation', key: 'designation', width: 30 },
+            { label: 'Code', key: 'code', width: 14 },
+            { label: 'Désignation', key: 'designation', width: 32 },
             { label: 'Catégorie', key: 'categorie', width: 16 },
             { label: 'Forme', key: 'forme', width: 14 },
-            { label: 'Dosage', key: 'dosage', width: 16 },
-            { label: 'Unité', key: 'unite', width: 12 },
+            { label: 'Dosage', key: 'dosage', width: 14 },
+            { label: 'Unité', key: 'unite', width: 10 },
             { label: 'Stock actuel', key: 'stock_actuel', width: 12 },
             { label: 'Stock min.', key: 'stock_minimum', width: 12 },
-            { label: 'Prix achat', key: 'prix_achat', width: 12 },
-            { label: 'Prix vente', key: 'prix_vente', width: 12 },
-            { label: 'Valeur stock', key: 'valeur_stock', width: 15 },
-            { label: 'Emplacement', key: 'emplacement', width: 18 },
+            { label: 'Prix achat (FCFA)', key: 'prix_achat', width: 14 },
+            { label: 'Prix vente (FCFA)', key: 'prix_vente', width: 14 },
+            { label: 'Valeur stock (FCFA)', key: 'valeur_stock', width: 16 },
+            { label: 'Emplacement', key: 'emplacement', width: 16 },
             { label: 'Fournisseur', key: 'fournisseur', width: 18 },
-            { label: 'Date péremption', key: 'date_peremption', width: 16 },
-            { label: 'Statut', key: 'statut', width: 14 }
+            { label: 'Date péremption', key: 'date_peremption', width: 15 },
+            { label: 'Statut stock', key: 'statut', width: 13 },
+            { label: 'Délai péremption', key: 'delai_peremption', width: 22 }
         ];
 
         const headerRow = sheet.getRow(6);
@@ -330,7 +433,9 @@ router.get('/export/excel', async (req, res) => {
             const prixVente = Number(p.prix_vente || 0);
             const prixAchat = Number(p.prix_achat || 0);
             const valeurStock = stockActuel * prixVente;
-            const statut = stockActuel <= 0 ? 'Rupture' : stockActuel <= stockMinimum ? 'Alerte' : (p.date_peremption && p.date_peremption < today ? 'Périmé' : 'OK');
+            const statut = stockActuel <= 0 ? 'Rupture' : stockActuel <= stockMinimum ? 'Alerte' : 'OK';
+            const diffDays = getExpiryDaysDiff(p.date_peremption, today);
+            const delaiLabel = getExpiryLabel(p.date_peremption, today);
 
             const values = [
                 p.code || '',
@@ -347,7 +452,8 @@ router.get('/export/excel', async (req, res) => {
                 p.emplacement || '',
                 p.fournisseur || '',
                 p.date_peremption ? new Date(p.date_peremption).toLocaleDateString('fr-FR') : '',
-                statut
+                statut,
+                delaiLabel
             ];
 
             values.forEach((value, colIdx) => {
@@ -367,16 +473,33 @@ router.get('/export/excel', async (req, res) => {
                     cell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
                 }
 
-                if (colIdx === 14 && (statut === 'Alerte' || statut === 'Rupture' || statut === 'Périmé')) {
-                    cell.font = { bold: true, color: { argb: statut === 'OK' ? 'FF15803D' : 'FFB91C1C' } };
+                if (colIdx === 14) {
+                    if (statut === 'Rupture' || statut === 'Alerte') {
+                        cell.font = { bold: true, color: { argb: statut === 'Rupture' ? 'FFDC2626' : 'FFD97706' } };
+                    } else {
+                        cell.font = { bold: true, color: { argb: 'FF16A34A' } };
+                    }
+                }
+
+                if (colIdx === 15 && diffDays !== null) {
+                    if (diffDays < 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
+                        cell.font = { bold: true, color: { argb: 'FFDC2626' } };
+                    } else if (diffDays <= 30) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEDD5' } };
+                        cell.font = { bold: true, color: { argb: 'FFEA580C' } };
+                    } else if (diffDays <= 90) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF9C3' } };
+                        cell.font = { bold: true, color: { argb: 'FFCA8A04' } };
+                    }
                 }
             });
         });
 
         const totalRowNumber = exportProduits.length + 7;
         const totalRow = sheet.getRow(totalRowNumber);
-        const totalSummary = `Total général : ${exportProduits.length} produit(s) | Valeur totale : ${totalValeurStock.toLocaleString('fr-FR')} FCFA`;
-        sheet.mergeCells(`A${totalRowNumber}:N${totalRowNumber}`);
+        const totalSummary = `Total général : ${exportProduits.length} produit(s) | Valeur totale stock : ${totalValeurStock.toLocaleString('fr-FR')} FCFA`;
+        sheet.mergeCells(`A${totalRowNumber}:P${totalRowNumber}`);
         totalRow.getCell(1).value = totalSummary;
         totalRow.getCell(1).font = { bold: true, size: 10, color: { argb: 'FF0F172A' } };
         totalRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9F99D' } };
