@@ -31,18 +31,22 @@
 
     <!-- Filtres -->
     <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm mb-6 border border-gray-200">
-        <form action="/audit" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <form action="/audit" method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div>
-                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Recherche</label>
-                <input type="text" name="search" placeholder="Utilisateur, description..." value="<%= filters.search || '' %>" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                <label for="audit-search" class="block text-xs font-semibold text-gray-600 uppercase mb-1">Recherche</label>
+                <input id="audit-search" type="search" name="search" placeholder="Utilisateur, description..." value="<%= filters.search || '' %>" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
             </div>
             <div>
-                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Date Début</label>
-                <input type="date" name="date_from" value="<%= filters.date_from || '' %>" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                <label for="audit-action" class="block text-xs font-semibold text-gray-600 uppercase mb-1">Action exacte</label>
+                <input id="audit-action" type="text" name="action" placeholder="Ex. FACTURE_VALIDEE" value="<%= filters.action || '' %>" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
             </div>
             <div>
-                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Date Fin</label>
-                <input type="date" name="date_to" value="<%= filters.date_to || '' %>" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                <label for="audit-date-from" class="block text-xs font-semibold text-gray-600 uppercase mb-1">Date Début</label>
+                <input id="audit-date-from" type="date" name="date_from" value="<%= filters.date_from || '' %>" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label for="audit-date-to" class="block text-xs font-semibold text-gray-600 uppercase mb-1">Date Fin</label>
+                <input id="audit-date-to" type="date" name="date_to" value="<%= filters.date_to || '' %>" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
             </div>
             <div class="flex items-end gap-2">
                 <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm shadow">
@@ -114,4 +118,5 @@
             </table>
         </div>
     </div>
+    <%- include('../partials/pagination', { currentPage, totalPages, totalCount, pageSize, baseUrl, paginationFilters }) %>
 </div>
