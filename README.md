@@ -1,15 +1,17 @@
-# 🚒 CSA 3e COMPAGNIE GSPM BOUAKE - Système de Gestion Médicale & Facturation
+# 🚒 CSA 3e COMPAGNIE GSPM BOUAKE - Système de Gestion Médicale, Facturation & Pharmacie
 
-Application de gestion médicale et de facturation pour le **Centre de Santé (CSA) de la 3e Compagnie du Groupement de Sapeurs Pompiers Militaires (GSPM)** à Bouaké, République de Côte d'Ivoire (Ministère de la Défense).
+Application web complète de gestion médicale, hospitalière, de facturation et de pharmacie pour le **Centre de Santé (CSA) de la 3e Compagnie du Groupement de Sapeurs-Pompiers Militaires (GSPM)** à Bouaké, République de Côte d'Ivoire (Ministère de la Défense).
 
 ---
 
 ## 🚀 Technologies utilisées
-- **Backend** : Node.js, Express.js
-- **Base de données** : PostgreSQL via [Supabase](https://supabase.com)
+- **Backend** : Node.js (v18+), Express.js
+- **Base de données** : PostgreSQL hébergé sur [Supabase](https://supabase.com)
+- **Sessions & Sécurité** : `express-session`, `connect-pg-simple` (stockage persistant des sessions en base PostgreSQL), `helmet`, `express-rate-limit`, `bcryptjs`
 - **Moteur de templates** : EJS + `express-ejs-layouts`
-- **Styling UI** : Tailwind CSS (via CDN) + Font Awesome 6 + Alpine.js
-- **Devise** : Franc CFA (FCFA / XOF) avec conversion Euro (€) automatique
+- **Styling UI** : Tailwind CSS + Font Awesome 6 + Alpine.js
+- **Génération de documents & Exports** : `exceljs` (classeurs Excel multi-onglets stylisés), `pdfkit` (documents et fiches PDF), CSV encodé en UTF-8 BOM
+- **Devise** : Franc CFA (FCFA / XOF) avec conversion Euro (€) automatique et montants en toutes lettres
 
 ---
 
@@ -18,106 +20,163 @@ Application de gestion médicale et de facturation pour le **Centre de Santé (C
 ```text
 clinique-cmena/
 ├── config/
-│   └── supabase.js             # Client Supabase (public & admin)
+│   └── supabase.js             # Client Supabase (public & admin service role)
 ├── database/
-│   └── schema.sql              # Schéma PostgreSQL complet (Tables, RLS, Triggers)
-├── .env.example                # Modèle de variables d'environnement
+│   ├── schema.sql              # Schéma PostgreSQL complet (Tables, RLS, Triggers)
+│   └── migrations/             # Migrations et fonctions SQL complémentaires
+│       ├── 20261015_private_sessions.sql      # Table pour le stockage persistant des sessions
+│       └── 20261015_pharmacy_pagination.sql   # Procédure de pagination et stats pharmacie
+├── .env.example                # Modèle des variables d'environnement
 ├── middleware/
-│   └── auth.js                 # Authentification & contrôle d'accès
+│   └── auth.js                 # Authentification, sessions et contrôle des accès par rôle
 ├── public/
 │   ├── css/
-│   │   └── styles.css          # Styles personnalisés et gabarit d'impression
-│   └── js/
-│       └── main.js             # Calculs dynamiques de facture, montants en lettres
+│   │   ├── styles.css          # Styles personnalisés et gabarit d'impression
+│   │   └── tailwind.min.css    # Build Tailwind CSS compilé
+│   ├── js/
+│   │   └── main.js             # Calculs dynamiques de facture, montants en toutes lettres
+│   └── img/                    # Logos et médias statiques
 ├── routes/
-│   ├── actes.js                # Catalogue des actes médicaux
-│   ├── assurances.js           # Gestion des mutuelles et assurances
-│   ├── auth.js                 # Connexion et déconnexion
-│   ├── consultations.js        # Gestion des consultations et séjours
-│   ├── dashboard.js            # Tableau de bord et métriques
-│   ├── factures.js             # Facturation, impression et décomptes
-│   ├── paiements.js            # Enregistrement des règlements
-│   ├── patients.js             # Dossiers patients et matricules
-│   └── praticiens.js           # Médecins et spécialistes
+│   ├── actes.js                # Catalogue des actes et tarifs médicaux
+│   ├── assurances.js           # Gestion des mutuelles et assurances partenaires
+│   ├── audit.js                # Journal d'audit et traçabilité des opérations
+│   ├── auth.js                 # Connexion, déconnexion et profil utilisateur
+│   ├── consultations.js        # Consultations médicales, constantes et séjours
+│   ├── dashboard.js            # Tableau de bord général et indicateurs de performance
+│   ├── factures.js             # Facturation conforme CMENA, décomptes et impression
+│   ├── paiements.js            # Règlements, modes de paiement et suivi de caisse
+│   ├── patients.js             # Dossiers médicaux, immatriculation et antécédents
+│   ├── pharmacie.js            # Pharmacie, stock, alertes péremption et exports
+│   ├── praticiens.js           # Personnel soignant, médecins et spécialistes
+│   ├── rapports.js             # Rapports financiers, statistiques et graphiques
+│   ├── settings.js             # Paramètres généraux du Centre de Santé (CSA)
+│   └── utilisateurs.js         # Administration des comptes et attribution des rôles
 ├── views/
-│   ├── actes/                  # Vues des actes
-│   ├── assurances/             # Vues des assurances
-│   ├── auth/                   # Connexion
-│   ├── consultations/          # Vues des consultations
+│   ├── actes/                  # Vues du catalogue d'actes
+│   ├── assurances/             # Vues des assurances et taux de couverture
+│   ├── audit/                  # Vues du journal d'activités
+│   ├── auth/                   # Formulaire de connexion
+│   ├── consultations/          # Vues des consultations et ordonnances
 │   ├── dashboard.ejs           # Tableau de bord principal
-│   ├── factures/               # Vues facturation + print.ejs conforme CMENA
-│   ├── layout.ejs              # Gabarit global avec barre latérale rétractable
-│   ├── paiements/              # Vues des paiements
-│   ├── partials/               # En-tête, barre latérale, pagination
-│   ├── patients/               # Vues des patients
-│   └── praticiens/             # Vues des praticiens
+│   ├── factures/               # Vues factures, décomptes + print.ejs conforme A4
+│   ├── layouts/                # Gabarit général
+│   ├── paiements/              # Vues des reçus et règlements
+│   ├── partials/               # En-tête, navigation latérale rétractable, pagination
+│   ├── patients/               # Vues des dossiers patients et historique
+│   ├── pharmacie/              # Vues de la pharmacie (catalogue, fiche, mouvements)
+│   ├── praticiens/             # Vues du personnel soignant
+│   ├── rapports/               # Vues des bilans et statistiques
+│   ├── settings/               # Vues de configuration du centre
+│   ├── utilisateurs/           # Vues de gestion des comptes
+│   └── layout.ejs              # Structure de base des pages
 ├── package.json
-└── server.js                   # Point d'entrée de l'application
+└── server.js                   # Point d'entrée de l'application Express
 ```
-
-Le fichier `.env` et le dossier `node_modules/` sont locaux et exclus de Git.
 
 ---
 
-## ⚙️ Installation & Démarrage
+## ⚙️ Installation & Configuration
 
-### 1. Configuration de la base de données (Supabase)
-1. Créez un projet gratuit sur [Supabase](https://supabase.com).
-2. Rendez-vous dans **SQL Editor** sur votre tableau de bord Supabase.
-3. Copiez l'intégralité du contenu du fichier `database/schema.sql` et exécutez-le.
-   - Les tables, énumérations, index et triggers de calcul automatique seront créés.
-   - Des données initiales (paramètres CMENA, catalogue d'actes type) seront automatiquement insérées.
-4. Récupérez vos clés API dans **Project Settings > API** :
-   - `Project URL`
-   - `anon public key`
-   - `service_role secret key`
+### 1. Prérequis
+- **Node.js** v18 ou supérieur
+- **npm** v9 ou supérieur
+- Un compte et un projet sur [Supabase](https://supabase.com) (PostgreSQL)
 
-### 2. Configuration du fichier `.env`
-Copiez `.env.example` vers `.env` à la racine, puis remplacez les valeurs d'exemple par votre configuration :
+### 2. Configuration de la base de données (Supabase)
+1. Dans votre console Supabase, ouvrez l'onglet **SQL Editor**.
+2. Exécutez le script complet `database/schema.sql` pour créer les tables, index, règles de sécurité (RLS) et données d'initialisation.
+3. Exécutez les migrations recommandées dans `database/migrations/` :
+   - `20261015_private_sessions.sql` : Initialise le schéma `private` pour le stockage PostgreSQL des sessions utilisateur.
+   - `20261015_pharmacy_pagination.sql` : Crée la procédure stockée `get_pharmacy_products_page` pour la pagination et les statistiques de stock globales (un mécanisme de secours par requête directe est également actif côté code).
+4. Récupérez vos paramètres dans **Project Settings > API** et **Project Settings > Database**.
+
+### 3. Fichier des variables d'environnement (`.env`)
+Créez un fichier `.env` à la racine à partir du modèle `.env.example` :
+
 ```env
 PORT=3000
 NODE_ENV=development
-SESSION_SECRET=cle_aleatoire_d_au_moins_32_octets
+SESSION_SECRET=cle_aleatoire_securisee_d_au_moins_32_octets
 
-# Supabase
+# Clés API Supabase
 SUPABASE_URL=https://votre-projet.supabase.co
-SUPABASE_ANON_KEY=votre_cle_anon_ici
-SUPABASE_SERVICE_ROLE_KEY=votre_cle_service_role_ici
+SUPABASE_ANON_KEY=votre_cle_anon_publique
+SUPABASE_SERVICE_ROLE_KEY=votre_cle_service_role_secrete
 
-# Connexion PostgreSQL Supabase (obligatoire en production pour les sessions)
-DATABASE_URL=postgresql://postgres:[MOT_DE_PASSE]@db.[PROJECT_REF].supabase.co:5432/postgres?sslmode=require
+# Chaîne de connexion PostgreSQL directe (obligatoire en production pour connect-pg-simple)
+DATABASE_URL=postgresql://postgres:[VOTRE_MOT_DE_PASSE]@db.[VOTRE_PROJECT_REF].supabase.co:5432/postgres?sslmode=require
 ```
 
-Générez `SESSION_SECRET` avec une valeur aléatoire d'au moins 32 octets (par exemple
-`node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`). En production,
-l'application refuse de démarrer si cette clé ou `DATABASE_URL` manque. Les sessions
-sont conservées dans la table `private.app_sessions`, créée automatiquement au premier
-enregistrement ; le compte PostgreSQL doit donc pouvoir créer et gérer cette table.
-En développement, si `DATABASE_URL` n'est pas défini, le stockage mémoire est utilisé.
-Pour une base déjà installée, exécutez `database/migrations/20261015_private_sessions.sql`
-dans Supabase avant de lancer la version qui utilise ce stockage.
-Pour activer la pagination et les statistiques globales de la pharmacie sur une base
-existante, exécutez également `database/migrations/20261015_pharmacy_pagination.sql`
-dans Supabase. Cette fonction SQL s'exécute avec les droits de l'appelant et respecte
-les politiques RLS existantes.
+> [!TIP]
+> Pour générer un `SESSION_SECRET` cryptographiquement sécurisé, vous pouvez exécuter :
+> ```bash
+> node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+> ```
 
-### 3. Lancement de l'application
+### 4. Démarrage de l'application
+Installez les dépendances :
 ```bash
-npm start
+npm install
 ```
-Ou en mode développement (rechargement automatique) :
+
+Pour lancer en environnement de développement :
 ```bash
 npm run dev
 ```
 
-Accédez ensuite à l'application dans votre navigateur :
+Pour lancer en environnement de production :
+```bash
+npm start
+```
+
+Accédez à l'application dans votre navigateur :
 👉 **http://localhost:3000**
 
 ---
 
-## 🧾 Fonctionnalités Clés & Facture CMENA
-- **Format de Facture Conforme CMENA** : En-tête avec coordonnées de Bouaké, mentions d'assurance, matricule calculé, décomposition par acte (Consultation, Laboratoire, Pharmacie, Soins d'un jour), part assureur et part assuré.
-- **Conversion et arrêtés de factures** : Calcul automatique de la contre-valeur en Euro (€) et conversion du montant total en toutes lettres en Francs CFA (ex: *CINQUANTE MILLE SOIXANTE-QUINZE FRANCS CFA*).
-- **Gestion des Patients** : N° de dossier unique, génération de matricule (ex: `KOAn2026091816152679`), historique médical, antécédents, groupe sanguin et couverture d'assurance.
-- **Listes paginées** : Patients, praticiens, consultations, factures, paiements, journal d'audit et produits de pharmacie chargés par pages de 25 résultats. Les filtres actifs restent appliqués pendant la navigation ; les statistiques de stock sont calculées en base sur l'ensemble des produits concernés.
-- **Impression A4 directe** : Page dédiée `/factures/:id/print` prête à être imprimée ou sauvegardée en PDF avec tampons et visas.
+## 🏥 Modules & Fonctionnalités Clés
+
+### 1. Facturation Médicale Conforme CMENA / CSA
+- **En-tête officiel** : Identification du Centre de Santé de la 3e Compagnie GSPM Bouaké.
+- **Répartition tiers-payant** : Prise en charge automatique de la part assurance/mutuelle et de la part patient selon le pourcentage convenu.
+- **Arrêté de facture en lettres** : Traduction automatique du total net en toutes lettres en Francs CFA (ex: *CENT VINGT-CINQ MILLE FRANCS CFA*).
+- **Contre-valeur Euro (€)** : Calcul et affichage en temps réel de l'équivalent monétaire en Euro.
+- **Impression A4 / PDF dédiée** : Route d'impression `/factures/:id/print` formatée pour édition papier ou export PDF avec signatures, visas et tampons réglementaires.
+
+### 2. Pharmacie & Consommables Médicaux
+- **Gestion des stocks & valorisation financière** : Suivi des quantités, seuils d'alerte minimums, prix d'achat, prix de vente et calcul de la valeur globale du stock en stock d'alerte ou normal.
+- **Surveillance avancée des péremptions** :
+  - Identification immédiate des produits déjà périmés (alerte rouge et consigne de mise au rebut).
+  - Alertes visuelles graduelles : **Périme &le; 30 jours** (alerte critique avec préconisation de dispensation prioritaire FEFO), **&le; 60 jours** et **&le; 90 jours**.
+  - Filtre rapide dédié dans la barre d'outils pour isoler instantanément les lots à surveiller.
+  - Statistiques en direct sur le tableau de bord de la pharmacie.
+- **Exports comptables et d'inventaire complets** :
+  - **Export CSV universel** : Doté du préfixe UTF-8 BOM (`\uFEFF`) garantissant une ouverture sans altération des accents sous Microsoft Excel sur Windows.
+  - **Export Excel (`.xlsx`) multi-onglets** :
+    - *Feuille 1 (Synthèse)* : 6 cartes d'indicateurs financiers et de volumétrie.
+    - *Feuille 2 (Inventaire Détaillé)* : Tableau formaté avec styles professionnels, colonnes monétaires en FCFA et colorisation conditionnelle selon l'urgence de péremption.
+
+### 3. Dossiers Médicaux & Suivi des Patients
+- **Génération automatique de matricule unique** (ex: `KOAn2026091816152679`).
+- Suivi des données biométriques, groupe sanguin, antécédents médicaux/chirurgicaux et allergies.
+- Historique chronologique complet des consultations, examens et factures rattachées au patient.
+
+### 4. Consultations & Dossier de Soins
+- Recueil des constantes cliniques (tension, température, poids, pouls).
+- Enregistrement des diagnostics, prescriptions d'actes et ordonnances de pharmacie avec décompte automatique des stocks.
+
+### 5. Encaissements & Règlements
+- Gestion des modes de paiement : Espèces, Mobile Money (Orange Money, MTN MoMo, Moov Money), Chèque, Virement.
+- Suivi des restes à recouvrer et historiques des reçus de caisse.
+
+### 6. Traçabilité & Journal d'Audit
+- Enregistrement automatique de toutes les actions sensibles (créations, modifications de tarifs, annulations de factures, ajustements de stocks).
+- Journal consultable par les administrateurs avec horodatage, utilisateur responsable et détails techniques.
+
+---
+
+## 🔒 Sécurité & Déploiement
+
+- **Gestion des sessions** : En production, les sessions sont sauvegardées dans PostgreSQL (`connect-pg-simple`) dans la table `private.app_sessions`, évitant les pertes de session lors des redémarrages ou sur les architectures serverless (Vercel, Render, Railway).
+- **Protection HTTP** : En-têtes sécurisés injectés via `helmet` et protection contre les attaques par force brute via `express-rate-limit`.
+- **Politiques RLS Supabase** : Les données sensibles sont protégées au niveau de la base de données.
