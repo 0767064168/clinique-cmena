@@ -84,16 +84,43 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Remplacement de méthode HTTP pour supporter PUT et DELETE via formulaires
 app.use(methodOverride('_method'));
 
-const sessionStore = databaseUrl
-  ? new PgSession({
-      conString: databaseUrl,
-      schemaName: 'private',
-      tableName: 'app_sessions',
-      createTableIfMissing: true,
-      ttl: 24 * 60 * 60,
-      pruneSessionInterval: 15 * 60
-    })
-  : undefined;
+// Conversion automatique vers le pooler IPv4 Supabase si l'URL directe IPv6 est fournie
+let effectiveDatabaseUrl = databaseUrl;
+if (effectiveDatabaseUrl && effectiveDatabaseUrl.includes('db.dumghtjbzadgwwcxxmla.supabase.co')) {
+  effectiveDatabaseUrl = effectiveDatabaseUrl.replace(
+    'db.dumghtjbzadgwwcxxmla.supabase.co',
+    'aws-1-eu-central-1.pooler.supabase.com'
+  );
+  if (effectiveDatabaseUrl.includes('//postgres:')) {
+    effectiveDatabaseUrl = effectiveDatabaseUrl.replace('//postgres:', '//postgres.dumghtjbzadgwwcxxmla:');
+  }
+}
+
+let sessionStore = undefined;
+if (effectiveDatabaseUrl) {
+  const { Pool } = require('pg');
+  const pgSessionPool = new Pool({
+    connectionString: effectiveDatabaseUrl,
+    ssl: { rejectUnauthorized: false }
+  });
+
+  pgSessionPool.on('error', (err) => {
+    console.error('⚠️ Avertissement Pool Sessions PostgreSQL:', err.message);
+  });
+
+  sessionStore = new PgSession({
+    pool: pgSessionPool,
+    schemaName: 'private',
+    tableName: 'app_sessions',
+    createTableIfMissing: true,
+    ttl: 24 * 60 * 60, // 24 heures
+    pruneSessionInterval: 15 * 60
+  });
+
+  sessionStore.on('error', (err) => {
+    console.error('⚠️ Avertissement Store Sessions:', err.message);
+  });
+}
 
 // Configuration de la gestion de sessions sécurisée
 app.use(
@@ -102,6 +129,7 @@ app.use(
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
+    rolling: true, // Prolonge automatiquement la session à chaque interaction
     cookie: {
       secure: isProd,
       httpOnly: true,

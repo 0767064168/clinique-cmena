@@ -24,11 +24,13 @@ const requireAuth = async (req, res, next) => {
       });
     }
 
-    // Re-vérifier le statut actif toutes les 5 minutes
+    // Re-vérifier le statut actif périodiquement (toutes les 5 minutes)
     const now = Date.now();
-    const lastCheck = req.session._lastActiveCheck || 0;
+    if (!req.session._lastActiveCheck) {
+      req.session._lastActiveCheck = now;
+    }
 
-    if (now - lastCheck > ACTIVE_CHECK_INTERVAL_MS) {
+    if (now - req.session._lastActiveCheck > ACTIVE_CHECK_INTERVAL_MS) {
       try {
         const { data: profil, error: profileError } = await supabase
           .from('utilisateurs')
@@ -36,25 +38,27 @@ const requireAuth = async (req, res, next) => {
           .eq('id', req.session.user.id)
           .maybeSingle();
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.warn('⚠️ Avertissement vérification statut utilisateur (requête ignorée):', profileError.message);
+          req.session._lastActiveCheck = now;
+        } else if (profil) {
+          if (profil.actif === false || !VALID_ROLES.has(profil.role)) {
+            return req.session.destroy((destroyError) => {
+              if (destroyError) console.error('Erreur suppression session désactivée:', destroyError.message);
+              res.clearCookie('connect.sid');
+              return res.redirect('/auth/login');
+            });
+          }
 
-        if (!profil || profil.actif === false || !VALID_ROLES.has(profil.role)) {
-          return req.session.destroy((destroyError) => {
-            if (destroyError) console.error('Erreur suppression session désactivée:', destroyError.message);
-            res.clearCookie('connect.sid');
-            return res.redirect('/auth/login');
-          });
+          // Mettre à jour le rôle si changé par l'administrateur
+          if (profil.role !== req.session.user.role) {
+            req.session.user.role = profil.role;
+          }
+          req.session._lastActiveCheck = now;
         }
-
-        // Mettre à jour le rôle si changé par l'admin
-        if (profil.role !== req.session.user.role) {
-          req.session.user.role = profil.role;
-        }
-
-        req.session._lastActiveCheck = now;
       } catch (err) {
-        console.error('Erreur vérification statut actif:', err.message);
-        return res.status(503).send('Le service d’authentification est indisponible. Réessayez plus tard.');
+        console.warn('⚠️ Avertissement vérification statut actif (session maintenue):', err.message);
+        req.session._lastActiveCheck = now;
       }
     }
 

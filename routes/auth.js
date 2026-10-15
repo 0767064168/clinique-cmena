@@ -71,6 +71,7 @@ router.post('/login', async (req, res) => {
                     prenom: profil.prenom,
                     role: profil.role
                 };
+                req.session._lastActiveCheck = Date.now();
                 req.flash('success', `Bienvenue ${req.session.user.prenom} ${req.session.user.nom}`);
 
                 return req.session.save((saveError) => {
