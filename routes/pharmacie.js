@@ -26,6 +26,52 @@ const getExpiryLabel = (dateStr, todayStr) => {
     return `Valide (${diff}j)`;
 };
 
+// Helper pour calculer les 4 métriques de stock (Initial, Entrées, Sorties, Restant)
+const computeStockMetrics = (produit, productMovements = []) => {
+    const stockActuel = Number(produit.stock_actuel || 0);
+
+    if (!productMovements || productMovements.length === 0) {
+        return {
+            stock_initial: stockActuel,
+            total_entrees: 0,
+            total_sorties: 0,
+            stock_restant: stockActuel
+        };
+    }
+
+    const sorted = [...productMovements].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const firstMvt = sorted[0];
+
+    let stockInitial = 0;
+    let totalEntrees = 0;
+    let totalSorties = 0;
+
+    if (firstMvt.motif === 'Stock initial' || (firstMvt.type_mouvement === 'entree' && Number(firstMvt.stock_avant) === 0)) {
+        stockInitial = Number(firstMvt.quantite || firstMvt.stock_apres || 0);
+        for (let i = 1; i < sorted.length; i++) {
+            const m = sorted[i];
+            const q = Number(m.quantite || 0);
+            if (m.type_mouvement === 'entree') totalEntrees += q;
+            else if (m.type_mouvement === 'sortie') totalSorties += q;
+        }
+    } else {
+        stockInitial = Number(firstMvt.stock_avant || 0);
+        for (let i = 0; i < sorted.length; i++) {
+            const m = sorted[i];
+            const q = Number(m.quantite || 0);
+            if (m.type_mouvement === 'entree') totalEntrees += q;
+            else if (m.type_mouvement === 'sortie') totalSorties += q;
+        }
+    }
+
+    return {
+        stock_initial: stockInitial,
+        total_entrees: totalEntrees,
+        total_sorties: totalSorties,
+        stock_restant: stockActuel
+    };
+};
+
 // GET /pharmacie — Liste des produits avec filtres et statistiques avancées
 router.get('/', async (req, res) => {
     try {
@@ -46,6 +92,10 @@ router.get('/', async (req, res) => {
         let stats = {
             totalProduits: 0,
             totalValeurStock: 0,
+            totalStockInitial: 0,
+            totalMedicamentsEntres: 0,
+            totalMedicamentsSortis: 0,
+            totalMedicamentsRestants: 0,
             produitsEnAlerte: 0,
             produitsEnRupture: 0,
             produitsPerimes: 0,
@@ -53,11 +103,22 @@ router.get('/', async (req, res) => {
             produitsExpirent30j: 0
         };
 
-        // 1. Calcul des statistiques globales sur le stock actif
+        // 1. Calcul des statistiques globales sur le stock actif et les mouvements
         const { data: allActive, error: errAll } = await supabase
             .from('produits_pharmacie')
-            .select('stock_actuel, stock_minimum, prix_vente, date_peremption')
+            .select('*')
             .eq('actif', true);
+
+        const { data: allMovements } = await supabase
+            .from('mouvements_stock')
+            .select('produit_id, type_mouvement, quantite, stock_avant, stock_apres, motif, created_at')
+            .order('created_at', { ascending: true });
+
+        const movementsByProduct = {};
+        (allMovements || []).forEach(m => {
+            if (!movementsByProduct[m.produit_id]) movementsByProduct[m.produit_id] = [];
+            movementsByProduct[m.produit_id].push(m);
+        });
 
         if (!errAll && allActive) {
             stats.totalProduits = allActive.length;
@@ -73,6 +134,12 @@ router.get('/', async (req, res) => {
                 const diff = getExpiryDaysDiff(p.date_peremption, today);
                 return diff !== null && diff >= 0 && diff <= 90;
             }).length;
+
+            // Totaux des mouvements de stock
+            stats.totalStockInitial = allActive.reduce((acc, p) => acc + computeStockMetrics(p, movementsByProduct[p.id]).stock_initial, 0);
+            stats.totalMedicamentsEntres = allActive.reduce((acc, p) => acc + computeStockMetrics(p, movementsByProduct[p.id]).total_entrees, 0);
+            stats.totalMedicamentsSortis = allActive.reduce((acc, p) => acc + computeStockMetrics(p, movementsByProduct[p.id]).total_sorties, 0);
+            stats.totalMedicamentsRestants = allActive.reduce((acc, p) => acc + Number(p.stock_actuel || 0), 0);
         }
 
         // 2. Requête filtrée pour la page courante
@@ -113,7 +180,16 @@ router.get('/', async (req, res) => {
         const totalPages = Math.ceil(totalCount / pageSize) || 1;
         const currentPage = Math.min(requestedPage, totalPages);
         const startIndex = (currentPage - 1) * pageSize;
-        products = filteredItems.slice(startIndex, startIndex + pageSize);
+        products = filteredItems.slice(startIndex, startIndex + pageSize).map(p => {
+            const metrics = computeStockMetrics(p, movementsByProduct[p.id]);
+            return {
+                ...p,
+                stock_initial: metrics.stock_initial,
+                total_entrees: metrics.total_entrees,
+                total_sorties: metrics.total_sorties,
+                stock_restant: metrics.stock_restant
+            };
+        });
 
         res.render('pharmacie/index', {
             title: 'Pharmacie & Consommables',
@@ -172,6 +248,17 @@ router.get('/export/csv', async (req, res) => {
             exportProduits = exportProduits.filter(p => p.date_peremption && p.date_peremption >= today && p.date_peremption <= maxDate);
         }
 
+        const { data: allMovements } = await supabase
+            .from('mouvements_stock')
+            .select('produit_id, type_mouvement, quantite, stock_avant, stock_apres, motif, created_at')
+            .order('created_at', { ascending: true });
+
+        const movementsByProduct = {};
+        (allMovements || []).forEach(m => {
+            if (!movementsByProduct[m.produit_id]) movementsByProduct[m.produit_id] = [];
+            movementsByProduct[m.produit_id].push(m);
+        });
+
         const filename = `stock_pharmacie_GSPM_${new Date().toISOString().slice(0, 10)}.csv`;
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -183,13 +270,17 @@ router.get('/export/csv', async (req, res) => {
 
         // Ajout du BOM UTF-8 (\uFEFF) pour compatibilité totale avec Microsoft Excel Windows
         let csv = '\uFEFF';
-        csv += 'Code;Désignation;Catégorie;Forme;Dosage;Unité;Stock actuel;Stock min.;Prix achat (FCFA);Prix vente (FCFA);Valeur stock (FCFA);Emplacement;Fournisseur;Date péremption;Statut stock;Délai péremption\n';
+        csv += 'Code;Désignation;Catégorie;Forme;Dosage;Unité;Stock initial;Médicaments Entrés;Médicaments Sortis;Stock restant;Stock min.;Prix achat (FCFA);Prix vente (FCFA);Valeur stock (FCFA);Emplacement;Fournisseur;Date péremption;Statut stock;Délai péremption\n';
 
         exportProduits.forEach((p) => {
-            const stockActuel = Number(p.stock_actuel || 0);
+            const metrics = computeStockMetrics(p, movementsByProduct[p.id]);
+            const stockInitial = metrics.stock_initial;
+            const totalEntrees = metrics.total_entrees;
+            const totalSorties = metrics.total_sorties;
+            const stockRestant = metrics.stock_restant;
             const stockMin = Number(p.stock_minimum || 0);
-            const statutStock = stockActuel <= 0 ? 'Rupture' : stockActuel <= stockMin ? 'Alerte' : 'OK';
-            const valeurStock = stockActuel * parseFloat(p.prix_vente || 0);
+            const statutStock = stockRestant <= 0 ? 'Rupture' : stockRestant <= stockMin ? 'Alerte' : 'OK';
+            const valeurStock = stockRestant * parseFloat(p.prix_vente || 0);
             const delaiLabel = getExpiryLabel(p.date_peremption, today);
 
             csv += [
@@ -199,7 +290,10 @@ router.get('/export/csv', async (req, res) => {
                 p.forme || '',
                 p.dosage || '',
                 p.unite || '',
-                stockActuel,
+                stockInitial,
+                totalEntrees,
+                totalSorties,
+                stockRestant,
                 stockMin,
                 p.prix_achat || 0,
                 p.prix_vente || 0,
@@ -256,12 +350,27 @@ router.get('/export/excel', async (req, res) => {
             exportProduits = exportProduits.filter(p => p.date_peremption && p.date_peremption >= today && p.date_peremption <= maxDate);
         }
 
+        const { data: allMovements } = await supabase
+            .from('mouvements_stock')
+            .select('produit_id, type_mouvement, quantite, stock_avant, stock_apres, motif, created_at')
+            .order('created_at', { ascending: true });
+
+        const movementsByProduct = {};
+        (allMovements || []).forEach(m => {
+            if (!movementsByProduct[m.produit_id]) movementsByProduct[m.produit_id] = [];
+            movementsByProduct[m.produit_id].push(m);
+        });
+
         const workbook = new ExcelJS.Workbook();
         workbook.creator = 'CSA 3e COMPAGNIE GSPM BOUAKÉ';
         workbook.created = new Date();
         workbook.modified = new Date();
 
         const totalValeurStock = exportProduits.reduce((sum, p) => sum + (Number(p.stock_actuel || 0) * Number(p.prix_vente || 0)), 0);
+        const totalStockInitial = exportProduits.reduce((sum, p) => sum + computeStockMetrics(p, movementsByProduct[p.id]).stock_initial, 0);
+        const totalMedicamentsEntres = exportProduits.reduce((sum, p) => sum + computeStockMetrics(p, movementsByProduct[p.id]).total_entrees, 0);
+        const totalMedicamentsSortis = exportProduits.reduce((sum, p) => sum + computeStockMetrics(p, movementsByProduct[p.id]).total_sorties, 0);
+        const totalMedicamentsRestants = exportProduits.reduce((sum, p) => sum + Number(p.stock_actuel || 0), 0);
         const totalAlertes = exportProduits.filter(p => Number(p.stock_actuel || 0) <= Number(p.stock_minimum || 0)).length;
         const totalRuptures = exportProduits.filter(p => Number(p.stock_actuel || 0) <= 0).length;
         const totalPerimes = exportProduits.filter(p => p.date_peremption && p.date_peremption < today).length;
@@ -306,6 +415,10 @@ router.get('/export/excel', async (req, res) => {
 
         const metrics = [
             ['Produits répertoriés', exportProduits.length],
+            ['Stock initial total (unités)', totalStockInitial],
+            ['Total médicaments entrés (unités)', totalMedicamentsEntres],
+            ['Total médicaments sortis (unités)', totalMedicamentsSortis],
+            ['Total médicaments restants (unités)', totalMedicamentsRestants],
             ['Valeur totale du stock', `${totalValeurStock.toLocaleString('fr-FR')} FCFA`],
             ['Alertes stock bas', totalAlertes],
             ['Ruptures de stock', totalRuptures],
@@ -614,13 +727,15 @@ router.get('/:id', async (req, res) => {
             .from('mouvements_stock')
             .select('*')
             .eq('produit_id', req.params.id)
-            .order('created_at', { ascending: false })
-            .limit(50);
+            .order('created_at', { ascending: false });
+
+        const stockMetrics = computeStockMetrics(produit, mouvements || []);
 
         res.render('pharmacie/show', {
             title: produit.designation,
             produit,
-            mouvements: mouvements || []
+            stockMetrics,
+            mouvements: (mouvements || []).slice(0, 50)
         });
     } catch (error) {
         console.error('Erreur détail produit:', error);

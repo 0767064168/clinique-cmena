@@ -87,6 +87,46 @@
         </div>
     </div>
 
+    <!-- Flux Global du Stock (Stock Initial, Entrées, Sorties, Restant) -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div class="bg-blue-50/80 border border-blue-200 rounded-xl p-3.5 flex items-center gap-3">
+            <div class="flex-shrink-0 h-10 w-10 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                <i class="fas fa-boxes-stacked"></i>
+            </div>
+            <div>
+                <p class="text-[11px] uppercase font-bold text-blue-700 tracking-wider">Stock Initial Total</p>
+                <p class="text-xl font-black text-blue-900"><%= stats.totalStockInitial || 0 %></p>
+            </div>
+        </div>
+        <div class="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3.5 flex items-center gap-3">
+            <div class="flex-shrink-0 h-10 w-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                <i class="fas fa-arrow-circle-down"></i>
+            </div>
+            <div>
+                <p class="text-[11px] uppercase font-bold text-emerald-700 tracking-wider">Total Entrées</p>
+                <p class="text-xl font-black text-emerald-900">+<%= stats.totalMedicamentsEntres || 0 %></p>
+            </div>
+        </div>
+        <div class="bg-red-50/80 border border-red-200 rounded-xl p-3.5 flex items-center gap-3">
+            <div class="flex-shrink-0 h-10 w-10 rounded-lg bg-red-100 text-red-700 flex items-center justify-center font-bold">
+                <i class="fas fa-arrow-circle-up"></i>
+            </div>
+            <div>
+                <p class="text-[11px] uppercase font-bold text-red-700 tracking-wider">Total Sorties</p>
+                <p class="text-xl font-black text-red-900">-<%= stats.totalMedicamentsSortis || 0 %></p>
+            </div>
+        </div>
+        <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-3.5 flex items-center gap-3">
+            <div class="flex-shrink-0 h-10 w-10 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                <i class="fas fa-warehouse"></i>
+            </div>
+            <div>
+                <p class="text-[11px] uppercase font-bold text-indigo-700 tracking-wider">Stock Restant Total</p>
+                <p class="text-xl font-black text-indigo-900"><%= stats.totalMedicamentsRestants || 0 %></p>
+            </div>
+        </div>
+    </div>
+
     <!-- Filtres -->
     <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm mb-6 border border-gray-100">
         <form action="/pharmacie" method="GET" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
@@ -268,20 +308,38 @@
                             <span class="font-semibold text-gray-800"><%= p.emplacement || '-' %></span>
                         </div>
                     </div>
+                    <!-- Flux de Stock Mobile (Initial, Entrées, Sorties, Restant) -->
+                    <div class="grid grid-cols-4 gap-1.5 pt-2 border-t border-gray-100 text-center">
+                        <div class="bg-blue-50/70 rounded-lg p-1.5 border border-blue-100">
+                            <span class="text-[10px] text-blue-700 font-bold block uppercase">Initial</span>
+                            <span class="text-sm font-black text-blue-900"><%= p.stock_initial != null ? p.stock_initial : '-' %></span>
+                        </div>
+                        <div class="bg-emerald-50/70 rounded-lg p-1.5 border border-emerald-100">
+                            <span class="text-[10px] text-emerald-700 font-bold block uppercase">Entrées</span>
+                            <span class="text-sm font-black text-emerald-700">+<%= p.total_entrees != null ? p.total_entrees : 0 %></span>
+                        </div>
+                        <div class="bg-red-50/70 rounded-lg p-1.5 border border-red-100">
+                            <span class="text-[10px] text-red-700 font-bold block uppercase">Sorties</span>
+                            <span class="text-sm font-black text-red-700"><%= (p.total_sorties || 0) > 0 ? '-' + p.total_sorties : '0' %></span>
+                        </div>
+                        <div class="bg-indigo-50/70 rounded-lg p-1.5 border border-indigo-100">
+                            <span class="text-[10px] text-indigo-700 font-bold block uppercase">Restant</span>
+                            <span class="text-sm font-black <%= (p.stock_restant != null ? p.stock_restant : p.stock_actuel) <= 0 ? 'text-red-600' : ((p.stock_restant != null ? p.stock_restant : p.stock_actuel) <= p.stock_minimum ? 'text-amber-600' : 'text-indigo-900') %>">
+                                <%= p.stock_restant != null ? p.stock_restant : p.stock_actuel %>
+                            </span>
+                        </div>
+                    </div>
                     <div class="flex items-center justify-between pt-2 border-t border-gray-100">
-                        <div class="flex gap-4">
-                            <div>
-                                <span class="text-[11px] text-gray-500 block uppercase font-medium">Stock</span>
-                                <span class="text-base font-extrabold <%= p.stock_actuel <= p.stock_minimum ? 'text-amber-600' : 'text-gray-900' %>"><%= p.stock_actuel %> <span class="text-xs font-medium text-gray-500"><%= p.unite %></span></span>
-                            </div>
-                            <div>
-                                <span class="text-[11px] text-gray-500 block uppercase font-medium">Prix</span>
-                                <span class="text-base font-extrabold text-emerald-700"><%= formatMoney(p.prix_vente) %></span>
-                            </div>
+                        <div>
+                            <span class="text-[11px] text-gray-500 block uppercase font-medium">Prix Vente</span>
+                            <span class="text-base font-extrabold text-emerald-700"><%= formatMoney(p.prix_vente) %></span>
                         </div>
                         <div class="flex items-center gap-2">
                             <a href="/pharmacie/<%= p.id %>" class="inline-flex min-h-[40px] items-center justify-center px-3 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition">
                                 <i class="fas fa-eye mr-1"></i> Voir
+                            </a>
+                            <a href="/pharmacie/<%= p.id %>/edit" class="inline-flex min-h-[40px] items-center justify-center px-3 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition">
+                                <i class="fas fa-edit mr-1"></i> Modifier
                             </a>
                         </div>
                     </div>
@@ -305,7 +363,10 @@
                         <th scope="col" class="px-4 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Code</th>
                         <th scope="col" class="px-4 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Désignation</th>
                         <th scope="col" class="px-4 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Catégorie</th>
-                        <th scope="col" class="px-4 py-3.5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Stock</th>
+                        <th scope="col" class="px-4 py-3.5 text-center text-xs font-bold text-blue-600 uppercase tracking-wider bg-blue-50/50">Stock Initial</th>
+                        <th scope="col" class="px-4 py-3.5 text-center text-xs font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50/50">Entrées</th>
+                        <th scope="col" class="px-4 py-3.5 text-center text-xs font-bold text-red-600 uppercase tracking-wider bg-red-50/50">Sorties</th>
+                        <th scope="col" class="px-4 py-3.5 text-center text-xs font-bold text-indigo-700 uppercase tracking-wider bg-indigo-50/50">Restant</th>
                         <th scope="col" class="px-4 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Prix Vente</th>
                         <th scope="col" class="px-4 py-3.5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Péremption</th>
                         <th scope="col" class="px-4 py-3.5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Statut Stock</th>
@@ -333,11 +394,23 @@
                                 <td class="px-4 py-3 whitespace-nowrap text-sm">
                                     <span class="px-2.5 py-1 rounded-full text-xs font-semibold border <%= getCatBadge(p.categorie) %>"><%= getCatLabel(p.categorie) %></span>
                                 </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-center">
-                                    <span class="font-bold <%= p.stock_actuel <= 0 ? 'text-red-600' : (p.stock_actuel <= p.stock_minimum ? 'text-amber-600' : 'text-gray-900') %>"><%= p.stock_actuel %></span>
-                                    <span class="text-gray-400">/</span>
-                                    <span class="text-xs text-gray-500"><%= p.stock_minimum %></span>
-                                    <span class="text-xs text-gray-400 ml-1"><%= p.unite %></span>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold text-blue-700 bg-blue-50/20">
+                                    <%= p.stock_initial != null ? p.stock_initial : '-' %>
+                                    <span class="text-[10px] text-gray-400 font-normal"><%= p.unite %></span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold text-emerald-700 bg-emerald-50/20">
+                                    +<%= p.total_entrees != null ? p.total_entrees : 0 %>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold text-red-600 bg-red-50/20">
+                                    <%= (p.total_sorties || 0) > 0 ? '-' + p.total_sorties : '0' %>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-center bg-indigo-50/20">
+                                    <span class="font-black text-base <%= (p.stock_restant != null ? p.stock_restant : p.stock_actuel) <= 0 ? 'text-red-600' : ((p.stock_restant != null ? p.stock_restant : p.stock_actuel) <= p.stock_minimum ? 'text-amber-600' : 'text-indigo-900') %>">
+                                        <%= p.stock_restant != null ? p.stock_restant : p.stock_actuel %>
+                                    </span>
+                                    <span class="text-gray-400 text-xs">/</span>
+                                    <span class="text-xs text-gray-500" title="Seuil minimum"><%= p.stock_minimum %></span>
+                                    <span class="text-[10px] text-gray-400 ml-0.5"><%= p.unite %></span>
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-emerald-700"><%= formatMoney(p.prix_vente) %></td>
                                 <td class="px-4 py-3 whitespace-nowrap text-center text-xs">
@@ -370,7 +443,7 @@
                         <% }); %>
                     <% } else { %>
                         <tr>
-                            <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+                            <td colspan="11" class="px-6 py-8 text-center text-gray-500">
                                 <i class="fas fa-box-open text-3xl text-gray-300 mb-2 block"></i>
                                 Aucun produit ne correspond aux critères de recherche
                             </td>

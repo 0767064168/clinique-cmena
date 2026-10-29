@@ -39,6 +39,12 @@
     const isLowStock = (produit.stock_actuel || 0) <= (produit.stock_minimum || 0);
     const isOutOfStock = (produit.stock_actuel || 0) <= 0;
     const valeurStock = (produit.stock_actuel || 0) * parseFloat(produit.prix_vente || 0);
+    const metrics = typeof stockMetrics !== 'undefined' ? stockMetrics : {
+        stock_initial: produit.stock_actuel || 0,
+        total_entrees: 0,
+        total_sorties: 0,
+        stock_restant: produit.stock_actuel || 0
+    };
     %>
 
     <!-- Alertes Péremption -->
@@ -106,6 +112,50 @@
             </div>
         </div>
     <% } %>
+
+    <!-- 4 Métriques de Stock (Stock Initial, Entrées, Sorties, Restant) -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div class="bg-blue-50/80 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
+            <div class="flex-shrink-0 h-11 w-11 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-lg">
+                <i class="fas fa-boxes-stacked"></i>
+            </div>
+            <div>
+                <span class="text-[11px] uppercase font-bold text-blue-700 tracking-wider block">Stock Initial</span>
+                <span class="text-2xl font-black text-blue-900"><%= metrics.stock_initial %></span>
+                <span class="text-xs font-semibold text-blue-600"><%= produit.unite %></span>
+            </div>
+        </div>
+        <div class="bg-emerald-50/80 border border-emerald-200 rounded-xl p-4 flex items-center gap-3">
+            <div class="flex-shrink-0 h-11 w-11 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
+                <i class="fas fa-arrow-circle-down"></i>
+            </div>
+            <div>
+                <span class="text-[11px] uppercase font-bold text-emerald-700 tracking-wider block">Médicaments Entrés</span>
+                <span class="text-2xl font-black text-emerald-700">+<%= metrics.total_entrees %></span>
+                <span class="text-xs font-semibold text-emerald-600"><%= produit.unite %></span>
+            </div>
+        </div>
+        <div class="bg-red-50/80 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+            <div class="flex-shrink-0 h-11 w-11 rounded-lg bg-red-100 text-red-700 flex items-center justify-center font-bold text-lg">
+                <i class="fas fa-arrow-circle-up"></i>
+            </div>
+            <div>
+                <span class="text-[11px] uppercase font-bold text-red-700 tracking-wider block">Médicaments Sortis</span>
+                <span class="text-2xl font-black text-red-700"><%= metrics.total_sorties > 0 ? '-' + metrics.total_sorties : '0' %></span>
+                <span class="text-xs font-semibold text-red-600"><%= produit.unite %></span>
+            </div>
+        </div>
+        <div class="bg-indigo-50/80 border border-indigo-200 rounded-xl p-4 flex items-center gap-3">
+            <div class="flex-shrink-0 h-11 w-11 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-lg">
+                <i class="fas fa-warehouse"></i>
+            </div>
+            <div>
+                <span class="text-[11px] uppercase font-bold text-indigo-700 tracking-wider block">Médicament Restant</span>
+                <span class="text-2xl font-black <%= isOutOfStock ? 'text-red-600' : (isLowStock ? 'text-amber-600' : 'text-indigo-900') %>"><%= metrics.stock_restant %></span>
+                <span class="text-xs font-semibold text-indigo-600"><%= produit.unite %></span>
+            </div>
+        </div>
+    </div>
 
     <!-- Cartes d'informations -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -176,9 +226,9 @@
             </h2>
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-slate-50 p-3 rounded-lg">
-                    <span class="text-xs text-gray-500 block uppercase font-medium">Stock Actuel</span>
+                    <span class="text-xs text-gray-500 block uppercase font-medium">Stock Restant (Actuel)</span>
                     <span class="text-2xl font-black <%= isOutOfStock ? 'text-red-600' : (isLowStock ? 'text-amber-600' : 'text-emerald-700') %>">
-                        <%= produit.stock_actuel %>
+                        <%= metrics.stock_restant %>
                     </span>
                     <span class="text-xs font-semibold text-gray-500"><%= produit.unite %></span>
                 </div>
