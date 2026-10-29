@@ -8,12 +8,114 @@ const formatPercent = (value) => `${Number(value || 0).toFixed(0)} %`;
 const csvSafe = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
 const asNumber = (value) => Number(value || 0);
 
+// Helper pour générer la série chronologique d'évolution (journalière ou mensuelle)
+function buildEvolutionTimeline(date_from, date_to, factures, paiements, consultations, patients) {
+    const [yFrom, mFrom, dFrom] = (date_from || '').split('-').map(Number);
+    const [yTo, mTo, dTo] = (date_to || '').split('-').map(Number);
+
+    const start = (yFrom && mFrom && dFrom) ? new Date(yFrom, mFrom - 1, dFrom) : new Date();
+    const end = (yTo && mTo && dTo) ? new Date(yTo, mTo - 1, dTo) : new Date();
+
+    const diffDays = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1);
+    const isMonthly = diffDays > 62;
+
+    const map = new Map();
+
+    if (!isMonthly) {
+        let cur = new Date(start);
+        while (cur <= end) {
+            const y = cur.getFullYear();
+            const m = String(cur.getMonth() + 1).padStart(2, '0');
+            const d = String(cur.getDate()).padStart(2, '0');
+            const key = `${y}-${m}-${d}`;
+            const label = `${d}/${m}`;
+            const fullDate = cur.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+            map.set(key, { key, label, fullDate, facturation: 0, encaissement: 0, consultations: 0, patients: 0 });
+            cur.setDate(cur.getDate() + 1);
+        }
+    } else {
+        let cur = new Date(start.getFullYear(), start.getMonth(), 1);
+        const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+        while (cur <= endMonth) {
+            const y = cur.getFullYear();
+            const m = String(cur.getMonth() + 1).padStart(2, '0');
+            const key = `${y}-${m}`;
+            const label = cur.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
+            const fullDate = cur.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+            map.set(key, { key, label, fullDate, facturation: 0, encaissement: 0, consultations: 0, patients: 0 });
+            cur.setMonth(cur.getMonth() + 1);
+        }
+    }
+
+    (factures || []).forEach(f => {
+        if (f.statut === 'brouillon' || f.statut === 'annulee') return;
+        const d = String(f.date_facture || '').slice(0, isMonthly ? 7 : 10);
+        if (map.has(d)) {
+            map.get(d).facturation += Number(f.total_net || 0);
+        }
+    });
+
+    (paiements || []).forEach(p => {
+        const d = String(p.date_paiement || '').slice(0, isMonthly ? 7 : 10);
+        if (map.has(d)) {
+            map.get(d).encaissement += Number(p.montant || 0);
+        }
+    });
+
+    (consultations || []).forEach(c => {
+        const d = String(c.date_entree || '').slice(0, isMonthly ? 7 : 10);
+        if (map.has(d)) {
+            map.get(d).consultations += 1;
+        }
+    });
+
+    (patients || []).forEach(pat => {
+        const d = String(pat.created_at || '').slice(0, isMonthly ? 7 : 10);
+        if (map.has(d)) {
+            map.get(d).patients += 1;
+        }
+    });
+
+    const points = Array.from(map.values());
+
+    let peakFacturation = { montant: 0, date: '-' };
+    let peakEncaissement = { montant: 0, date: '-' };
+    let peakConsultations = { count: 0, date: '-' };
+
+    points.forEach(p => {
+        if (p.facturation > peakFacturation.montant) {
+            peakFacturation = { montant: p.facturation, date: p.fullDate };
+        }
+        if (p.encaissement > peakEncaissement.montant) {
+            peakEncaissement = { montant: p.encaissement, date: p.fullDate };
+        }
+        if (p.consultations > peakConsultations.count) {
+            peakConsultations = { count: p.consultations, date: p.fullDate };
+        }
+    });
+
+    return {
+        isMonthly,
+        labels: points.map(p => p.label),
+        fullDates: points.map(p => p.fullDate),
+        facturation: points.map(p => p.facturation),
+        encaissement: points.map(p => p.encaissement),
+        consultations: points.map(p => p.consultations),
+        patients: points.map(p => p.patients),
+        peaks: {
+            peakFacturation,
+            peakEncaissement,
+            peakConsultations
+        }
+    };
+}
+
 async function getRapportData(date_from, date_to) {
     const { data: factures, error: errFactures } = await supabase
         .from('factures')
         .select('*, patients(nom, prenom, numero_dossier)')
-        .gte('date_facture', date_from)
-        .lte('date_facture', date_to)
+        .gte('date_facture', `${date_from}T00:00:00.000Z`)
+        .lte('date_facture', `${date_to}T23:59:59.999Z`)
         .neq('statut', 'annulee')
         .order('date_facture', { ascending: false });
 
@@ -88,25 +190,28 @@ async function getRapportData(date_from, date_to) {
     const { data: consultations, error: errConsultations } = await supabase
         .from('consultations')
         .select('id, statut, date_entree')
-        .gte('date_entree', date_from)
-        .lte('date_entree', date_to);
+        .gte('date_entree', `${date_from}T00:00:00.000Z`)
+        .lte('date_entree', `${date_to}T23:59:59.999Z`);
 
     if (errConsultations) throw errConsultations;
 
     const totalConsultations = (consultations || []).length;
     const consultationsTerminees = (consultations || []).filter(c => c.statut === 'termine').length;
 
-    const { count: nouveauxPatients, error: errPatients } = await supabase
+    const { data: patientsList, count: nouveauxPatients, error: errPatients } = await supabase
         .from('patients')
-        .select('*', { count: 'exact', head: true })
+        .select('id, created_at', { count: 'exact' })
         .gte('created_at', `${date_from}T00:00:00.000Z`)
         .lte('created_at', `${date_to}T23:59:59.999Z`);
 
     if (errPatients) throw errPatients;
 
+    const evolution = buildEvolutionTimeline(date_from, date_to, factures, paiements, consultations, patientsList);
+
     return {
         factures: factures || [],
         paiements: paiements || [],
+        evolution,
         stats: {
             totalFactureNet,
             totalFactureBrouillon,
@@ -139,14 +244,15 @@ router.get('/', async (req, res) => {
         const date_from = req.query.date_from || defaultFrom;
         const date_to = req.query.date_to || defaultTo;
 
-        const { factures, stats } = await getRapportData(date_from, date_to);
+        const { factures, stats, evolution } = await getRapportData(date_from, date_to);
 
         res.render('rapports/index', {
             title: 'Rapports d\'Activité & Financiers',
             date_from,
             date_to,
             stats,
-            factures
+            factures,
+            evolution
         });
 
     } catch (error) {

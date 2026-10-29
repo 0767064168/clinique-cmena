@@ -201,6 +201,75 @@
         </div>
     </div>
 
+    <!-- Courbe d'Évolution de l'Activité & des Recettes -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4 mb-4">
+            <div>
+                <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-xs font-bold text-teal-800 mb-1">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analyse Dynamique</span>
+                </div>
+                <h2 class="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+                    Courbe d'Évolution sur la Période
+                </h2>
+                <p class="text-xs text-gray-500">
+                    <%= (typeof evolution !== 'undefined' && evolution && evolution.isMonthly) ? 'Agrégation mensuelle' : 'Évolution quotidienne' %> du <%= new Date(date_from).toLocaleDateString('fr-FR') %> au <%= new Date(date_to).toLocaleDateString('fr-FR') %>
+                </p>
+            </div>
+
+            <!-- Boutons de filtrage de la courbe -->
+            <div class="no-print inline-flex p-1 bg-gray-100 rounded-xl gap-1 text-xs font-semibold self-start sm:self-auto">
+                <button type="button" id="btn-chart-finances" onclick="setChartMode('finances')"
+                    class="chart-tab-btn px-3 py-1.5 rounded-lg transition bg-white text-teal-800 shadow-sm font-bold">
+                    <i class="fas fa-coins mr-1 text-emerald-600"></i> Finances
+                </button>
+                <button type="button" id="btn-chart-activite" onclick="setChartMode('activite')"
+                    class="chart-tab-btn px-3 py-1.5 rounded-lg transition text-gray-600 hover:text-gray-900">
+                    <i class="fas fa-stethoscope mr-1 text-purple-600"></i> Activité Médicale
+                </button>
+                <button type="button" id="btn-chart-mixte" onclick="setChartMode('mixte')"
+                    class="chart-tab-btn px-3 py-1.5 rounded-lg transition text-gray-600 hover:text-gray-900">
+                    <i class="fas fa-layer-group mr-1 text-blue-600"></i> Vue Combinée
+                </button>
+            </div>
+        </div>
+
+        <!-- Zone du Canvas -->
+        <div class="relative w-full h-72 sm:h-80 md:h-96">
+            <canvas id="evolutionReportChart"></canvas>
+        </div>
+
+        <!-- Cartes synthétiques des pics sous la courbe -->
+        <% if (typeof evolution !== 'undefined' && evolution && evolution.peaks) { %>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 mt-4 border-t border-gray-100 text-xs">
+                <div class="flex items-center gap-3 p-2.5 rounded-lg bg-emerald-50/70 border border-emerald-100">
+                    <span class="p-2 rounded-md bg-emerald-100 text-emerald-700 font-bold"><i class="fas fa-arrow-trend-up"></i></span>
+                    <div>
+                        <span class="text-gray-500 block text-[11px] uppercase font-bold">Pic d'Encaissement</span>
+                        <span class="font-extrabold text-emerald-800 text-sm"><%= (evolution.peaks.peakEncaissement.montant || 0).toLocaleString('fr-FR') %> FCFA</span>
+                        <span class="text-gray-400 block text-[10px]"><%= evolution.peaks.peakEncaissement.date %></span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 p-2.5 rounded-lg bg-blue-50/70 border border-blue-100">
+                    <span class="p-2 rounded-md bg-blue-100 text-blue-700 font-bold"><i class="fas fa-file-invoice-dollar"></i></span>
+                    <div>
+                        <span class="text-gray-500 block text-[11px] uppercase font-bold">Pic de Facturation</span>
+                        <span class="font-extrabold text-blue-800 text-sm"><%= (evolution.peaks.peakFacturation.montant || 0).toLocaleString('fr-FR') %> FCFA</span>
+                        <span class="text-gray-400 block text-[10px]"><%= evolution.peaks.peakFacturation.date %></span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 p-2.5 rounded-lg bg-purple-50/70 border border-purple-100">
+                    <span class="p-2 rounded-md bg-purple-100 text-purple-700 font-bold"><i class="fas fa-user-md"></i></span>
+                    <div>
+                        <span class="text-gray-500 block text-[11px] uppercase font-bold">Pic de Consultations</span>
+                        <span class="font-extrabold text-purple-800 text-sm"><%= evolution.peaks.peakConsultations.count || 0 %> acte(s)</span>
+                        <span class="text-gray-400 block text-[10px]"><%= evolution.peaks.peakConsultations.date %></span>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+    </div>
+
     <!-- Activité Médicale & Modes de Paiement -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <!-- Activité Médicale -->
@@ -265,6 +334,7 @@
                     </div>
                     <span class="font-bold text-sm text-gray-900"><%= (stats.modesPaiement.mobile_money || 0).toLocaleString('fr-FR') %> FCFA</span>
                 </div>
+                <% if ((stats.modesPaiement.carte || 0) > 0) { %>
                 <div class="mode-row flex justify-between items-center p-3 rounded-lg">
                     <div class="flex items-center gap-3">
                         <span class="p-2 bg-indigo-100 text-indigo-700 rounded-md"><i class="fas fa-credit-card"></i></span>
@@ -272,6 +342,8 @@
                     </div>
                     <span class="font-bold text-sm text-gray-900"><%= (stats.modesPaiement.carte || 0).toLocaleString('fr-FR') %> FCFA</span>
                 </div>
+                <% } %>
+                <% if ((stats.modesPaiement.virement || 0) > 0) { %>
                 <div class="mode-row flex justify-between items-center p-3 rounded-lg">
                     <div class="flex items-center gap-3">
                         <span class="p-2 bg-purple-100 text-purple-700 rounded-md"><i class="fas fa-university"></i></span>
@@ -279,6 +351,8 @@
                     </div>
                     <span class="font-bold text-sm text-gray-900"><%= (stats.modesPaiement.virement || 0).toLocaleString('fr-FR') %> FCFA</span>
                 </div>
+                <% } %>
+                <% if ((stats.modesPaiement.cheque || 0) > 0) { %>
                 <div class="mode-row flex justify-between items-center p-3 rounded-lg">
                     <div class="flex items-center gap-3">
                         <span class="p-2 bg-yellow-100 text-yellow-700 rounded-md"><i class="fas fa-money-check"></i></span>
@@ -286,6 +360,7 @@
                     </div>
                     <span class="font-bold text-sm text-gray-900"><%= (stats.modesPaiement.cheque || 0).toLocaleString('fr-FR') %> FCFA</span>
                 </div>
+                <% } %>
             </div>
         </div>
     </div>
@@ -351,3 +426,217 @@
         </div>
     </div>
 </div>
+
+<!-- Chart.js 4.4.x -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const evolutionData = <%- JSON.stringify(typeof evolution !== 'undefined' ? evolution : {}) %>;
+        const labels = evolutionData.labels || [];
+        const fullDates = evolutionData.fullDates || [];
+        const facturation = evolutionData.facturation || [];
+        const encaissement = evolutionData.encaissement || [];
+        const consultations = evolutionData.consultations || [];
+        const patients = evolutionData.patients || [];
+
+        const ctx = document.getElementById('evolutionReportChart');
+        if (!ctx) return;
+
+        // Configuration des datasets
+        const dsEncaissement = {
+            label: 'Encaissé Réel (FCFA)',
+            data: encaissement,
+            borderColor: '#059669', // Vert Émeraude
+            backgroundColor: 'rgba(5, 150, 105, 0.12)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.32,
+            pointRadius: labels.length > 31 ? 1.5 : 3.5,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#059669',
+            yAxisID: 'yFCFA'
+        };
+
+        const dsFacturation = {
+            label: 'Facturé Net (FCFA)',
+            data: facturation,
+            borderColor: '#2563eb', // Bleu Roi
+            backgroundColor: 'rgba(37, 99, 235, 0.08)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.32,
+            pointRadius: labels.length > 31 ? 1.5 : 3.5,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#2563eb',
+            yAxisID: 'yFCFA'
+        };
+
+        const dsConsultations = {
+            label: 'Consultations Médicales',
+            data: consultations,
+            borderColor: '#7c3aed', // Violet
+            backgroundColor: 'rgba(124, 58, 237, 0.08)',
+            borderWidth: 2,
+            borderDash: [4, 4],
+            fill: false,
+            tension: 0.3,
+            pointRadius: labels.length > 31 ? 1.5 : 3.5,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#7c3aed',
+            yAxisID: 'yCount'
+        };
+
+        const dsPatients = {
+            label: 'Nouveaux Patients',
+            data: patients,
+            borderColor: '#ea580c', // Orange
+            backgroundColor: 'rgba(234, 88, 12, 0.08)',
+            borderWidth: 2,
+            borderDash: [2, 2],
+            fill: false,
+            tension: 0.3,
+            pointRadius: labels.length > 31 ? 1.5 : 3.5,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#ea580c',
+            yAxisID: 'yCount'
+        };
+
+        const chartConfig = {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [dsEncaissement, dsFacturation]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 16,
+                            font: {
+                                size: 12,
+                                weight: '600'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.94)',
+                        padding: 12,
+                        cornerRadius: 8,
+                        titleFont: { size: 12, weight: '700' },
+                        bodyFont: { size: 12 },
+                        callbacks: {
+                            title: function(items) {
+                                const idx = items[0].dataIndex;
+                                return fullDates[idx] || items[0].label;
+                            },
+                            label: function(context) {
+                                const val = Number(context.parsed.y || 0);
+                                if (context.dataset.yAxisID === 'yFCFA') {
+                                    return ` ${context.dataset.label} : ${val.toLocaleString('fr-FR')} FCFA`;
+                                } else {
+                                    return ` ${context.dataset.label} : ${val} acte(s)`;
+                                }
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: 'rgba(226, 232, 240, 0.6)'
+                        },
+                        ticks: {
+                            font: { size: 11 },
+                            maxRotation: 45,
+                            autoSkip: true,
+                            maxTicksLimit: 16
+                        }
+                    },
+                    yFCFA: {
+                        type: 'linear',
+                        position: 'left',
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(226, 232, 240, 0.8)'
+                        },
+                        ticks: {
+                            font: { size: 11 },
+                            callback: function(value) {
+                                if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M F';
+                                if (value >= 1000) return (value / 1000).toLocaleString('fr-FR') + 'k F';
+                                return value.toLocaleString('fr-FR') + ' F';
+                            }
+                        }
+                    },
+                    yCount: {
+                        type: 'linear',
+                        position: 'right',
+                        display: false,
+                        beginAtZero: true,
+                        grid: {
+                            drawOnChartArea: false
+                        },
+                        ticks: {
+                            precision: 0,
+                            font: { size: 11 }
+                        }
+                    }
+                }
+            }
+        };
+
+        const chartInstance = new Chart(ctx, chartConfig);
+
+        window.setChartMode = function(mode) {
+            const btnFinances = document.getElementById('btn-chart-finances');
+            const btnActivite = document.getElementById('btn-chart-activite');
+            const btnMixte = document.getElementById('btn-chart-mixte');
+
+            const allBtns = [btnFinances, btnActivite, btnMixte];
+            allBtns.forEach(btn => {
+                if (btn) {
+                    btn.classList.remove('bg-white', 'text-teal-800', 'shadow-sm', 'font-bold');
+                    btn.classList.add('text-gray-600');
+                }
+            });
+
+            if (mode === 'finances') {
+                if (btnFinances) {
+                    btnFinances.classList.add('bg-white', 'text-teal-800', 'shadow-sm', 'font-bold');
+                    btnFinances.classList.remove('text-gray-600');
+                }
+                chartInstance.data.datasets = [dsEncaissement, dsFacturation];
+                chartInstance.options.scales.yFCFA.display = true;
+                chartInstance.options.scales.yCount.display = false;
+            } else if (mode === 'activite') {
+                if (btnActivite) {
+                    btnActivite.classList.add('bg-white', 'text-teal-800', 'shadow-sm', 'font-bold');
+                    btnActivite.classList.remove('text-gray-600');
+                }
+                chartInstance.data.datasets = [dsConsultations, dsPatients];
+                chartInstance.options.scales.yFCFA.display = false;
+                chartInstance.options.scales.yCount.display = true;
+                chartInstance.options.scales.yCount.position = 'left';
+            } else if (mode === 'mixte') {
+                if (btnMixte) {
+                    btnMixte.classList.add('bg-white', 'text-teal-800', 'shadow-sm', 'font-bold');
+                    btnMixte.classList.remove('text-gray-600');
+                }
+                chartInstance.data.datasets = [dsEncaissement, dsFacturation, dsConsultations, dsPatients];
+                chartInstance.options.scales.yFCFA.display = true;
+                chartInstance.options.scales.yCount.display = true;
+                chartInstance.options.scales.yCount.position = 'right';
+            }
+            chartInstance.update();
+        };
+    });
+</script>
