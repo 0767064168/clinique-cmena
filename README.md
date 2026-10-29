@@ -9,7 +9,7 @@ Application web complète de gestion médicale, hospitalière, de facturation et
 - **Base de données** : PostgreSQL hébergé sur [Supabase](https://supabase.com)
 - **Sessions & Sécurité** : `express-session`, `connect-pg-simple` (stockage persistant des sessions en base PostgreSQL), `helmet`, `express-rate-limit`, `bcryptjs`
 - **Moteur de templates** : EJS + `express-ejs-layouts`
-- **Styling UI** : Tailwind CSS + Font Awesome 6 + Alpine.js
+- **Styling UI & Visualisation** : Tailwind CSS + Font Awesome 6 + Alpine.js + Chart.js (courbes d'évolution interactives)
 - **Génération de documents & Exports** : `exceljs` (classeurs Excel multi-onglets stylisés), `pdfkit` (documents et fiches PDF), CSV encodé en UTF-8 BOM
 - **Devise** : Franc CFA (FCFA / XOF) avec conversion Euro (€) automatique et montants en toutes lettres
 
@@ -144,16 +144,20 @@ Accédez à l'application dans votre navigateur :
 - **Impression A4 / PDF dédiée** : Route d'impression `/factures/:id/print` formatée pour édition papier ou export PDF avec signatures, visas et tampons réglementaires.
 
 ### 2. Pharmacie & Consommables Médicaux
-- **Gestion des stocks & valorisation financière** : Suivi des quantités, seuils d'alerte minimums, prix d'achat, prix de vente et calcul de la valeur globale du stock en stock d'alerte ou normal.
+- **Flux & 4 Métriques de Stock** : Calcul et suivi rigoureux pour chaque produit du :
+  - **Stock Initial** : Reconstitué à partir du premier inventaire/mouvement.
+  - **Médicaments Entrés** : Cumul de tous les approvisionnements et réceptions de lots.
+  - **Médicaments Sortis** : Cumul de toutes les dispensations et sorties d'ordonnances.
+  - **Stock Restant** : Quantité actuellement disponible avec seuil d'alerte minimum et valorisation financière.
 - **Surveillance avancée des péremptions** :
   - Identification immédiate des produits déjà périmés (alerte rouge et consigne de mise au rebut).
   - Alertes visuelles graduelles : **Périme &le; 30 jours** (alerte critique avec préconisation de dispensation prioritaire FEFO), **&le; 60 jours** et **&le; 90 jours**.
   - Filtre rapide dédié dans la barre d'outils pour isoler instantanément les lots à surveiller.
   - Statistiques en direct sur le tableau de bord de la pharmacie.
 - **Exports comptables et d'inventaire complets** :
-  - **Export CSV universel** : Doté du préfixe UTF-8 BOM (`\uFEFF`) garantissant une ouverture sans altération des accents sous Microsoft Excel sur Windows.
+  - **Export CSV universel** : Doté du préfixe UTF-8 BOM (`\uFEFF`), incluant les 4 métriques de stock pour compatibilité totale avec Microsoft Excel Windows.
   - **Export Excel (`.xlsx`) multi-onglets** :
-    - *Feuille 1 (Synthèse)* : 6 cartes d'indicateurs financiers et de volumétrie.
+    - *Feuille 1 (Synthèse)* : Indicateurs de valorisation, volumétrie et totaux de flux (initial, entrées, sorties, restants).
     - *Feuille 2 (Inventaire Détaillé)* : Tableau formaté avec styles professionnels, colonnes monétaires en FCFA et colorisation conditionnelle selon l'urgence de péremption.
 
 ### 3. Dossiers Médicaux & Suivi des Patients
@@ -162,16 +166,25 @@ Accédez à l'application dans votre navigateur :
 - Historique chronologique complet des consultations, examens et factures rattachées au patient.
 
 ### 4. Consultations & Dossier de Soins
+- **Création fluide de consultation** : Choix entre un patient déjà répertorié ou **saisie manuelle directe d'un nouveau patient** (enregistrement transparent en base de données sans quitter la consultation).
 - Recueil des constantes cliniques (tension, température, poids, pouls).
 - Enregistrement des diagnostics, prescriptions d'actes et ordonnances de pharmacie avec décompte automatique des stocks.
 
 ### 5. Encaissements & Règlements
-- Gestion des modes de paiement : Espèces, Mobile Money (Orange Money, MTN MoMo, Moov Money), Chèque, Virement.
+- **Modes de paiement simplifiés & opérationnels** : Espèces et Mobile Money (Orange Money, MTN MoMo, Moov Money).
 - Suivi des restes à recouvrer et historiques des reçus de caisse.
 
 ### 6. Traçabilité & Journal d'Audit
 - Enregistrement automatique de toutes les actions sensibles (créations, modifications de tarifs, annulations de factures, ajustements de stocks).
 - Journal consultable par les administrateurs avec horodatage, utilisateur responsable et détails techniques.
+
+### 7. Rapports d'Activité, Finances & Courbe d'Évolution
+- **Bilan financier complet sur période personnalisée** : Chiffre d'affaires facturé net, total encaissé réel, taux de recouvrement, moyenne par facture et créances restantes.
+- **Courbe d'évolution interactive (Chart.js)** :
+  - Filtres dynamiques sans rechargement : *Finances (Facturé vs Encaissé)*, *Activité Médicale (Consultations & Nouveaux patients)*, ou *Vue Combinée (double axe Y)*.
+  - Granularité adaptative : quotidienne ($\le 62$ jours) ou mensuelle ($> 62$ jours).
+  - Détection automatique et mise en valeur des records (pic d'encaissement, pic de facturation, pic de consultations).
+- **Exports dédiés** : Exportation du rapport en fichiers Excel stylisé et CSV avec filtres de date.
 
 ---
 
