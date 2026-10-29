@@ -142,8 +142,8 @@
 
         <!-- Section 1 : Prestations Médicales -->
         <div class="mb-4">
-            <div class="font-bold text-xs uppercase tracking-wide bg-gray-200 px-2 py-1 mb-1 border border-black flex justify-between items-center">
-                <span>1. Détails des Prestations Médicales & Actes</span>
+            <div class="font-bold text-xs uppercase tracking-wide bg-gray-200 px-2.5 py-1 mb-1 border border-black flex justify-between items-center">
+                <span>Détails des Prestations</span>
                 <span class="text-[11px] font-normal text-gray-700"><%= prestations.length %> acte(s)</span>
             </div>
             <table class="w-full text-xs table-borders mb-1" style="border-collapse: collapse;">
@@ -152,8 +152,8 @@
                         <th class="text-left">Libellé</th>
                         <th class="text-left">Praticien</th>
                         <th class="text-right">PU (FCFA)</th>
-                        <th class="text-right">Qté</th>
-                        <th class="text-right">%</th>
+                        <th class="text-center w-12">Qté</th>
+                        <th class="text-right w-12">%</th>
                         <th class="text-right">Montant</th>
                         <th class="text-right">Part Assureur</th>
                         <th class="text-right">Part Assuré</th>
@@ -166,7 +166,7 @@
                                 <td><%= ligne.libelle %></td>
                                 <td><%= ligne.nom_praticien || '-' %></td>
                                 <td class="text-right"><%= (ligne.prix_unitaire || 0).toLocaleString('fr-FR') %></td>
-                                <td class="text-right"><%= ligne.quantite %></td>
+                                <td class="text-center"><%= ligne.quantite %></td>
                                 <td class="text-right"><%= ligne.pourcentage %>%</td>
                                 <td class="text-right"><%= (ligne.montant || 0).toLocaleString('fr-FR') %></td>
                                 <td class="text-right"><%= (ligne.part_assureur || 0).toLocaleString('fr-FR') %></td>
@@ -192,8 +192,8 @@
         <!-- Section 2 : Ordonnance & Produits pharmaceutiques (affiché si présent) -->
         <% if (ordonnances.length > 0) { %>
         <div class="mb-4">
-            <div class="font-bold text-xs uppercase tracking-wide bg-gray-200 px-2 py-1 mb-1 border border-black flex justify-between items-center">
-                <span>2. Ordonnance & Médicaments délivrés</span>
+            <div class="font-bold text-xs uppercase tracking-wide bg-gray-200 px-2.5 py-1 mb-1 border border-black flex justify-between items-center">
+                <span>Détails de l'Ordonnance</span>
                 <span class="text-[11px] font-normal text-gray-700"><%= ordonnances.length %> produit(s)</span>
             </div>
             <table class="w-full text-xs table-borders mb-1" style="border-collapse: collapse;">
@@ -201,7 +201,7 @@
                     <tr>
                         <th class="text-center w-10">N°</th>
                         <th class="text-left">Dénomination</th>
-                        <th class="text-right w-20">Quantité</th>
+                        <th class="text-center w-20">Quantité</th>
                         <th class="text-right w-28">Coût unitaire (FCFA)</th>
                         <th class="text-right w-28">Coût Total (FCFA)</th>
                     </tr>
@@ -211,7 +211,7 @@
                         <tr>
                             <td class="text-center font-semibold"><%= idx + 1 %></td>
                             <td><%= ligne.libelle %></td>
-                            <td class="text-right"><%= ligne.quantite %></td>
+                            <td class="text-center"><%= ligne.quantite %></td>
                             <td class="text-right"><%= (ligne.prix_unitaire || 0).toLocaleString('fr-FR') %></td>
                             <td class="text-right font-medium"><%= (ligne.montant || 0).toLocaleString('fr-FR') %></td>
                         </tr>
