@@ -108,26 +108,12 @@
         </div>
     </div>
 
-    <% 
-        const allLignes = (typeof lignes !== 'undefined' && lignes) ? lignes : [];
-        const prestations = allLignes.filter(l => l.type_ligne !== 'ordonnance');
-        const ordonnances = allLignes.filter(l => l.type_ligne === 'ordonnance');
-        const totalPrestations = prestations.reduce((acc, l) => acc + (parseFloat(l.montant) || 0), 0);
-        const totalOrdonnances = ordonnances.reduce((acc, l) => acc + (parseFloat(l.montant) || 0), 0);
-    %>
-
-    <!-- 1. Prestations médicales -->
+    <!-- Lignes de facturation -->
     <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center px-4 sm:px-6 py-3 sm:py-4 border-b gap-2 bg-gray-50">
-            <div>
-                <h2 class="text-base font-semibold text-gray-800">1. Prestations médicales & Actes</h2>
-                <p class="text-xs text-gray-500"><%= prestations.length %> prestation(s) enregistrée(s)</p>
-            </div>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center px-4 sm:px-6 py-3 sm:py-4 border-b gap-2">
+            <h2 class="text-lg font-semibold text-gray-700">Lignes de facturation</h2>
             <% if (facture.statut === 'brouillon') { %>
-                <button type="button" class="text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 px-3.5 rounded shadow-sm flex items-center gap-1.5" onclick="openAddLigneModal('prestation')">
-                    <i class="fas fa-plus text-xs"></i>
-                    <span>Ajouter un acte</span>
-                </button>
+                <button type="button" class="text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-1 px-3 rounded" onclick="document.getElementById('add-ligne-modal').classList.remove('hidden')">+ Ajouter</button>
             <% } %>
         </div>
         <div class="overflow-x-auto">
@@ -139,119 +125,49 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qté</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">%</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant</th>
-                    <% if (facture.statut === 'brouillon') { %><th class="px-6 py-3 text-right">Action</th><% } %>
+                    <% if (facture.statut === 'brouillon') { %><th class="px-6 py-3"></th><% } %>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-                <% if (prestations.length > 0) { %>
-                    <% prestations.forEach(ligne => { %>
+                <% if (lignes && lignes.length > 0) { %>
+                    <% lignes.forEach(ligne => { %>
                         <tr>
-                            <td class="px-6 py-3 text-sm text-gray-900 font-medium"><%= ligne.libelle %></td>
-                            <td class="px-6 py-3 text-sm text-gray-600"><%= (ligne.prix_unitaire || 0).toLocaleString('fr-FR') %></td>
-                            <td class="px-6 py-3 text-sm text-gray-600"><%= ligne.quantite %></td>
-                            <td class="px-6 py-3 text-sm text-gray-600"><%= ligne.pourcentage %>%</td>
-                            <td class="px-6 py-3 text-sm font-semibold text-gray-900"><%= (ligne.montant || 0).toLocaleString('fr-FR') %> FCFA</td>
+                            <td class="px-6 py-4 text-sm text-gray-900"><%= ligne.libelle %></td>
+                            <td class="px-6 py-4 text-sm text-gray-600"><%= (ligne.prix_unitaire || 0).toLocaleString('fr-FR') %></td>
+                            <td class="px-6 py-4 text-sm text-gray-600"><%= ligne.quantite %></td>
+                            <td class="px-6 py-4 text-sm text-gray-600"><%= ligne.pourcentage %>%</td>
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900"><%= (ligne.montant || 0).toLocaleString('fr-FR') %> FCFA</td>
                             <% if (facture.statut === 'brouillon') { %>
-                                <td class="px-6 py-3 text-sm text-right">
-                                    <form action="/factures/<%= facture.id %>/lignes/<%= ligne.id %>?_method=DELETE" method="POST" onsubmit="return confirm('Supprimer cet acte ?');">
-                                        <button type="submit" class="text-red-600 hover:text-red-900 font-medium">Supprimer</button>
+                                <td class="px-6 py-4 text-sm">
+                                    <form action="/factures/<%= facture.id %>/lignes/<%= ligne.id %>?_method=DELETE" method="POST">
+                                        <button type="submit" class="text-red-600 hover:text-red-900">Supprimer</button>
                                     </form>
                                 </td>
                             <% } %>
                         </tr>
                     <% }); %>
                 <% } else { %>
-                    <tr><td colspan="<%= facture.statut === 'brouillon' ? 6 : 5 %>" class="px-6 py-4 text-center text-gray-400 italic">Aucune prestation médicale</td></tr>
+                    <tr><td colspan="6" class="px-6 py-4 text-center text-gray-400">Aucune ligne</td></tr>
                 <% } %>
             </tbody>
-        </table>
-        </div>
-    </div>
-
-    <!-- 2. Ordonnance & Médicaments délivrés (si existant ou si brouillon) -->
-    <% if (ordonnances.length > 0 || facture.statut === 'brouillon') { %>
-    <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center px-4 sm:px-6 py-3 sm:py-4 border-b gap-2 bg-emerald-50">
-            <div>
-                <h2 class="text-base font-semibold text-emerald-900">2. Ordonnance & Médicaments délivrés</h2>
-                <p class="text-xs text-emerald-700"><%= ordonnances.length %> médicament(s) / produit(s)</p>
-            </div>
-            <% if (facture.statut === 'brouillon') { %>
-                <button type="button" class="text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1.5 px-3.5 rounded shadow-sm flex items-center gap-1.5" onclick="openAddLigneModal('ordonnance')">
-                    <i class="fas fa-pills text-xs"></i>
-                    <span>Ajouter un médicament</span>
-                </button>
-            <% } %>
-        </div>
-        <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+            <tfoot class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase w-12">N°</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dénomination</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase w-24">Quantité</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase w-36">Coût unitaire</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase w-36">Coût Total</th>
-                    <% if (facture.statut === 'brouillon') { %><th class="px-6 py-3 text-right w-24">Action</th><% } %>
+                    <td colspan="4" class="px-6 py-3 text-right text-sm font-medium text-gray-700">Sous-total</td>
+                    <td class="px-6 py-3 text-sm font-medium text-gray-900"><%= (facture.total || 0).toLocaleString('fr-FR') %> FCFA</td>
+                    <% if (facture.statut === 'brouillon') { %><td></td><% } %>
                 </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                <% if (ordonnances.length > 0) { %>
-                    <% ordonnances.forEach((ligne, idx) => { %>
-                        <tr>
-                            <td class="px-6 py-3 text-sm text-center font-bold text-gray-500"><%= idx + 1 %></td>
-                            <td class="px-6 py-3 text-sm text-gray-900 font-medium"><%= ligne.libelle %></td>
-                            <td class="px-6 py-3 text-sm text-right text-gray-700"><%= ligne.quantite %></td>
-                            <td class="px-6 py-3 text-sm text-right text-gray-700"><%= (ligne.prix_unitaire || 0).toLocaleString('fr-FR') %> FCFA</td>
-                            <td class="px-6 py-3 text-sm text-right font-semibold text-emerald-800"><%= (ligne.montant || 0).toLocaleString('fr-FR') %> FCFA</td>
-                            <% if (facture.statut === 'brouillon') { %>
-                                <td class="px-6 py-3 text-sm text-right">
-                                    <form action="/factures/<%= facture.id %>/lignes/<%= ligne.id %>?_method=DELETE" method="POST" onsubmit="return confirm('Supprimer ce médicament ?');">
-                                        <button type="submit" class="text-red-600 hover:text-red-900 font-medium">Supprimer</button>
-                                    </form>
-                                </td>
-                            <% } %>
-                        </tr>
-                    <% }); %>
-                <% } else { %>
-                    <tr><td colspan="<%= facture.statut === 'brouillon' ? 6 : 5 %>" class="px-6 py-4 text-center text-gray-400 italic">Aucun médicament prescrit</td></tr>
-                <% } %>
-            </tbody>
+                <tr>
+                    <td colspan="4" class="px-6 py-3 text-right text-sm font-medium text-gray-700">Remise</td>
+                    <td class="px-6 py-3 text-sm font-medium text-red-600">- <%= (facture.remise || 0).toLocaleString('fr-FR') %> FCFA</td>
+                    <% if (facture.statut === 'brouillon') { %><td></td><% } %>
+                </tr>
+                <tr class="border-t-2 border-gray-300">
+                    <td colspan="4" class="px-6 py-3 text-right text-base font-bold text-gray-800">Total TTC</td>
+                    <td class="px-6 py-3 text-base font-bold text-gray-900"><%= (facture.total_net || 0).toLocaleString('fr-FR') %> FCFA</td>
+                    <% if (facture.statut === 'brouillon') { %><td></td><% } %>
+                </tr>
+            </tfoot>
         </table>
-        </div>
-    </div>
-    <% } %>
-
-    <!-- Récapitulatif Financier -->
-    <div class="bg-white shadow rounded-lg overflow-hidden mb-6 p-5">
-        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-600 mb-3 border-b pb-2">Récapitulatif Financier</h3>
-        <div class="max-w-md ml-auto space-y-2 text-sm">
-            <% if (ordonnances.length > 0) { %>
-                <div class="flex justify-between text-gray-700">
-                    <span>Sous-total Prestations :</span>
-                    <span class="font-medium"><%= totalPrestations.toLocaleString('fr-FR') %> FCFA</span>
-                </div>
-                <div class="flex justify-between text-gray-700">
-                    <span>Sous-total Ordonnance :</span>
-                    <span class="font-medium"><%= totalOrdonnances.toLocaleString('fr-FR') %> FCFA</span>
-                </div>
-            <% } %>
-            <div class="flex justify-between text-gray-800 font-semibold border-t pt-2">
-                <span>Total brut :</span>
-                <span><%= (facture.total || 0).toLocaleString('fr-FR') %> FCFA</span>
-            </div>
-            <div class="flex justify-between text-red-600">
-                <span>Remise accordée :</span>
-                <span>- <%= (facture.remise || 0).toLocaleString('fr-FR') %> FCFA</span>
-            </div>
-            <div class="flex justify-between text-base font-bold text-gray-900 border-t-2 border-gray-900 pt-2">
-                <span>Total Net TTC :</span>
-                <span class="text-blue-700"><%= (facture.total_net || 0).toLocaleString('fr-FR') %> FCFA</span>
-            </div>
-            <div class="flex justify-between text-xs text-gray-500">
-                <span>Équivalent Euros :</span>
-                <span><%= ((facture.total_net || 0) / 655.957).toFixed(2).replace('.', ',') %> €</span>
-            </div>
         </div>
     </div>
 
@@ -292,11 +208,10 @@
     <!-- Modal ajout ligne -->
     <div id="add-ligne-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
         <div class="relative top-10 sm:top-20 mx-auto p-4 sm:p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
-            <h3 id="modal-ligne-title" class="text-lg font-medium text-gray-900 mb-4">Ajouter un acte médical</h3>
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Ajouter une ligne</h3>
             <form action="/factures/<%= facture.id %>/lignes" method="POST" class="space-y-3">
-                <input type="hidden" name="type_ligne" id="modal-type-ligne" value="prestation">
                 <div>
-                    <label id="modal-libelle-label" class="block text-sm font-medium text-gray-700">Libellé</label>
+                    <label class="block text-sm font-medium text-gray-700">Libellé</label>
                     <input type="text" name="libelle" required class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
                 </div>
                 <div class="grid grid-cols-3 gap-2">
@@ -308,7 +223,7 @@
                         <label class="block text-sm font-medium text-gray-700">Qté</label>
                         <input type="number" name="quantite" value="1" min="1" required class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
                     </div>
-                    <div id="modal-pct-container">
+                    <div>
                         <label class="block text-sm font-medium text-gray-700">% pris en charge</label>
                         <input type="number" name="pourcentage" value="100" min="0" max="100" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
                     </div>
@@ -320,28 +235,6 @@
             </form>
         </div>
     </div>
-
-    <script>
-        function openAddLigneModal(type) {
-            const modal = document.getElementById('add-ligne-modal');
-            const title = document.getElementById('modal-ligne-title');
-            const typeInput = document.getElementById('modal-type-ligne');
-            const label = document.getElementById('modal-libelle-label');
-            const pctContainer = document.getElementById('modal-pct-container');
-
-            typeInput.value = type || 'prestation';
-            if (type === 'ordonnance') {
-                title.textContent = 'Ajouter un médicament / ordonnance';
-                label.textContent = 'Dénomination du médicament';
-                pctContainer.style.display = 'none';
-            } else {
-                title.textContent = 'Ajouter un acte médical';
-                label.textContent = 'Libellé de l\'acte';
-                pctContainer.style.display = 'block';
-            }
-            modal.classList.remove('hidden');
-        }
-    </script>
 
     <!-- Modal paiement -->
     <div id="payment-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
