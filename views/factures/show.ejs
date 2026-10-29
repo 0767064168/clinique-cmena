@@ -108,68 +108,7 @@
         </div>
     </div>
 
-    <!-- Lignes de facturation -->
-    <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center px-4 sm:px-6 py-3 sm:py-4 border-b gap-2">
-            <h2 class="text-lg font-semibold text-gray-700">Lignes de facturation</h2>
-            <% if (facture.statut === 'brouillon') { %>
-                <button type="button" class="text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium py-1 px-3 rounded" onclick="document.getElementById('add-ligne-modal').classList.remove('hidden')">+ Ajouter</button>
-            <% } %>
-        </div>
-        <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Libellé</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">P.U.</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qté</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">%</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Montant</th>
-                    <% if (facture.statut === 'brouillon') { %><th class="px-6 py-3"></th><% } %>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                <% if (lignes && lignes.length > 0) { %>
-                    <% lignes.forEach(ligne => { %>
-                        <tr>
-                            <td class="px-6 py-4 text-sm text-gray-900"><%= ligne.libelle %></td>
-                            <td class="px-6 py-4 text-sm text-gray-600"><%= (ligne.prix_unitaire || 0).toLocaleString('fr-FR') %></td>
-                            <td class="px-6 py-4 text-sm text-gray-600"><%= ligne.quantite %></td>
-                            <td class="px-6 py-4 text-sm text-gray-600"><%= ligne.pourcentage %>%</td>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-900"><%= (ligne.montant || 0).toLocaleString('fr-FR') %> FCFA</td>
-                            <% if (facture.statut === 'brouillon') { %>
-                                <td class="px-6 py-4 text-sm">
-                                    <form action="/factures/<%= facture.id %>/lignes/<%= ligne.id %>?_method=DELETE" method="POST">
-                                        <button type="submit" class="text-red-600 hover:text-red-900">Supprimer</button>
-                                    </form>
-                                </td>
-                            <% } %>
-                        </tr>
-                    <% }); %>
-                <% } else { %>
-                    <tr><td colspan="6" class="px-6 py-4 text-center text-gray-400">Aucune ligne</td></tr>
-                <% } %>
-            </tbody>
-            <tfoot class="bg-gray-50">
-                <tr>
-                    <td colspan="4" class="px-6 py-3 text-right text-sm font-medium text-gray-700">Sous-total</td>
-                    <td class="px-6 py-3 text-sm font-medium text-gray-900"><%= (facture.total || 0).toLocaleString('fr-FR') %> FCFA</td>
-                    <% if (facture.statut === 'brouillon') { %><td></td><% } %>
-                </tr>
-                <tr>
-                    <td colspan="4" class="px-6 py-3 text-right text-sm font-medium text-gray-700">Remise</td>
-                    <td class="px-6 py-3 text-sm font-medium text-red-600">- <%= (facture.remise || 0).toLocaleString('fr-FR') %> FCFA</td>
-                    <% if (facture.statut === 'brouillon') { %><td></td><% } %>
-                </tr>
-                <tr class="border-t-2 border-gray-300">
-                    <td colspan="4" class="px-6 py-3 text-right text-base font-bold text-gray-800">Total TTC</td>
-                    <td class="px-6 py-3 text-base font-bold text-gray-900"><%= (facture.total_net || 0).toLocaleString('fr-FR') %> FCFA</td>
-                    <% if (facture.statut === 'brouillon') { %><td></td><% } %>
-                </tr>
-            </tfoot>
-        </table>
-        </div>
-    </div>
+
 
     <!-- Paiements -->
     <% if (paiements && paiements.length > 0) { %>
@@ -205,36 +144,7 @@
     </div>
     <% } %>
 
-    <!-- Modal ajout ligne -->
-    <div id="add-ligne-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
-        <div class="relative top-10 sm:top-20 mx-auto p-4 sm:p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Ajouter une ligne</h3>
-            <form action="/factures/<%= facture.id %>/lignes" method="POST" class="space-y-3">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Libellé</label>
-                    <input type="text" name="libelle" required class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
-                </div>
-                <div class="grid grid-cols-3 gap-2">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">P.U.</label>
-                        <input type="number" name="prix_unitaire" value="0" min="0" required class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Qté</label>
-                        <input type="number" name="quantite" value="1" min="1" required class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">% pris en charge</label>
-                        <input type="number" name="pourcentage" value="100" min="0" max="100" class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
-                    </div>
-                </div>
-                <div class="flex gap-3 mt-4">
-                    <button type="submit" class="flex-1 bg-blue-600 text-white font-medium py-2 px-4 rounded hover:bg-blue-700">Ajouter</button>
-                    <button type="button" onclick="document.getElementById('add-ligne-modal').classList.add('hidden')" class="flex-1 bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded hover:bg-gray-50">Annuler</button>
-                </div>
-            </form>
-        </div>
-    </div>
+
 
     <!-- Modal paiement -->
     <div id="payment-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
