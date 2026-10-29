@@ -1,130 +1,532 @@
-<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-    <div class="max-w-3xl mx-auto">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Modifier Consultation</h1>
-            <a href="/consultations/<%= consultation.id %>" class="text-gray-600 hover:text-gray-900 font-medium text-sm">← Retour</a>
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8" x-data="consultationEditForm()">
+    <div class="max-w-5xl mx-auto">
+        <!-- En-tête -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+            <div>
+                <a href="/consultations/<%= consultation.id %>" class="text-xs text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1 mb-1">
+                    <i class="fas fa-arrow-left"></i> Retour à la fiche consultation
+                </a>
+                <h1 class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                    <i class="fas fa-edit text-indigo-600"></i>
+                    Modifier Consultation & Bilan Clinique
+                </h1>
+                <p class="text-xs sm:text-sm text-gray-500">Patient : <%= consultation.patient_nom %> <%= consultation.patient_prenom %></p>
+            </div>
         </div>
 
-        <form action="/consultations/<%= consultation.id %>?_method=PUT" method="POST" class="bg-white shadow rounded-lg p-6 space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Patient</label>
-                    <input type="text" disabled class="w-full border rounded-md px-3 py-2 bg-gray-100 text-gray-600" value="<%= consultation.patient_nom %> <%= consultation.patient_prenom %>">
-                    <input type="hidden" name="patient_id" value="<%= consultation.patient_id %>">
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Praticien *</label>
-                    <select name="praticien_id" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                        <% if (typeof praticiens !== 'undefined') { %>
-                            <% praticiens.forEach(p => { %>
-                                <option value="<%= p.id %>" <%= consultation.praticien_id === p.id ? 'selected' : '' %>><%= p.nom %> <%= p.prenom %> (<%= p.specialite %><%= p.matricule ? ' - Mle: ' + p.matricule : '' %>)</option>
-                            <% }); %>
-                        <% } %>
-                    </select>
+        <% 
+            const clin = (consultation && consultation.clinical) ? consultation.clinical : {}; 
+            const obsClean = consultation.observations_clean || consultation.observations || '';
+        %>
+
+        <form action="/consultations/<%= consultation.id %>?_method=PUT" method="POST" class="space-y-6">
+            
+            <!-- BLOC 1 : Identification & Paramètres de Visite -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 space-y-4">
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-3">
+                    <span class="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-black">1</span>
+                    <h2 class="text-base font-bold text-gray-800 uppercase tracking-wide">Identification du Patient & Médecin Consultant</h2>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Statut</label>
-                    <select name="statut" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="en_cours" <%= consultation.statut === 'en_cours' ? 'selected' : '' %>>En cours</option>
-                        <option value="termine" <%= consultation.statut === 'termine' ? 'selected' : '' %>>Terminé</option>
-                        <option value="annule" <%= consultation.statut === 'annule' ? 'selected' : '' %>>Annulé</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Date d'entrée *</label>
-                    <input type="datetime-local" name="date_entree" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500" value="<%= new Date(consultation.date_entree).toISOString().slice(0, 16) %>">
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Date de sortie</label>
-                    <input type="datetime-local" name="date_sortie" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500" value="<%= consultation.date_sortie ? new Date(consultation.date_sortie).toISOString().slice(0, 16) : '' %>">
-                </div>
-
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Motif</label>
-                    <textarea name="motif" rows="2" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"><%= consultation.motif %></textarea>
-                </div>
-
-                <!-- Section Constantes Vitales -->
-                <div class="md:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-5">
-                    <div class="flex items-center gap-2 mb-3">
-                        <i class="fas fa-heartbeat text-red-600 text-lg"></i>
-                        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wide">Constantes Vitales du Patient</h3>
-                        <span class="text-[11px] text-gray-500 font-normal ml-auto">(Réservé au dossier médical — n'apparaît pas sur la facture)</span>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="lg:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Patient</label>
+                        <input type="text" disabled class="w-full border border-gray-200 bg-gray-100 rounded-lg px-3 py-2 text-sm text-gray-700 font-bold" 
+                            value="<%= consultation.patient_nom %> <%= consultation.patient_prenom %>">
+                        <input type="hidden" name="patient_id" value="<%= consultation.patient_id %>">
                     </div>
-                    <% const v = (consultation && consultation.vitals) ? consultation.vitals : {}; %>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                        <!-- Tension Artérielle -->
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Tension (TA)</label>
-                            <div class="relative">
-                                <input type="text" name="tension" value="<%= v.tension || '' %>" placeholder="12/8" 
-                                    class="w-full border rounded-md px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
-                                <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-medium">mmHg</span>
-                            </div>
-                        </div>
 
-                        <!-- Température -->
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Température</label>
-                            <div class="relative">
-                                <input type="text" name="temperature" value="<%= v.temperature || '' %>" placeholder="37.2" 
-                                    class="w-full border rounded-md px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
-                                <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-medium">°C</span>
-                            </div>
-                        </div>
-
-                        <!-- Poids -->
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Poids</label>
-                            <div class="relative">
-                                <input type="text" name="poids" value="<%= v.poids || '' %>" placeholder="72" 
-                                    class="w-full border rounded-md px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
-                                <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-medium">kg</span>
-                            </div>
-                        </div>
-
-                        <!-- Pouls -->
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Pouls</label>
-                            <div class="relative">
-                                <input type="text" name="pouls" value="<%= v.pouls || '' %>" placeholder="78" 
-                                    class="w-full border rounded-md px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
-                                <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-medium">bpm</span>
-                            </div>
-                        </div>
-
-                        <!-- Taille -->
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Taille</label>
-                            <div class="relative">
-                                <input type="text" name="taille" value="<%= v.taille || '' %>" placeholder="175" 
-                                    class="w-full border rounded-md px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
-                                <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-medium">cm</span>
-                            </div>
-                        </div>
+                    <div class="lg:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Praticien / Médecin *</label>
+                        <select name="praticien_id" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <% if (typeof praticiens !== 'undefined') { %>
+                                <% praticiens.forEach(p => { %>
+                                    <option value="<%= p.id %>" <%= consultation.praticien_id === p.id ? 'selected' : '' %>>
+                                        Dr. <%= p.nom %> <%= p.prenom %> (<%= p.specialite || 'Généraliste' %><%= p.matricule ? ' - Mle: ' + p.matricule : '' %>)
+                                    </option>
+                                <% }); %>
+                            <% } %>
+                        </select>
                     </div>
-                </div>
 
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Observations</label>
-                    <textarea name="observations" rows="3" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"><%= consultation.observations_clean || consultation.observations %></textarea>
-                </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Date d'entrée *</label>
+                        <input type="datetime-local" name="date_entree" required 
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" 
+                            value="<%= consultation.date_entree ? new Date(consultation.date_entree).toISOString().slice(0, 16) : '' %>">
+                    </div>
 
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Diagnostic</label>
-                    <textarea name="diagnostic" rows="3" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"><%= consultation.diagnostic %></textarea>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Date de sortie</label>
+                        <input type="datetime-local" name="date_sortie" 
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            value="<%= consultation.date_sortie ? new Date(consultation.date_sortie).toISOString().slice(0, 16) : '' %>">
+                    </div>
+
+                    <div class="lg:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Statut consultation</label>
+                        <select name="statut" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                            <option value="en_cours" <%= consultation.statut === 'en_cours' ? 'selected' : '' %>>En cours</option>
+                            <option value="termine" <%= consultation.statut === 'termine' ? 'selected' : '' %>>Terminé</option>
+                            <option value="annule" <%= consultation.statut === 'annule' ? 'selected' : '' %>>Annulé</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2 lg:col-span-4">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Motifs de consultation *</label>
+                        <textarea name="motif" rows="2" required 
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" 
+                            placeholder="Motifs de consultation..."><%= consultation.motif || '' %></textarea>
+                    </div>
                 </div>
             </div>
 
-            <!-- Buttons -->
-            <div class="flex justify-end gap-4 border-t pt-4">
-                <a href="/consultations/<%= consultation.id %>" class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50">Annuler</a>
-                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-bold">Mettre à jour</button>
+            <!-- BLOC 2 : Examen Clinique & Constantes Physiques -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 space-y-5">
+                <div class="flex items-center justify-between border-b border-gray-200 pb-3 flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-xs font-black">2</span>
+                        <h2 class="text-base font-bold text-gray-800 uppercase tracking-wide">Examen Clinique & Constantes Physiques</h2>
+                    </div>
+                    <span class="text-xs text-red-700 font-semibold bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
+                        <i class="fas fa-heartbeat mr-1"></i> Constantes & Dépistage TB
+                    </span>
+                </div>
+
+                <!-- Grille des constantes physiques -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <!-- Poids -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Poids</label>
+                        <div class="relative">
+                            <input type="number" step="0.1" name="poids" x-model="poids" @input="calcImc()" placeholder="24" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">kg</span>
+                        </div>
+                    </div>
+
+                    <!-- Taille -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Taille</label>
+                        <div class="relative">
+                            <input type="number" step="1" name="taille" x-model="taille" @input="calcImc()" placeholder="128" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">cm</span>
+                        </div>
+                    </div>
+
+                    <!-- IMC -->
+                    <div class="bg-white p-2 rounded-lg border border-gray-200">
+                        <label class="block text-[11px] font-bold text-gray-700 mb-0.5">IMC</label>
+                        <div class="flex items-center justify-between">
+                            <input type="text" name="imc" x-model="imc" readonly 
+                                class="w-16 bg-transparent font-black text-sm text-gray-900 border-none p-0 focus:ring-0">
+                            <span class="text-[9px] text-gray-400 font-bold">kg/m²</span>
+                        </div>
+                        <span class="text-[10px] font-bold block truncate" :class="imcColor" x-text="imcStatus || '—'"></span>
+                    </div>
+
+                    <!-- Z-score -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Z-score (Enfant)</label>
+                        <input type="text" name="zscore" value="<%= clin.zscore || '' %>" placeholder="Ex: -1 SD" 
+                            class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                    </div>
+
+                    <!-- Température -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Température</label>
+                        <div class="relative">
+                            <input type="number" step="0.1" name="temperature" value="<%= clin.temperature || '' %>" placeholder="37.8" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">°C</span>
+                        </div>
+                    </div>
+
+                    <!-- Tension (TA) -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Tension (TA)</label>
+                        <div class="relative">
+                            <input type="text" name="tension" value="<%= clin.tension || '' %>" placeholder="12/8" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">mmHg</span>
+                        </div>
+                    </div>
+
+                    <!-- Fréquence Respiratoire -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Fréq. Respiratoire</label>
+                        <div class="relative">
+                            <input type="number" name="frequence_respiratoire" value="<%= clin.frequence_respiratoire || '' %>" placeholder="22" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">cycles/mn</span>
+                        </div>
+                    </div>
+
+                    <!-- Pouls -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Pouls</label>
+                        <div class="relative">
+                            <input type="number" name="pouls" value="<%= clin.pouls || '' %>" placeholder="78" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">batt/mn</span>
+                        </div>
+                    </div>
+
+                    <!-- Périmètre Brachial (PB) -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Périmètre Brachial</label>
+                        <div class="relative">
+                            <input type="number" step="0.1" name="perimetre_brachial" value="<%= clin.perimetre_brachial || '' %>" placeholder="14" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">cm</span>
+                        </div>
+                    </div>
+
+                    <!-- Périmètre Crânien (PC) -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Périmètre Crânien</label>
+                        <div class="relative">
+                            <input type="number" step="0.1" name="perimetre_cranien" value="<%= clin.perimetre_cranien || '' %>" placeholder="48" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">cm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tuberculose (TB) -->
+                <div class="bg-amber-50/60 border border-amber-200 rounded-xl p-3.5 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div>
+                        <span class="font-bold text-gray-800 block mb-1.5">Recherche active de la tuberculose :</span>
+                        <div class="flex items-center gap-4">
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="recherche_tb" value="oui" <%= clin.recherche_tb === 'oui' ? 'checked' : '' %>> Oui
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="recherche_tb" value="non" <%= clin.recherche_tb === 'non' || !clin.recherche_tb ? 'checked' : '' %>> Non
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="recherche_tb" value="na" <%= clin.recherche_tb === 'na' ? 'checked' : '' %>> NA
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="font-bold text-gray-800 block mb-1.5">Signes d'imprégnation de la tuberculose :</span>
+                        <div class="flex items-center gap-4">
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="signes_tb" value="oui" <%= clin.signes_tb === 'oui' ? 'checked' : '' %>> Oui
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="signes_tb" value="non" <%= clin.signes_tb === 'non' || !clin.signes_tb ? 'checked' : '' %>> Non
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Examen physique, Diagnostic, Autres pathologies -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Examen Physique</label>
+                        <textarea name="examen_physique" rows="2" 
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            placeholder="BEG, conjonctives, langue, examen des appareils..."><%= clin.examen_physique || '' %></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Diagnostic Retenu *</label>
+                        <input type="text" name="diagnostic" required 
+                            value="<%= consultation.diagnostic || '' %>"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-blue-500"
+                            placeholder="Diagnostic retenu...">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Autres pathologies associées</label>
+                        <input type="text" name="autres_pathologies" 
+                            value="<%= clin.autres_pathologies || '' %>"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            placeholder="Autres pathologies associées...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOC 3 : Examens Complémentaires (Laboratoire & Dépistage) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 space-y-4">
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-3">
+                    <span class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-black">3</span>
+                    <h2 class="text-base font-bold text-gray-800 uppercase tracking-wide">Examens Complémentaires & Dépistages</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                    <!-- TDR Paludisme -->
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <span class="font-bold text-gray-800 block mb-2">TDR Paludisme :</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="tdr_palu" value="positif" <%= clin.tdr_palu === 'positif' ? 'checked' : '' %>> Positif
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="tdr_palu" value="negatif" <%= clin.tdr_palu === 'negatif' ? 'checked' : '' %>> Négatif
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="tdr_palu" value="non_realise" <%= clin.tdr_palu === 'non_realise' || !clin.tdr_palu ? 'checked' : '' %>> Non réalisé
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="tdr_palu" value="na" <%= clin.tdr_palu === 'na' ? 'checked' : '' %>> NA
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Goutte Épaisse -->
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <span class="font-bold text-gray-800 block mb-2">Goutte Épaisse (GE) :</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="goutte_epaisse" value="positive" <%= clin.goutte_epaisse === 'positive' ? 'checked' : '' %>> Positive
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="goutte_epaisse" value="negative" <%= clin.goutte_epaisse === 'negative' ? 'checked' : '' %>> Négative
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="goutte_epaisse" value="non_realise" <%= clin.goutte_epaisse === 'non_realise' || !clin.goutte_epaisse ? 'checked' : '' %>> Non réalisé
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="goutte_epaisse" value="na" <%= clin.goutte_epaisse === 'na' ? 'checked' : '' %>> NA
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Glycémie -->
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <span class="font-bold text-gray-800 block mb-1">Glycémie :</span>
+                        <div class="flex items-center gap-2 mb-2">
+                            <input type="number" step="0.01" name="glycemie" value="<%= clin.glycemie || '' %>" placeholder="0.95" 
+                                class="w-24 border border-gray-300 rounded px-2 py-1 text-xs focus:ring-blue-500">
+                            <span class="text-gray-500 font-bold">g/L</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <label class="inline-flex items-center gap-1 cursor-pointer">
+                                <input type="radio" name="glycemie_type" value="a_jeun" <%= clin.glycemie_type === 'a_jeun' ? 'checked' : '' %>> À jeun
+                            </label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer">
+                                <input type="radio" name="glycemie_type" value="non_a_jeun" <%= clin.glycemie_type === 'non_a_jeun' ? 'checked' : '' %>> Non à jeun
+                            </label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer">
+                                <input type="radio" name="glycemie_type" value="na" <%= clin.glycemie_type === 'na' || !clin.glycemie_type ? 'checked' : '' %>> NA
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- CDIP (VIH) -->
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 lg:col-span-2">
+                        <span class="font-bold text-gray-800 block mb-1.5">CDIP (Conseil & Dépistage Initié par le Prestataire) :</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div>
+                                <span class="text-[11px] text-gray-500 block">CDIP proposé :</span>
+                                <div class="flex gap-2 mt-1">
+                                    <label class="inline-flex items-center gap-1"><input type="radio" name="cdip_propose" value="oui" <%= clin.cdip_propose === 'oui' ? 'checked' : '' %>> Oui</label>
+                                    <label class="inline-flex items-center gap-1"><input type="radio" name="cdip_propose" value="non" <%= clin.cdip_propose === 'non' ? 'checked' : '' %>> Non</label>
+                                    <label class="inline-flex items-center gap-1"><input type="radio" name="cdip_propose" value="na" <%= clin.cdip_propose === 'na' || !clin.cdip_propose ? 'checked' : '' %>> NA</label>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="text-[11px] text-gray-500 block">CDIP réalisé :</span>
+                                <div class="flex gap-2 mt-1">
+                                    <label class="inline-flex items-center gap-1"><input type="radio" name="cdip_realise" value="oui" <%= clin.cdip_realise === 'oui' ? 'checked' : '' %>> Oui</label>
+                                    <label class="inline-flex items-center gap-1"><input type="radio" name="cdip_realise" value="non" <%= clin.cdip_realise === 'non' || !clin.cdip_realise ? 'checked' : '' %>> Non</label>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="text-[11px] text-gray-500 block">Code dépistage client :</span>
+                                <input type="text" name="code_depistage" value="<%= clin.code_depistage || '' %>" placeholder="Code dépistage" 
+                                    class="w-full border border-gray-300 rounded px-2 py-1 text-xs mt-0.5">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Autres examens -->
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <label class="font-bold text-gray-800 block mb-1">Autres Examens demandés :</label>
+                        <input type="text" name="autres_examens" value="<%= clin.autres_examens || '' %>" placeholder="Échographie, Radio, NFS..." 
+                            class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOC 4 : Conduite à Tenir Traitement & MILDA -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 space-y-4">
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-3">
+                    <span class="w-7 h-7 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-black">4</span>
+                    <h2 class="text-base font-bold text-gray-800 uppercase tracking-wide">Conduite à Tenir : Traitement & MILDA</h2>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
+                        Traitement (Médicaments, posologie, voie d'administration & Conseils hygiéno-diététiques)
+                    </label>
+                    <textarea name="traitement_prescrit" rows="3" 
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500"
+                        placeholder="Médicaments et posologies..."><%= clin.traitement_prescrit || '' %></textarea>
+                </div>
+
+                <!-- MILDA Enfant 12 à 59 mois -->
+                <div class="bg-teal-50/60 border border-teal-200 rounded-xl p-3.5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div>
+                        <span class="font-bold text-gray-800 block mb-1.5">MILDA Enfant de 12 à 59 mois — Éligible :</span>
+                        <div class="flex items-center gap-4">
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer"><input type="radio" name="milda_eligible" value="oui" <%= clin.milda_eligible === 'oui' ? 'checked' : '' %>> Oui</label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer"><input type="radio" name="milda_eligible" value="non" <%= clin.milda_eligible === 'non' || !clin.milda_eligible ? 'checked' : '' %>> Non</label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer"><input type="radio" name="milda_eligible" value="na" <%= clin.milda_eligible === 'na' ? 'checked' : '' %>> NA</label>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="font-bold text-gray-800 block mb-1.5">Remise MILDA Enfant de 12 à 59 mois :</span>
+                        <div class="flex items-center gap-4">
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer"><input type="radio" name="milda_remis" value="oui" <%= clin.milda_remis === 'oui' ? 'checked' : '' %>> Oui</label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer"><input type="radio" name="milda_remis" value="non" <%= clin.milda_remis === 'non' || !clin.milda_remis ? 'checked' : '' %>> Non</label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer"><input type="radio" name="milda_remis" value="na" <%= clin.milda_remis === 'na' ? 'checked' : '' %>> NA</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOC 5 : Issue de la Consultation & Décision Médicale (Modèle 8 / Repos) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 space-y-4">
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-3">
+                    <span class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-black">5</span>
+                    <h2 class="text-base font-bold text-gray-800 uppercase tracking-wide">Issue de la Consultation & Décisions</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Issue de la consultation -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Issue de la consultation *</label>
+                        <select name="issue_consultation" x-model="issue" 
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-indigo-500">
+                            <option value="sorti">Sorti(e) (Domicile)</option>
+                            <option value="hospitalise">Hospitalisé(e)</option>
+                            <option value="mo">M.O (Mise en Observation)</option>
+                            <option value="refere_interne">Référé(e) en interne</option>
+                            <option value="refere_externe">Référé(e) externe (Hôpital / CHU)</option>
+                            <option value="tb_refere">Cas présumé de TB référé</option>
+                            <option value="a_revoir">À revoir (Rendez-vous de contrôle)</option>
+                            <option value="decede">Décédé(e)</option>
+                        </select>
+                    </div>
+
+                    <!-- Si M.O préciser début et fin -->
+                    <div x-show="issue === 'mo'" class="grid grid-cols-2 gap-2 bg-indigo-50/50 p-2.5 rounded-lg border border-indigo-200">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 mb-0.5">Début M.O</label>
+                            <input type="datetime-local" name="mo_debut" value="<%= clin.mo_debut || '' %>" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 mb-0.5">Fin M.O</label>
+                            <input type="datetime-local" name="mo_fin" value="<%= clin.mo_fin || '' %>" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+                        </div>
+                    </div>
+
+                    <!-- Décision de repos / Modèle 8 militaire -->
+                    <div class="md:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <span class="block text-xs font-bold text-gray-800 uppercase mb-2 flex items-center gap-1.5">
+                            <i class="fas fa-file-medical text-indigo-600"></i>
+                            Décision d'arrêt d'activité / Exemption Militaire
+                        </span>
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs mb-3">
+                            <label class="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="repos_type" value="aucun" <%= clin.repos_type === 'aucun' || !clin.repos_type ? 'checked' : '' %> class="text-indigo-600">
+                                <span class="font-semibold text-gray-700">Aucun arrêt</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="repos_type" value="repos" <%= clin.repos_type === 'repos' ? 'checked' : '' %> class="text-indigo-600">
+                                <span class="font-semibold text-gray-700">Repos médical</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="repos_type" value="exemption" <%= clin.repos_type === 'exemption' ? 'checked' : '' %> class="text-indigo-600">
+                                <span class="font-semibold text-gray-700">Exemption de service</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="repos_type" value="modele8" <%= clin.repos_type === 'modele8' ? 'checked' : '' %> class="text-indigo-600">
+                                <span class="font-bold text-red-700">Modèle 8 (GSPM)</span>
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Nombre de jours d'arrêt / exemption</label>
+                                <input type="number" name="repos_nb_jours" value="<%= clin.repos_nb_jours || '' %>" placeholder="Ex : 3" 
+                                    class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Durée précise (si < 24h ou NA)</label>
+                                <input type="text" name="repos_duree" value="<%= clin.repos_duree || '' %>" placeholder="Ex : 48h ou NA" 
+                                    class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs focus:ring-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observations complémentaires libres -->
+                <div class="pt-2">
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Observations médicales libres complémentaires</label>
+                    <textarea name="observations" rows="2" 
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                        placeholder="Observations médicales..."><%= obsClean %></textarea>
+                </div>
+            </div>
+
+            <!-- Boutons de soumission -->
+            <div class="flex items-center justify-end gap-3 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <a href="/consultations/<%= consultation.id %>" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 transition">
+                    Annuler
+                </a>
+                <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition flex items-center gap-2">
+                    <i class="fas fa-save"></i>
+                    Enregistrer les Modifications
+                </button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+function consultationEditForm() {
+    return {
+        poids: '<%= clin.poids || "" %>',
+        taille: '<%= clin.taille || "" %>',
+        imc: '<%= clin.imc || "" %>',
+        imcStatus: '',
+        imcColor: 'text-gray-400',
+        issue: '<%= clin.issue_consultation || "sorti" %>',
+        init() {
+            this.calcImc();
+        },
+        calcImc() {
+            const p = parseFloat(this.poids);
+            const t = parseFloat(this.taille);
+            if (p > 0 && t > 0) {
+                const tailleM = t > 3 ? t / 100 : t;
+                const imcVal = p / (tailleM * tailleM);
+                this.imc = imcVal.toFixed(1);
+
+                if (imcVal < 18.5) {
+                    this.imcStatus = 'Insuffisance pondérale';
+                    this.imcColor = 'text-amber-600';
+                } else if (imcVal < 25) {
+                    this.imcStatus = 'Poids normal';
+                    this.imcColor = 'text-emerald-600';
+                } else if (imcVal < 30) {
+                    this.imcStatus = 'Surpoids';
+                    this.imcColor = 'text-orange-600';
+                } else {
+                    this.imcStatus = 'Obésité';
+                    this.imcColor = 'text-red-600';
+                }
+            } else {
+                this.imcStatus = '';
+                this.imcColor = 'text-gray-400';
+            }
+        }
+    };
+}
+</script>

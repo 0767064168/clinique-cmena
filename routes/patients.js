@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
 const ExcelJS = require('exceljs');
+const { unpackClinicalData, packClinicalData } = require('../utils/vitals');
 
 router.get('/', async (req, res) => {
     try {
@@ -46,7 +47,12 @@ router.get('/', async (req, res) => {
 router.get('/create', async (req, res) => {
     try {
         const { data: assurances } = await supabase.from('assurances').select('*').order('nom');
-        res.render('patients/create', { title: 'Nouveau Patient', assurances: assurances || [] });
+        const { data: praticiens } = await supabase.from('praticiens').select('id, nom, prenom, specialite, matricule').eq('actif', true).order('nom');
+        res.render('patients/create', { 
+            title: 'Nouveau Patient', 
+            assurances: assurances || [],
+            praticiens: praticiens || []
+        });
     } catch (error) {
         req.flash('error', 'Erreur lors du chargement du formulaire');
         res.redirect('/patients');
@@ -223,6 +229,26 @@ router.post('/', async (req, res) => {
                 }]);
         }
 
+        // Si un bilan clinique initial ou des constantes physiques ont été renseignées
+        const hasVitals = req.body.tension || req.body.temperature || req.body.poids || req.body.taille || req.body.pouls || req.body.motif_consultation || req.body.diagnostic;
+        if (hasVitals) {
+            const packedObs = packClinicalData(req.body.observations || 'Bilan initial à l\'enregistrement du patient', {
+                ...req.body,
+                motif: req.body.motif_consultation || req.body.motif
+            });
+            await supabase
+                .from('consultations')
+                .insert([{
+                    patient_id: patient.id,
+                    praticien_id: req.body.praticien_id || null,
+                    date_entree: new Date(),
+                    statut: 'en_cours',
+                    motif: req.body.motif_consultation || 'Consultation initiale à l\'admission',
+                    diagnostic: req.body.diagnostic || null,
+                    observations: packedObs
+                }]);
+        }
+
         req.flash('success', 'Patient créé avec succès');
         res.redirect(`/patients/${patient.id}`);
     } catch (error) {
@@ -253,11 +279,21 @@ router.get('/:id', async (req, res) => {
             patient.numero_police = ass.numero_police;
         }
 
-        const { data: consultations } = await supabase
+        const { data: rawConsultations } = await supabase
             .from('consultations')
             .select('*, praticiens(nom, prenom)')
             .eq('patient_id', id)
             .order('date_entree', { ascending: false });
+
+        const consultations = (rawConsultations || []).map(c => {
+            const clinical = unpackClinicalData(c.observations);
+            return {
+                ...c,
+                clinical,
+                vitals: clinical,
+                observations_clean: clinical.cleanObservations
+            };
+        });
 
         const { data: factures } = await supabase
             .from('factures')

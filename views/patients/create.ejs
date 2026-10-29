@@ -1,125 +1,287 @@
-<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Nouveau Patient</h1>
-        <a href="/patients" class="text-gray-600 hover:text-gray-900 font-medium text-sm">← Retour à la liste</a>
-    </div>
-
-    <form action="/patients" method="POST" class="bg-white shadow rounded-lg p-4 sm:p-6 space-y-6 sm:space-y-8">
-        
-        <!-- Informations personnelles -->
-        <section>
-            <h2 class="text-xl font-semibold border-b pb-2 mb-4">Informations Personnelles</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
-                    <input type="text" name="nom" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
-                    <input type="text" name="prenom" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Date de naissance</label>
-                    <input type="date" name="date_naissance" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Sexe</label>
-                    <select name="sexe" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="M">Masculin</option>
-                        <option value="F">Féminin</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
-                    <input type="text" name="telephone" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Ville</label>
-                    <input type="text" name="ville" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
-                    <input type="text" name="adresse" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8" x-data="patientCreateForm()">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
+            <div>
+                <a href="/patients" class="text-xs text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1 mb-1">
+                    <i class="fas fa-arrow-left"></i> Retour à la liste
+                </a>
+                <h1 class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                    <i class="fas fa-user-plus text-blue-600"></i> Nouveau Patient & Fiche Clinique
+                </h1>
+                <p class="text-xs text-gray-500">Enregistrement du dossier patient & Bilan clinique d'entrée — CSA 3e Compagnie GSPM</p>
             </div>
-        </section>
-
-        <!-- Informations Médicales -->
-        <section>
-            <h2 class="text-xl font-semibold border-b pb-2 mb-4">Informations Médicales</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Groupe Sanguin</label>
-                    <select name="groupe_sanguin" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Non spécifié</option>
-                        <option value="A+">A+</option>
-                        <option value="A-">A-</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B-</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB-</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O-</option>
-                    </select>
-                </div>
-                <div></div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Allergies</label>
-                    <textarea name="allergies" rows="3" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Antécédents médicaux</label>
-                    <textarea name="antecedents" rows="3" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
-                </div>
-            </div>
-        </section>
-
-        <!-- Contact d'urgence -->
-        <section>
-            <h2 class="text-xl font-semibold border-b pb-2 mb-4">Contact d'urgence</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nom du contact</label>
-                    <input type="text" name="contact_urgence_nom" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone du contact</label>
-                    <input type="text" name="contact_urgence_telephone" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-            </div>
-        </section>
-
-        <!-- Assurance -->
-        <section>
-            <h2 class="text-xl font-semibold border-b pb-2 mb-4">Informations d'Assurance</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Type d'assurance</label>
-                    <select name="type_assurance" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="PARTICULIER">PARTICULIER</option>
-                        <option value="ENTREPRISE">ENTREPRISE</option>
-                        <option value="MUTUELLE">MUTUELLE</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Assureur</label>
-                    <input type="text" name="assureur" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Souscripteur</label>
-                    <input type="text" name="souscripteur" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">N° Police</label>
-                    <input type="text" name="numero_police" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-            </div>
-        </section>
-
-        <!-- Buttons -->
-        <div class="flex justify-end gap-4 border-t pt-4">
-            <a href="/patients" class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50">Annuler</a>
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-bold">Enregistrer</button>
         </div>
-    </form>
+
+        <form action="/patients" method="POST" class="space-y-6">
+            
+            <!-- SECTION 1 : Informations Personnelles -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-4">
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-3">
+                    <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">1</span>
+                    <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wide">État Civil & Coordonnées</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nom *</label>
+                        <input type="text" name="nom" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Prénom *</label>
+                        <input type="text" name="prenom" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Sexe *</label>
+                        <select name="sexe" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                            <option value="M">Masculin</option>
+                            <option value="F">Féminin</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Date de naissance</label>
+                        <input type="date" name="date_naissance" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Téléphone</label>
+                        <input type="text" name="telephone" placeholder="07XXXXXXXX" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Ville</label>
+                        <input type="text" name="ville" value="Bouaké" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="md:col-span-2 lg:col-span-3">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Adresse ou Quartier</label>
+                        <input type="text" name="adresse" placeholder="Quartier, Rue ou Compagnie GSPM" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2 : Examen Clinique & Constantes Physiques (Registre Officiel) -->
+            <div class="bg-white rounded-xl shadow-sm border border-red-200 p-5 space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-200 pb-3 flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold">2</span>
+                        <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wide">Constantes Physiques & Examen Clinique Initial</h2>
+                    </div>
+                    <span class="text-[11px] font-bold text-red-700 bg-red-50 border border-red-200 px-2.5 py-0.5 rounded-full">
+                        <i class="fas fa-heartbeat mr-1"></i> Conforme au registre de consultation
+                    </span>
+                </div>
+
+                <!-- Grille des constantes physiques -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <!-- Poids -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 mb-1">Poids (kg)</label>
+                        <input type="number" step="0.1" name="poids" x-model="poids" @input="calcImc()" placeholder="24" 
+                            class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-red-500">
+                    </div>
+
+                    <!-- Taille -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 mb-1">Taille (cm)</label>
+                        <input type="number" step="1" name="taille" x-model="taille" @input="calcImc()" placeholder="128" 
+                            class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-red-500">
+                    </div>
+
+                    <!-- IMC -->
+                    <div class="bg-white p-2 rounded-lg border border-gray-200 text-center">
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase">IMC</label>
+                        <span class="text-xs font-black text-gray-900 block" x-text="imc || '—'"></span>
+                        <span class="text-[9px] font-bold block" :class="imcColor" x-text="imcStatus || ''"></span>
+                    </div>
+
+                    <!-- Température -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 mb-1">Température (°C)</label>
+                        <input type="number" step="0.1" name="temperature" placeholder="37.8" 
+                            class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-red-500">
+                    </div>
+
+                    <!-- Tension TA -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 mb-1">Tension (TA)</label>
+                        <input type="text" name="tension" placeholder="12/8" 
+                            class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-red-500">
+                    </div>
+
+                    <!-- Pouls -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-gray-700 mb-1">Pouls (bpm)</label>
+                        <input type="number" name="pouls" placeholder="78" 
+                            class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-red-500">
+                    </div>
+                </div>
+
+                <!-- Examens complémentaires rapides (TDR, Glycémie, TB) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div>
+                        <span class="font-bold text-gray-800 block mb-1">TDR Paludisme :</span>
+                        <div class="flex items-center gap-3">
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="tdr_palu" value="positif" class="text-red-600"> Positif</label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="tdr_palu" value="negatif" class="text-emerald-600"> Négatif</label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="tdr_palu" value="non_realise" checked class="text-gray-500"> Non réalisé</label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="font-bold text-gray-800 block mb-1">Recherche active Tuberculose :</span>
+                        <div class="flex items-center gap-3">
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="recherche_tb" value="oui"> Oui</label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="recherche_tb" value="non" checked> Non</label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="recherche_tb" value="na"> NA</label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="font-bold text-gray-800 block mb-1">Glycémie (g/L) :</span>
+                        <div class="flex items-center gap-2">
+                            <input type="number" step="0.01" name="glycemie" placeholder="0.95" class="w-20 border border-gray-300 rounded px-2 py-1 text-xs">
+                            <label class="inline-flex items-center gap-1"><input type="radio" name="glycemie_type" value="a_jeun"> À jeun</label>
+                            <label class="inline-flex items-center gap-1"><input type="radio" name="glycemie_type" value="na" checked> NA</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Motif & Diagnostic d'entrée -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Motifs de consultation / Visite</label>
+                        <input type="text" name="motif_consultation" placeholder="Ex: Fièvre vespérale, toux, malaise..." 
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Diagnostic Retenu</label>
+                        <input type="text" name="diagnostic" placeholder="Ex: Paludisme simple, Rhinopharyngite..." 
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Praticien / Médecin Consultant</label>
+                        <select name="praticien_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                            <option value="">Sélectionner un médecin (optionnel)...</option>
+                            <% if (typeof praticiens !== 'undefined') { %>
+                                <% praticiens.forEach(p => { %>
+                                    <option value="<%= p.id %>">Dr. <%= p.nom %> <%= p.prenom %> (<%= p.specialite || 'Généraliste' %>)</option>
+                                <% }); %>
+                            <% } %>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3 : Informations Médicales de Fond -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-4">
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-3">
+                    <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">3</span>
+                    <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wide">Antécédents & Terrain Médical</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Groupe Sanguin</label>
+                        <select name="groupe_sanguin" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                            <option value="">Non spécifié</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Allergies connues</label>
+                        <input type="text" name="allergies" placeholder="Pénicilline, Sulfamides..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Antécédents médicaux</label>
+                        <input type="text" name="antecedents" placeholder="HTA, Diabète, Asthme..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4 : Contact d'Urgence & Assurance -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-4">
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-3">
+                    <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">4</span>
+                    <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wide">Contact d'Urgence & Mutuelle / Assurance</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Nom contact urgence</label>
+                        <input type="text" name="contact_urgence_nom" placeholder="Nom du proche" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Téléphone urgence</label>
+                        <input type="text" name="contact_urgence_telephone" placeholder="07XXXXXXXX" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Type d'assurance</label>
+                        <select name="type_assurance" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                            <option value="PARTICULIER">PARTICULIER (Sans tiers-payant)</option>
+                            <option value="ENTREPRISE">ENTREPRISE</option>
+                            <option value="MUTUELLE">MUTUELLE (Militaire / Fonctionnaire)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Assureur / Mutuelle</label>
+                        <input type="text" name="assureur" placeholder="Ex: ASCOMA, MUGEF-CI..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boutons de soumission -->
+            <div class="flex items-center justify-end gap-3 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <a href="/patients" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 transition">
+                    Annuler
+                </a>
+                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition flex items-center gap-2">
+                    <i class="fas fa-save"></i>
+                    Enregistrer le Patient
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
+
+<script>
+function patientCreateForm() {
+    return {
+        poids: '',
+        taille: '',
+        imc: '',
+        imcStatus: '',
+        imcColor: 'text-gray-400',
+        calcImc() {
+            const p = parseFloat(this.poids);
+            const t = parseFloat(this.taille);
+            if (p > 0 && t > 0) {
+                const tailleM = t > 3 ? t / 100 : t;
+                const imcVal = p / (tailleM * tailleM);
+                this.imc = imcVal.toFixed(1);
+
+                if (imcVal < 18.5) {
+                    this.imcStatus = 'Insuffisance pondérale';
+                    this.imcColor = 'text-amber-600';
+                } else if (imcVal < 25) {
+                    this.imcStatus = 'Poids normal';
+                    this.imcColor = 'text-emerald-600';
+                } else if (imcVal < 30) {
+                    this.imcStatus = 'Surpoids';
+                    this.imcColor = 'text-orange-600';
+                } else {
+                    this.imcStatus = 'Obésité';
+                    this.imcColor = 'text-red-600';
+                }
+            } else {
+                this.imc = '';
+                this.imcStatus = '';
+                this.imcColor = 'text-gray-400';
+            }
+        }
+    };
+}
+</script>

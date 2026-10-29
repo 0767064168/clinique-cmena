@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
-const { packVitals, unpackVitals } = require('../utils/vitals');
+const { packClinicalData, unpackClinicalData, packVitals, unpackVitals } = require('../utils/vitals');
 
 router.get('/', async (req, res) => {
     try {
@@ -101,8 +101,7 @@ router.get(['/nouveau', '/nouvelle'], (req, res) => res.redirect('/consultations
 router.post('/', async (req, res) => {
     try {
         const { 
-            patient_id, praticien_id, date_entree, date_sortie, statut, motif, observations, diagnostic,
-            tension, temperature, poids, taille, pouls
+            patient_id, praticien_id, date_entree, date_sortie, statut, motif, observations, diagnostic
         } = req.body;
         
         let nombre_jours = 1;
@@ -113,7 +112,7 @@ router.post('/', async (req, res) => {
             nombre_jours = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
         }
 
-        const packedObs = packVitals(observations, { tension, temperature, poids, taille, pouls });
+        const packedObs = packClinicalData(observations, req.body);
 
         const { data: consultation, error } = await supabase
             .from('consultations')
@@ -166,16 +165,11 @@ router.get('/:id', async (req, res) => {
                 consultation.praticien_matricule = consultation.praticiens.matricule || null;
             }
 
-            // Décodage des constantes vitales
-            const unpacked = unpackVitals(consultation.observations);
-            consultation.vitals = {
-                tension: unpacked.tension,
-                temperature: unpacked.temperature,
-                poids: unpacked.poids,
-                taille: unpacked.taille,
-                pouls: unpacked.pouls
-            };
-            consultation.observations_clean = unpacked.cleanObservations;
+            // Décodage des constantes vitales et du bilan clinique complet
+            const clinical = unpackClinicalData(consultation.observations);
+            consultation.clinical = clinical;
+            consultation.vitals = clinical;
+            consultation.observations_clean = clinical.cleanObservations;
         }
 
         res.render('consultations/show', {
@@ -211,9 +205,10 @@ router.get('/:id/ordonnance', async (req, res) => {
             consultation.praticien_matricule = consultation.praticiens.matricule;
         }
 
-        const unpacked = unpackVitals(consultation.observations);
-        consultation.vitals = unpacked;
-        consultation.observations_clean = unpacked.cleanObservations;
+        const clinical = unpackClinicalData(consultation.observations);
+        consultation.clinical = clinical;
+        consultation.vitals = clinical;
+        consultation.observations_clean = clinical.cleanObservations;
 
         res.render('consultations/ordonnance', {
             layout: false,
@@ -243,16 +238,11 @@ router.get('/:id/edit', async (req, res) => {
                 consultation.patient_nom = consultation.patients.nom;
                 consultation.patient_prenom = consultation.patients.prenom;
             }
-            // Décodage des constantes vitales pour le formulaire
-            const unpacked = unpackVitals(consultation.observations);
-            consultation.vitals = {
-                tension: unpacked.tension,
-                temperature: unpacked.temperature,
-                poids: unpacked.poids,
-                taille: unpacked.taille,
-                pouls: unpacked.pouls
-            };
-            consultation.observations_clean = unpacked.cleanObservations;
+            // Décodage des données cliniques pour le formulaire
+            const clinical = unpackClinicalData(consultation.observations);
+            consultation.clinical = clinical;
+            consultation.vitals = clinical;
+            consultation.observations_clean = clinical.cleanObservations;
         }
 
         const { data: praticiens } = await supabase.from('praticiens').select('id, nom, prenom, specialite, matricule').eq('actif', true).order('nom');
@@ -272,8 +262,7 @@ router.get('/:id/edit', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const { 
-            praticien_id, date_entree, date_sortie, statut, motif, observations, diagnostic,
-            tension, temperature, poids, taille, pouls
+            praticien_id, date_entree, date_sortie, statut, motif, observations, diagnostic
         } = req.body;
         
         let nombre_jours = 1;
@@ -282,7 +271,7 @@ router.put('/:id', async (req, res) => {
             nombre_jours = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
         }
 
-        const packedObs = packVitals(observations, { tension, temperature, poids, taille, pouls });
+        const packedObs = packClinicalData(observations, req.body);
 
         const { error } = await supabase
             .from('consultations')

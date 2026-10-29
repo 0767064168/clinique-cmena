@@ -1,136 +1,534 @@
-<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-    <div class="max-w-3xl mx-auto">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Nouvelle Consultation</h1>
-            <a href="/consultations" class="text-gray-600 hover:text-gray-900 font-medium text-sm">← Retour</a>
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8" x-data="consultationForm()">
+    <div class="max-w-5xl mx-auto">
+        <!-- En-tête -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+            <div>
+                <a href="/consultations" class="text-xs text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1 mb-1">
+                    <i class="fas fa-arrow-left"></i> Retour à la liste des consultations
+                </a>
+                <h1 class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                    <i class="fas fa-stethoscope text-red-600"></i>
+                    Fiche d'Examen Clinique & Consultation
+                </h1>
+                <p class="text-xs sm:text-sm text-gray-500">Registre officiel de consultation médicale — CSA 3e Compagnie GSPM Bouaké</p>
+            </div>
         </div>
 
-        <form action="/consultations" method="POST" class="bg-white shadow rounded-lg p-6 space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Patient *</label>
-                    <select name="patient_id" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Sélectionner un patient...</option>
-                        <% if (typeof patients !== 'undefined') { %>
-                            <% patients.forEach(p => { %>
-                                <option value="<%= p.id %>" <%= typeof query !== 'undefined' && query.patient_id == p.id ? 'selected' : '' %>><%= p.numero_dossier %> - <%= p.nom %> <%= p.prenom %></option>
-                            <% }); %>
-                        <% } %>
-                    </select>
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Praticien *</label>
-                    <select name="praticien_id" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Sélectionner un praticien...</option>
-                        <% if (typeof praticiens !== 'undefined') { %>
-                            <% praticiens.forEach(p => { %>
-                                <option value="<%= p.id %>"><%= p.nom %> <%= p.prenom %> (<%= p.specialite %><%= p.matricule ? ' - Mle: ' + p.matricule : '' %>)</option>
-                            <% }); %>
-                        <% } %>
-                    </select>
+        <form action="/consultations" method="POST" class="space-y-6">
+            
+            <!-- BLOC 1 : Identification & Paramètres de Visite -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 space-y-4">
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-3">
+                    <span class="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-black">1</span>
+                    <h2 class="text-base font-bold text-gray-800 uppercase tracking-wide">Identification du Patient & Médecin Consultant</h2>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Statut</label>
-                    <select name="statut" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="en_cours">En cours</option>
-                        <option value="termine">Terminé</option>
-                        <option value="annule">Annulé</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Date d'entrée *</label>
-                    <input type="datetime-local" name="date_entree" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500" value="<%= new Date().toISOString().slice(0, 16) %>">
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Date de sortie</label>
-                    <input type="datetime-local" name="date_sortie" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Motif</label>
-                    <textarea name="motif" rows="2" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Motif de la consultation..."></textarea>
-                </div>
-
-                <!-- Section Constantes Vitales -->
-                <div class="md:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-5">
-                    <div class="flex items-center gap-2 mb-3">
-                        <i class="fas fa-heartbeat text-red-600 text-lg"></i>
-                        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wide">Constantes Vitales du Patient</h3>
-                        <span class="text-[11px] text-gray-500 font-normal ml-auto">(Réservé au dossier médical — n'apparaît pas sur la facture)</span>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="lg:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Patient *</label>
+                        <select name="patient_id" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Sélectionner un patient...</option>
+                            <% if (typeof patients !== 'undefined') { %>
+                                <% patients.forEach(p => { %>
+                                    <option value="<%= p.id %>" <%= typeof query !== 'undefined' && query.patient_id == p.id ? 'selected' : '' %>>
+                                        <%= p.numero_dossier %> — <%= p.nom %> <%= p.prenom %>
+                                    </option>
+                                <% }); %>
+                            <% } %>
+                        </select>
                     </div>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                        <!-- Tension Artérielle -->
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Tension (TA)</label>
-                            <div class="relative">
-                                <input type="text" name="tension" placeholder="12/8" 
-                                    class="w-full border rounded-md px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
-                                <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-medium">mmHg</span>
-                            </div>
-                        </div>
 
-                        <!-- Température -->
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Température</label>
-                            <div class="relative">
-                                <input type="text" name="temperature" placeholder="37.2" 
-                                    class="w-full border rounded-md px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
-                                <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-medium">°C</span>
-                            </div>
-                        </div>
-
-                        <!-- Poids -->
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Poids</label>
-                            <div class="relative">
-                                <input type="text" name="poids" placeholder="72" 
-                                    class="w-full border rounded-md px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
-                                <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-medium">kg</span>
-                            </div>
-                        </div>
-
-                        <!-- Pouls -->
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Pouls</label>
-                            <div class="relative">
-                                <input type="text" name="pouls" placeholder="78" 
-                                    class="w-full border rounded-md px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
-                                <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-medium">bpm</span>
-                            </div>
-                        </div>
-
-                        <!-- Taille -->
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Taille</label>
-                            <div class="relative">
-                                <input type="text" name="taille" placeholder="175" 
-                                    class="w-full border rounded-md px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
-                                <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-medium">cm</span>
-                            </div>
-                        </div>
+                    <div class="lg:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Praticien / Médecin *</label>
+                        <select name="praticien_id" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Sélectionner un praticien...</option>
+                            <% if (typeof praticiens !== 'undefined') { %>
+                                <% praticiens.forEach(p => { %>
+                                    <option value="<%= p.id %>">
+                                        Dr. <%= p.nom %> <%= p.prenom %> (<%= p.specialite || 'Généraliste' %><%= p.matricule ? ' - Mle: ' + p.matricule : '' %>)
+                                    </option>
+                                <% }); %>
+                            <% } %>
+                        </select>
                     </div>
-                </div>
 
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Observations</label>
-                    <textarea name="observations" rows="3" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
-                </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Date d'entrée *</label>
+                        <input type="datetime-local" name="date_entree" required 
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" 
+                            value="<%= new Date().toISOString().slice(0, 16) %>">
+                    </div>
 
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Diagnostic</label>
-                    <textarea name="diagnostic" rows="3" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Date de sortie (si arrêtée)</label>
+                        <input type="datetime-local" name="date_sortie" 
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div class="lg:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Statut consultation</label>
+                        <select name="statut" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                            <option value="en_cours" selected>En cours</option>
+                            <option value="termine">Terminé</option>
+                            <option value="annule">Annulé</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2 lg:col-span-4">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Motifs de consultation *</label>
+                        <textarea name="motif" rows="2" required 
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500" 
+                            placeholder="Ex : Fièvre vespérale, toux grasse, rhinorrhée, vomissements, céphalées..."></textarea>
+                    </div>
                 </div>
             </div>
 
-            <!-- Buttons -->
-            <div class="flex justify-end gap-4 border-t pt-4">
-                <a href="/consultations" class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50">Annuler</a>
-                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-bold">Enregistrer</button>
+            <!-- BLOC 2 : Examen Clinique & Constantes Physiques (Registre Officiel) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 space-y-5">
+                <div class="flex items-center justify-between border-b border-gray-200 pb-3 flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-xs font-black">2</span>
+                        <h2 class="text-base font-bold text-gray-800 uppercase tracking-wide">Examen Clinique & Constantes Physiques</h2>
+                    </div>
+                    <span class="text-xs text-red-700 font-semibold bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
+                        <i class="fas fa-heartbeat mr-1"></i> Constantes & Dépistage TB
+                    </span>
+                </div>
+
+                <!-- Grille des constantes physiques -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <!-- Poids -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Poids</label>
+                        <div class="relative">
+                            <input type="number" step="0.1" name="poids" x-model="poids" @input="calcImc()" placeholder="24" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">kg</span>
+                        </div>
+                    </div>
+
+                    <!-- Taille -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Taille</label>
+                        <div class="relative">
+                            <input type="number" step="1" name="taille" x-model="taille" @input="calcImc()" placeholder="128" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">cm</span>
+                        </div>
+                    </div>
+
+                    <!-- IMC Calculé automatiquement -->
+                    <div class="bg-white p-2 rounded-lg border border-gray-200">
+                        <label class="block text-[11px] font-bold text-gray-700 mb-0.5">IMC</label>
+                        <div class="flex items-center justify-between">
+                            <input type="text" name="imc" x-model="imc" readonly 
+                                class="w-16 bg-transparent font-black text-sm text-gray-900 border-none p-0 focus:ring-0">
+                            <span class="text-[9px] text-gray-400 font-bold">kg/m²</span>
+                        </div>
+                        <span class="text-[10px] font-bold block truncate" :class="imcColor" x-text="imcStatus || '—'"></span>
+                    </div>
+
+                    <!-- Z-score -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Z-score (Enfant)</label>
+                        <input type="text" name="zscore" placeholder="Ex: -1 SD" 
+                            class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                    </div>
+
+                    <!-- Température -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Température</label>
+                        <div class="relative">
+                            <input type="number" step="0.1" name="temperature" placeholder="37.8" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">°C</span>
+                        </div>
+                    </div>
+
+                    <!-- Tension (TA) -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Tension (TA)</label>
+                        <div class="relative">
+                            <input type="text" name="tension" placeholder="12/8" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">mmHg</span>
+                        </div>
+                    </div>
+
+                    <!-- Fréquence Respiratoire -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Fréq. Respiratoire</label>
+                        <div class="relative">
+                            <input type="number" name="frequence_respiratoire" placeholder="22" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">cycles/mn</span>
+                        </div>
+                    </div>
+
+                    <!-- Pouls -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Pouls</label>
+                        <div class="relative">
+                            <input type="number" name="pouls" placeholder="78" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">batt/mn</span>
+                        </div>
+                    </div>
+
+                    <!-- Périmètre Brachial (PB) -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Périmètre Brachial</label>
+                        <div class="relative">
+                            <input type="number" step="0.1" name="perimetre_brachial" placeholder="14" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">cm</span>
+                        </div>
+                    </div>
+
+                    <!-- Périmètre Crânien (PC) -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Périmètre Crânien</label>
+                        <div class="relative">
+                            <input type="number" step="0.1" name="perimetre_cranien" placeholder="48" 
+                                class="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-red-500">
+                            <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-bold">cm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tuberculose (TB) -->
+                <div class="bg-amber-50/60 border border-amber-200 rounded-xl p-3.5 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div>
+                        <span class="font-bold text-gray-800 block mb-1.5">Recherche active de la tuberculose :</span>
+                        <div class="flex items-center gap-4">
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="recherche_tb" value="oui" class="text-amber-600 focus:ring-amber-500"> Oui
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="recherche_tb" value="non" checked class="text-amber-600 focus:ring-amber-500"> Non
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="recherche_tb" value="na" class="text-amber-600 focus:ring-amber-500"> NA
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="font-bold text-gray-800 block mb-1.5">Signes d'imprégnation de la tuberculose :</span>
+                        <div class="flex items-center gap-4">
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="signes_tb" value="oui" class="text-amber-600 focus:ring-amber-500"> Oui
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="signes_tb" value="non" checked class="text-amber-600 focus:ring-amber-500"> Non
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Examen physique, Diagnostic, Autres pathologies -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Examen Physique</label>
+                        <textarea name="examen_physique" rows="2" 
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            placeholder="Ex : BEG, conjonctives colorées, langue propre, abdomen souple dépressif..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Diagnostic Retenu *</label>
+                        <input type="text" name="diagnostic" required 
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-blue-500"
+                            placeholder="Ex : Paludisme simple, Rhinopharyngite, Gastro-entérite...">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Autres pathologies associées</label>
+                        <input type="text" name="autres_pathologies" 
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            placeholder="Ex : Anémie légère, Parasitose intestinale...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOC 3 : Examens Complémentaires (Laboratoire & Dépistage) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 space-y-4">
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-3">
+                    <span class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-black">3</span>
+                    <h2 class="text-base font-bold text-gray-800 uppercase tracking-wide">Examens Complémentaires & Dépistages</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                    <!-- TDR Paludisme -->
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <span class="font-bold text-gray-800 block mb-2">TDR Paludisme :</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="tdr_palu" value="positif" class="text-red-600 focus:ring-red-500"> Positif
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="tdr_palu" value="negatif" class="text-emerald-600 focus:ring-emerald-500"> Négatif
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="tdr_palu" value="non_realise" checked class="text-gray-600"> Non réalisé
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="tdr_palu" value="na" class="text-gray-600"> NA
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Goutte Épaisse -->
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <span class="font-bold text-gray-800 block mb-2">Goutte Épaisse (GE) :</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="goutte_epaisse" value="positive" class="text-red-600 focus:ring-red-500"> Positive
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="goutte_epaisse" value="negative" class="text-emerald-600 focus:ring-emerald-500"> Négative
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="goutte_epaisse" value="non_realise" checked class="text-gray-600"> Non réalisé
+                            </label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer">
+                                <input type="radio" name="goutte_epaisse" value="na" class="text-gray-600"> NA
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Glycémie -->
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <span class="font-bold text-gray-800 block mb-1">Glycémie :</span>
+                        <div class="flex items-center gap-2 mb-2">
+                            <input type="number" step="0.01" name="glycemie" placeholder="0.95" 
+                                class="w-24 border border-gray-300 rounded px-2 py-1 text-xs focus:ring-blue-500">
+                            <span class="text-gray-500 font-bold">g/L</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <label class="inline-flex items-center gap-1 cursor-pointer">
+                                <input type="radio" name="glycemie_type" value="a_jeun" class="text-blue-600"> À jeun
+                            </label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer">
+                                <input type="radio" name="glycemie_type" value="non_a_jeun" class="text-blue-600"> Non à jeun
+                            </label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer">
+                                <input type="radio" name="glycemie_type" value="na" checked class="text-blue-600"> NA
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- CDIP (VIH) -->
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 lg:col-span-2">
+                        <span class="font-bold text-gray-800 block mb-1.5">CDIP (Conseil & Dépistage Initié par le Prestataire) :</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div>
+                                <span class="text-[11px] text-gray-500 block">CDIP proposé :</span>
+                                <div class="flex gap-2 mt-1">
+                                    <label class="inline-flex items-center gap-1"><input type="radio" name="cdip_propose" value="oui"> Oui</label>
+                                    <label class="inline-flex items-center gap-1"><input type="radio" name="cdip_propose" value="non"> Non</label>
+                                    <label class="inline-flex items-center gap-1"><input type="radio" name="cdip_propose" value="na" checked> NA</label>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="text-[11px] text-gray-500 block">CDIP réalisé :</span>
+                                <div class="flex gap-2 mt-1">
+                                    <label class="inline-flex items-center gap-1"><input type="radio" name="cdip_realise" value="oui"> Oui</label>
+                                    <label class="inline-flex items-center gap-1"><input type="radio" name="cdip_realise" value="non" checked> Non</label>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="text-[11px] text-gray-500 block">Code dépistage client :</span>
+                                <input type="text" name="code_depistage" placeholder="Ex: CD-2026-98" 
+                                    class="w-full border border-gray-300 rounded px-2 py-1 text-xs mt-0.5">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Autres examens -->
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <label class="font-bold text-gray-800 block mb-1">Autres Examens demandés :</label>
+                        <input type="text" name="autres_examens" placeholder="Ex : Échographie abdominale, Radiographie, NFS..." 
+                            class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOC 4 : Conduite à Tenir Traitement & MILDA -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 space-y-4">
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-3">
+                    <span class="w-7 h-7 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-black">4</span>
+                    <h2 class="text-base font-bold text-gray-800 uppercase tracking-wide">Conduite à Tenir : Traitement & MILDA</h2>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">
+                        Traitement (Médicaments, posologie, voie d'administration & Conseils hygiéno-diététiques)
+                    </label>
+                    <textarea name="traitement_prescrit" rows="3" 
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500"
+                        placeholder="Ex : 
+1) Paracétamol sirop : 1 dose-poids x 3/jour pendant 3 jours
+2) Luméfantrine-Artéméther 20/120 : 1 cp matin et soir pendant 3 jours
+3) Conseils : Repos, hydratation abondante, alimentation fractionnée..."></textarea>
+                </div>
+
+                <!-- MILDA Enfant 12 à 59 mois -->
+                <div class="bg-teal-50/60 border border-teal-200 rounded-xl p-3.5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div>
+                        <span class="font-bold text-gray-800 block mb-1.5">MILDA Enfant de 12 à 59 mois — Éligible :</span>
+                        <div class="flex items-center gap-4">
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer"><input type="radio" name="milda_eligible" value="oui"> Oui</label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer"><input type="radio" name="milda_eligible" value="non" checked> Non</label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer"><input type="radio" name="milda_eligible" value="na"> NA</label>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="font-bold text-gray-800 block mb-1.5">Remise MILDA Enfant de 12 à 59 mois :</span>
+                        <div class="flex items-center gap-4">
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer"><input type="radio" name="milda_remis" value="oui"> Oui</label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer"><input type="radio" name="milda_remis" value="non" checked> Non</label>
+                            <label class="inline-flex items-center gap-1 font-semibold cursor-pointer"><input type="radio" name="milda_remis" value="na"> NA</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLOC 5 : Issue de la Consultation & Décision Médicale (Modèle 8 / Repos) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 space-y-4">
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-3">
+                    <span class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-black">5</span>
+                    <h2 class="text-base font-bold text-gray-800 uppercase tracking-wide">Issue de la Consultation & Décisions</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Issue de la consultation -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Issue de la consultation *</label>
+                        <select name="issue_consultation" x-model="issue" 
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-indigo-500">
+                            <option value="sorti" selected>Sorti(e) (Domicile)</option>
+                            <option value="hospitalise">Hospitalisé(e)</option>
+                            <option value="mo">M.O (Mise en Observation)</option>
+                            <option value="refere_interne">Référé(e) en interne</option>
+                            <option value="refere_externe">Référé(e) externe (Hôpital / CHU)</option>
+                            <option value="tb_refere">Cas présumé de TB référé</option>
+                            <option value="a_revoir">À revoir (Rendez-vous de contrôle)</option>
+                            <option value="decede">Décédé(e)</option>
+                        </select>
+                    </div>
+
+                    <!-- Si M.O préciser début et fin -->
+                    <div x-show="issue === 'mo'" class="grid grid-cols-2 gap-2 bg-indigo-50/50 p-2.5 rounded-lg border border-indigo-200">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 mb-0.5">Début M.O</label>
+                            <input type="datetime-local" name="mo_debut" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 mb-0.5">Fin M.O</label>
+                            <input type="datetime-local" name="mo_fin" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+                        </div>
+                    </div>
+
+                    <!-- Décision de repos / Modèle 8 militaire -->
+                    <div class="md:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <span class="block text-xs font-bold text-gray-800 uppercase mb-2 flex items-center gap-1.5">
+                            <i class="fas fa-file-medical text-indigo-600"></i>
+                            Décision d'arrêt d'activité / Exemption Militaire
+                        </span>
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs mb-3">
+                            <label class="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="repos_type" value="aucun" checked class="text-indigo-600">
+                                <span class="font-semibold text-gray-700">Aucun arrêt</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="repos_type" value="repos" class="text-indigo-600">
+                                <span class="font-semibold text-gray-700">Repos médical</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="repos_type" value="exemption" class="text-indigo-600">
+                                <span class="font-semibold text-gray-700">Exemption de service</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="repos_type" value="modele8" class="text-indigo-600">
+                                <span class="font-bold text-red-700">Modèle 8 (GSPM)</span>
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Nombre de jours d'arrêt / exemption</label>
+                                <input type="number" name="repos_nb_jours" placeholder="Ex : 3" 
+                                    class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-700 mb-1">Durée précise (si < 24h ou NA)</label>
+                                <input type="text" name="repos_duree" placeholder="Ex : 48h ou NA" 
+                                    class="w-full border border-gray-300 rounded px-2.5 py-1.5 text-xs focus:ring-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observations complémentaires libres -->
+                <div class="pt-2">
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Observations médicales libres complémentaires</label>
+                    <textarea name="observations" rows="2" 
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                        placeholder="Remarques particulières, antécédents immédiats ou directives de suivi..."></textarea>
+                </div>
+            </div>
+
+            <!-- Boutons de soumission -->
+            <div class="flex items-center justify-end gap-3 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <a href="/consultations" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 transition">
+                    Annuler
+                </a>
+                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition flex items-center gap-2">
+                    <i class="fas fa-save"></i>
+                    Enregistrer la Consultation
+                </button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+function consultationForm() {
+    return {
+        poids: '',
+        taille: '',
+        imc: '',
+        imcStatus: '',
+        imcColor: 'text-gray-400',
+        issue: 'sorti',
+        calcImc() {
+            const p = parseFloat(this.poids);
+            const t = parseFloat(this.taille);
+            if (p > 0 && t > 0) {
+                // Si la taille est entrée en cm (> 3), convertir en mètres
+                const tailleM = t > 3 ? t / 100 : t;
+                const imcVal = p / (tailleM * tailleM);
+                this.imc = imcVal.toFixed(1);
+
+                if (imcVal < 18.5) {
+                    this.imcStatus = 'Insuffisance pondérale';
+                    this.imcColor = 'text-amber-600';
+                } else if (imcVal < 25) {
+                    this.imcStatus = 'Poids normal';
+                    this.imcColor = 'text-emerald-600';
+                } else if (imcVal < 30) {
+                    this.imcStatus = 'Surpoids';
+                    this.imcColor = 'text-orange-600';
+                } else {
+                    this.imcStatus = 'Obésité';
+                    this.imcColor = 'text-red-600';
+                }
+            } else {
+                this.imc = '';
+                this.imcStatus = '';
+                this.imcColor = 'text-gray-400';
+            }
+        }
+    };
+}
+</script>

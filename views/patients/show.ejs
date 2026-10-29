@@ -1,13 +1,29 @@
 <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8" x-data="{ tab: 'informations' }">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <div>
-            <h1 class="text-xl sm:text-3xl font-bold text-gray-800">Dossier : <%= patient.nom %> <%= patient.prenom %></h1>
-            <p class="text-xs text-gray-500 font-mono mt-0.5">N° Dossier : <%= patient.numero_dossier %></p>
+            <div class="flex items-center gap-2">
+                <a href="/patients" class="text-xs text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+            </div>
+            <h1 class="text-xl sm:text-3xl font-black text-gray-900 tracking-tight mt-1">
+                <%= patient.nom %> <%= patient.prenom %>
+            </h1>
+            <p class="text-xs text-gray-500 font-mono mt-0.5">N° Dossier : <strong class="text-gray-800"><%= patient.numero_dossier %></strong> <%= patient.matricule ? '— Mle: ' + patient.matricule : '' %></p>
         </div>
         <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-            <a href="/consultations/create?patient_id=<%= patient.id %>" class="flex-1 sm:flex-none text-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded text-xs sm:text-sm">Consultation</a>
-            <a href="/factures/create?patient_id=<%= patient.id %>" class="flex-1 sm:flex-none text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded text-xs sm:text-sm">Facture</a>
-            <a href="/patients/<%= patient.id %>/edit" class="flex-1 sm:flex-none text-center bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded text-xs sm:text-sm">Modifier</a>
+            <a href="/consultations/create?patient_id=<%= patient.id %>" class="flex-1 sm:flex-none text-center bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3.5 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition">
+                <i class="fas fa-stethoscope"></i>
+                <span>Nouvelle Consultation</span>
+            </a>
+            <a href="/factures/create?patient_id=<%= patient.id %>" class="flex-1 sm:flex-none text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3.5 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Facturer</span>
+            </a>
+            <a href="/patients/<%= patient.id %>/edit" class="flex-1 sm:flex-none text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-3.5 rounded-lg text-xs sm:text-sm border border-gray-300 inline-flex items-center justify-center gap-1.5 transition">
+                <i class="fas fa-user-edit"></i>
+                <span>Modifier</span>
+            </a>
         </div>
     </div>
 
@@ -45,62 +61,265 @@
     <!-- Tabs Header -->
     <div class="border-b border-gray-200 mb-6 overflow-x-auto">
         <nav class="-mb-px flex gap-4 sm:gap-8 min-w-max">
-            <button @click="tab = 'informations'" :class="{'border-blue-500 text-blue-600': tab === 'informations', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'informations'}" class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-xs sm:text-sm">Informations</button>
-            <button @click="tab = 'chronologie'" :class="{'border-blue-500 text-blue-600': tab === 'chronologie', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'chronologie'}" class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-xs sm:text-sm">Chronologie</button>
-            <button @click="tab = 'consultations'" :class="{'border-blue-500 text-blue-600': tab === 'consultations', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'consultations'}" class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-xs sm:text-sm">Consultations</button>
-            <button @click="tab = 'factures'" :class="{'border-blue-500 text-blue-600': tab === 'factures', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'factures'}" class="whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-xs sm:text-sm">Factures</button>
+            <button @click="tab = 'informations'" :class="{'border-blue-500 text-blue-600': tab === 'informations', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'informations'}" class="whitespace-nowrap pb-3.5 px-1 border-b-2 font-bold text-xs sm:text-sm flex items-center gap-1.5">
+                <i class="fas fa-id-card"></i> Fiche Patient & Constantes
+            </button>
+            <button @click="tab = 'consultations'" :class="{'border-blue-500 text-blue-600': tab === 'consultations', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'consultations'}" class="whitespace-nowrap pb-3.5 px-1 border-b-2 font-bold text-xs sm:text-sm flex items-center gap-1.5">
+                <i class="fas fa-notes-medical"></i> Consultations & Bilan Clinique (<%= (consultations || []).length %>)
+            </button>
+            <button @click="tab = 'chronologie'" :class="{'border-blue-500 text-blue-600': tab === 'chronologie', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'chronologie'}" class="whitespace-nowrap pb-3.5 px-1 border-b-2 font-bold text-xs sm:text-sm flex items-center gap-1.5">
+                <i class="fas fa-history"></i> Chronologie Médicale
+            </button>
+            <button @click="tab = 'factures'" :class="{'border-blue-500 text-blue-600': tab === 'factures', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'factures'}" class="whitespace-nowrap pb-3.5 px-1 border-b-2 font-bold text-xs sm:text-sm flex items-center gap-1.5">
+                <i class="fas fa-file-invoice"></i> Factures (<%= (factures || []).length %>)
+            </button>
         </nav>
     </div>
 
     <!-- Tab Contents -->
     <div>
         <!-- Informations Tab -->
-        <div x-show="tab === 'informations'" class="bg-white shadow rounded-lg p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Profil</h3>
-                    <dl class="space-y-3">
-                        <div class="flex justify-between"><dt class="text-gray-500">N° Dossier:</dt> <dd class="font-medium"><%= patient.numero_dossier %></dd></div>
-                        <div class="flex justify-between"><dt class="text-gray-500">Sexe:</dt> <dd class="font-medium"><%= patient.sexe === 'M' ? 'Masculin' : (patient.sexe === 'F' ? 'Féminin' : '-') %></dd></div>
-                        <div class="flex justify-between"><dt class="text-gray-500">Date de naissance:</dt> <dd class="font-medium"><%= patient.date_naissance ? new Date(patient.date_naissance).toLocaleDateString('fr-FR') : '-' %></dd></div>
-                        <div class="flex justify-between"><dt class="text-gray-500">Téléphone:</dt> <dd class="font-medium"><%= patient.telephone || '-' %></dd></div>
-                        <div class="flex justify-between"><dt class="text-gray-500">Ville:</dt> <dd class="font-medium"><%= patient.ville || '-' %></dd></div>
-                        <div class="flex justify-between"><dt class="text-gray-500">Adresse:</dt> <dd class="font-medium"><%= patient.adresse || '-' %></dd></div>
-                    </dl>
+        <div x-show="tab === 'informations'" class="space-y-6">
+            
+            <% 
+                const latestCons = (consultations && consultations.length > 0) ? consultations[0] : null;
+                const latestClin = latestCons ? (latestCons.clinical || {}) : null;
+            %>
+
+            <!-- Dernières Constantes & Examen Clinique du Patient -->
+            <% if (latestClin && (latestClin.tension || latestClin.temperature || latestClin.poids || latestClin.taille || latestClin.diagnostic || latestCons.diagnostic)) { %>
+                <div class="bg-white rounded-xl shadow-sm border border-red-200 p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-gray-200 pb-3 flex-wrap gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="p-2 bg-red-100 text-red-600 rounded-lg text-sm"><i class="fas fa-heartbeat"></i></span>
+                            <div>
+                                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Dernières Constantes Physiques & Statut Clinique</h3>
+                                <p class="text-[11px] text-gray-500">Relevées le <%= new Date(latestCons.date_entree).toLocaleDateString('fr-FR') %> par Dr. <%= latestCons.praticiens ? latestCons.praticiens.nom + ' ' + latestCons.praticiens.prenom : (latestCons.praticien_nom || 'Médecin') %></p>
+                            </div>
+                        </div>
+                        <a href="/consultations/<%= latestCons.id %>" class="text-xs text-red-700 hover:text-red-900 font-bold inline-flex items-center gap-1">
+                            Voir la fiche complète <i class="fas fa-arrow-right text-[10px]"></i>
+                        </a>
+                    </div>
+
+                    <!-- Grille des constantes physiques -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2.5">
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">Tension (TA)</span>
+                            <span class="text-sm font-black text-gray-900"><%= latestClin.tension ? (latestClin.tension + ' mmHg') : '-' %></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">Température</span>
+                            <span class="text-sm font-black text-gray-900"><%= latestClin.temperature ? (latestClin.temperature + ' °C') : '-' %></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">Poids</span>
+                            <span class="text-sm font-black text-gray-900"><%= latestClin.poids ? (latestClin.poids + ' kg') : '-' %></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">Taille</span>
+                            <span class="text-sm font-black text-gray-900"><%= latestClin.taille ? (latestClin.taille + ' cm') : '-' %></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">IMC</span>
+                            <span class="text-sm font-black text-gray-900"><%= latestClin.imc ? (latestClin.imc + ' kg/m²') : '-' %></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">Pouls</span>
+                            <span class="text-sm font-black text-gray-900"><%= latestClin.pouls ? (latestClin.pouls + ' bpm') : '-' %></span>
+                        </div>
+                    </div>
+
+                    <!-- Bilan résumé & diagnostic -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs pt-1">
+                        <div class="p-3 bg-red-50/60 rounded-lg border border-red-200">
+                            <span class="text-gray-500 uppercase font-bold text-[10px] block">Dernier Diagnostic Retenu</span>
+                            <strong class="text-sm font-black text-red-800 block mt-0.5"><%= latestCons.diagnostic || latestClin.diagnostic || 'Non spécifié' %></strong>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                            <span class="text-gray-500 uppercase font-bold text-[10px] block">Dernier TDR Paludisme</span>
+                            <strong class="text-sm font-black <%= latestClin.tdr_palu === 'positif' ? 'text-red-700' : (latestClin.tdr_palu === 'negatif' ? 'text-emerald-700' : 'text-gray-700') %> capitalize block mt-0.5">
+                                <%= latestClin.tdr_palu ? latestClin.tdr_palu.replace('_', ' ') : 'Non réalisé' %>
+                            </strong>
+                        </div>
+                        <div class="p-3 <%= latestClin.repos_type && latestClin.repos_type !== 'aucun' ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200' %> rounded-lg border">
+                            <span class="text-gray-500 uppercase font-bold text-[10px] block">Statut Militaire / Repos</span>
+                            <strong class="text-sm font-black <%= latestClin.repos_type === 'modele8' ? 'text-red-800' : 'text-gray-800' %> block mt-0.5">
+                                <%= latestClin.repos_type === 'modele8' ? 'Modèle 8 (' + (latestClin.repos_nb_jours || '-') + ' jours)' : (latestClin.repos_type === 'exemption' ? 'Exemption (' + (latestClin.repos_nb_jours || '-') + 'j)' : (latestClin.repos_type === 'repos' ? 'Repos (' + (latestClin.repos_nb_jours || '-') + 'j)' : 'En service actif')) %>
+                            </strong>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Médical & Assurance</h3>
-                    <dl class="space-y-3">
-                        <div class="flex justify-between"><dt class="text-gray-500">Groupe Sanguin:</dt> <dd class="font-medium"><%= patient.groupe_sanguin || '-' %></dd></div>
-                        <div class="flex justify-between"><dt class="text-gray-500">Allergies:</dt> <dd class="font-medium"><%= patient.allergies || '-' %></dd></div>
-                        <div class="flex justify-between"><dt class="text-gray-500">Antécédents:</dt> <dd class="font-medium"><%= patient.antecedents || '-' %></dd></div>
-                        <hr class="my-2">
-                        <div class="flex justify-between"><dt class="text-gray-500">Assurance:</dt> <dd class="font-medium"><%= patient.type_assurance %> <%= patient.assureur ? '- ' + patient.assureur : '' %></dd></div>
-                        <div class="flex justify-between"><dt class="text-gray-500">Souscripteur:</dt> <dd class="font-medium"><%= patient.souscripteur || '-' %></dd></div>
-                        <div class="flex justify-between"><dt class="text-gray-500">N° Police:</dt> <dd class="font-medium"><%= patient.numero_police || '-' %></dd></div>
-                        <hr class="my-2">
-                        <div class="flex justify-between"><dt class="text-gray-500">Urgence:</dt> <dd class="font-medium"><%= patient.contact_urgence_nom || '-' %> (<%= patient.contact_urgence_tel || '-' %>)</dd></div>
-                    </dl>
+            <% } %>
+
+            <!-- Profil & Antécédents -->
+            <div class="bg-white shadow-sm border border-gray-200 rounded-xl p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
+                            <i class="fas fa-user text-blue-600"></i> État Civil & Coordonnées
+                        </h3>
+                        <dl class="space-y-3 text-sm">
+                            <div class="flex justify-between"><dt class="text-gray-500">N° Dossier :</dt> <dd class="font-bold text-gray-900"><%= patient.numero_dossier %></dd></div>
+                            <% if (patient.matricule) { %>
+                                <div class="flex justify-between"><dt class="text-gray-500">Matricule Militaire :</dt> <dd class="font-mono font-bold text-gray-800"><%= patient.matricule %></dd></div>
+                            <% } %>
+                            <div class="flex justify-between"><dt class="text-gray-500">Sexe :</dt> <dd class="font-medium text-gray-800"><%= patient.sexe === 'M' ? 'Masculin' : (patient.sexe === 'F' ? 'Féminin' : '-') %></dd></div>
+                            <div class="flex justify-between"><dt class="text-gray-500">Date de naissance :</dt> <dd class="font-medium text-gray-800"><%= patient.date_naissance ? new Date(patient.date_naissance).toLocaleDateString('fr-FR') : '-' %></dd></div>
+                            <div class="flex justify-between"><dt class="text-gray-500">Téléphone :</dt> <dd class="font-medium text-gray-800"><%= patient.telephone || '-' %></dd></div>
+                            <div class="flex justify-between"><dt class="text-gray-500">Ville :</dt> <dd class="font-medium text-gray-800"><%= patient.ville || '-' %></dd></div>
+                            <div class="flex justify-between"><dt class="text-gray-500">Adresse :</dt> <dd class="font-medium text-gray-800"><%= patient.adresse || '-' %></dd></div>
+                        </dl>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
+                            <i class="fas fa-notes-medical text-red-600"></i> Données Médicales & Assurance
+                        </h3>
+                        <dl class="space-y-3 text-sm">
+                            <div class="flex justify-between items-center">
+                                <dt class="text-gray-500">Groupe Sanguin :</dt> 
+                                <dd class="font-black px-2 py-0.5 rounded <%= patient.groupe_sanguin ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600' %>">
+                                    <%= patient.groupe_sanguin || 'Non spécifié' %>
+                                </dd>
+                            </div>
+                            <div class="flex justify-between"><dt class="text-gray-500">Allergies :</dt> <dd class="font-medium text-gray-800"><%= patient.allergies || 'Aucune connue' %></dd></div>
+                            <div class="flex justify-between"><dt class="text-gray-500">Antécédents :</dt> <dd class="font-medium text-gray-800"><%= patient.antecedents || 'Aucun antécédent notoire' %></dd></div>
+                            <hr class="my-2 border-gray-200">
+                            <div class="flex justify-between"><dt class="text-gray-500">Assurance :</dt> <dd class="font-bold text-gray-800"><%= patient.type_assurance %> <%= patient.assureur ? '- ' + patient.assureur : '' %></dd></div>
+                            <div class="flex justify-between"><dt class="text-gray-500">Souscripteur :</dt> <dd class="font-medium text-gray-800"><%= patient.souscripteur || '-' %></dd></div>
+                            <div class="flex justify-between"><dt class="text-gray-500">N° Police :</dt> <dd class="font-mono text-xs text-gray-800"><%= patient.numero_police || '-' %></dd></div>
+                            <hr class="my-2 border-gray-200">
+                            <div class="flex justify-between"><dt class="text-gray-500">Contact Urgence :</dt> <dd class="font-medium text-gray-800"><%= patient.contact_urgence_nom || '-' %> (<%= patient.contact_urgence_tel || '-' %>)</dd></div>
+                        </dl>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Chronologie médicale (Timeline combinée Consultations + Factures) -->
-        <div x-show="tab === 'chronologie'" style="display: none;" class="bg-white shadow rounded-lg p-6">
-            <h3 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+        <!-- Consultations & Fiches Cliniques Tab -->
+        <div x-show="tab === 'consultations'" style="display: none;" class="space-y-4">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider">
+                    Historique des Consultations & Registre Médical (<%= (consultations || []).length %>)
+                </h3>
+                <a href="/consultations/create?patient_id=<%= patient.id %>" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg shadow-sm inline-flex items-center gap-1">
+                    <i class="fas fa-plus"></i> Nouvelle Consultation
+                </a>
+            </div>
+
+            <% if (typeof consultations !== 'undefined' && consultations.length > 0) { %>
+                <div class="space-y-4">
+                    <% consultations.forEach(c => { 
+                        const clin = c.clinical || {};
+                    %>
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:border-blue-300 transition space-y-3">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-gray-100 pb-3">
+                                <div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="text-xs font-bold text-blue-700">
+                                            <%= new Date(c.date_entree).toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) %>
+                                        </span>
+                                        <span class="text-gray-300">•</span>
+                                        <span class="text-xs text-gray-600 font-semibold">
+                                            Dr. <%= c.praticiens ? c.praticiens.nom + ' ' + c.praticiens.prenom : (c.praticien_nom || 'Médecin') %>
+                                        </span>
+                                    </div>
+                                    <h4 class="text-base font-extrabold text-gray-900 mt-1">
+                                        <%= c.motif || 'Consultation médicale' %>
+                                    </h4>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <% if (clin.repos_type && clin.repos_type !== 'aucun') { %>
+                                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold <%= clin.repos_type === 'modele8' ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-indigo-100 text-indigo-800' %>">
+                                            <i class="fas fa-file-medical mr-0.5"></i> <%= clin.repos_type === 'modele8' ? 'Modèle 8' : (clin.repos_type === 'exemption' ? 'Exemption' : 'Repos') %> (<%= clin.repos_nb_jours %>j)
+                                        </span>
+                                    <% } %>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold <%= c.statut === 'termine' ? 'bg-green-100 text-green-800' : (c.statut === 'en_cours' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800') %>">
+                                        <%= c.statut === 'termine' ? 'Terminé' : (c.statut === 'en_cours' ? 'En cours' : 'Annulé') %>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Constantes Physiques de la consultation -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 text-center text-xs">
+                                <div class="bg-slate-50 p-2 rounded border border-slate-100">
+                                    <span class="text-[9px] text-gray-500 font-bold block uppercase">TA</span>
+                                    <span class="font-extrabold text-gray-900"><%= clin.tension ? (clin.tension + ' mmHg') : '-' %></span>
+                                </div>
+                                <div class="bg-slate-50 p-2 rounded border border-slate-100">
+                                    <span class="text-[9px] text-gray-500 font-bold block uppercase">Température</span>
+                                    <span class="font-extrabold text-gray-900"><%= clin.temperature ? (clin.temperature + ' °C') : '-' %></span>
+                                </div>
+                                <div class="bg-slate-50 p-2 rounded border border-slate-100">
+                                    <span class="text-[9px] text-gray-500 font-bold block uppercase">Poids</span>
+                                    <span class="font-extrabold text-gray-900"><%= clin.poids ? (clin.poids + ' kg') : '-' %></span>
+                                </div>
+                                <div class="bg-slate-50 p-2 rounded border border-slate-100">
+                                    <span class="text-[9px] text-gray-500 font-bold block uppercase">Taille</span>
+                                    <span class="font-extrabold text-gray-900"><%= clin.taille ? (clin.taille + ' cm') : '-' %></span>
+                                </div>
+                                <div class="bg-slate-50 p-2 rounded border border-slate-100">
+                                    <span class="text-[9px] text-gray-500 font-bold block uppercase">IMC</span>
+                                    <span class="font-extrabold text-gray-900"><%= clin.imc ? (clin.imc + ' kg/m²') : '-' %></span>
+                                </div>
+                                <div class="bg-slate-50 p-2 rounded border border-slate-100">
+                                    <span class="text-[9px] text-gray-500 font-bold block uppercase">TDR Palu</span>
+                                    <span class="font-extrabold <%= clin.tdr_palu === 'positif' ? 'text-red-600' : (clin.tdr_palu === 'negatif' ? 'text-emerald-600' : 'text-gray-500') %> capitalize">
+                                        <%= clin.tdr_palu ? clin.tdr_palu.replace('_', ' ') : '-' %>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Diagnostic & Traitement -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
+                                <div class="p-2.5 bg-red-50/50 rounded-lg border border-red-100">
+                                    <span class="text-gray-500 font-bold block text-[10px] uppercase">Diagnostic Retenu :</span>
+                                    <strong class="text-sm font-black text-red-900"><%= c.diagnostic || clin.diagnostic || 'Non spécifié' %></strong>
+                                </div>
+                                <div class="p-2.5 bg-teal-50/50 rounded-lg border border-teal-100">
+                                    <span class="text-gray-500 font-bold block text-[10px] uppercase">Traitement & Prescriptions :</span>
+                                    <p class="text-xs text-gray-800 line-clamp-2"><%= clin.traitement_prescrit || 'Aucun traitement saisi' %></p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+                                <a href="/consultations/<%= c.id %>/ordonnance" target="_blank" class="text-xs text-teal-700 hover:text-teal-900 font-bold inline-flex items-center gap-1">
+                                    <i class="fas fa-print"></i> Ordonnance
+                                </a>
+                                <a href="/consultations/<%= c.id %>" class="text-xs text-blue-600 hover:text-blue-800 font-bold inline-flex items-center gap-1">
+                                    Consulter la fiche complète <i class="fas fa-arrow-right text-[10px]"></i>
+                                </a>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">
+                    <i class="fas fa-stethoscope text-3xl text-gray-300 mb-2"></i>
+                    <p class="text-sm">Aucune consultation enregistrée pour ce patient.</p>
+                    <a href="/consultations/create?patient_id=<%= patient.id %>" class="mt-3 inline-block px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold shadow hover:bg-red-700">
+                        Créer une consultation
+                    </a>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Chronologie médicale -->
+        <div x-show="tab === 'chronologie'" style="display: none;" class="bg-white shadow-sm border border-gray-200 rounded-xl p-6">
+            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-6 flex items-center gap-2">
                 <i class="fas fa-history text-red-600"></i>
-                Historique chronologique du patient
+                Historique chronologique des soins et actes
             </h3>
             <% 
-                // Fusionner les consultations et factures par ordre antéchronologique
                 const events = [];
                 (consultations || []).forEach(c => {
                     events.push({
                         type: 'consultation',
                         date: new Date(c.date_entree),
-                        title: 'Consultation médicale',
+                        title: 'Consultation médicale — ' + (c.motif || 'Visite'),
                         praticien: c.praticiens ? (c.praticiens.nom + ' ' + c.praticiens.prenom) : '-',
-                        desc: c.motif || 'Sans motif particulier',
+                        desc: (c.diagnostic ? 'Diagnostic : ' + c.diagnostic : 'Sans diagnostic particulier'),
                         statut: c.statut,
                         id: c.id
                     });
@@ -126,54 +345,55 @@
                                 <span class="absolute -left-3 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white text-xs shadow">
                                     <i class="fas fa-stethoscope"></i>
                                 </span>
-                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div class="bg-blue-50/60 border border-blue-200 rounded-lg p-4">
                                     <div class="flex justify-between items-start">
                                         <div>
                                             <span class="text-xs font-bold uppercase text-blue-700 tracking-wider">Consultation</span>
-                                            <h4 class="font-bold text-gray-900 mt-0.5">Praticien : <%= e.praticien %></h4>
-                                            <p class="text-sm text-gray-600 mt-1"><%= e.desc %></p>
+                                            <h4 class="font-bold text-gray-900 mt-0.5"><%= e.title %></h4>
+                                            <p class="text-xs text-gray-600 mt-0.5">Médecin : Dr. <%= e.praticien %></p>
+                                            <p class="text-xs text-gray-800 font-semibold mt-1"><%= e.desc %></p>
                                         </div>
                                         <div class="text-right">
                                             <span class="text-xs font-medium text-gray-500 block"><%= e.date.toLocaleDateString('fr-FR') %></span>
-                                            <span class="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-semibold <%= e.statut === 'termine' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' %>">
+                                            <span class="text-[11px] px-2 py-0.5 rounded-full mt-1 inline-block font-bold <%= e.statut === 'termine' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' %>">
                                                 <%= e.statut === 'termine' ? 'Terminée' : 'En cours' %>
                                             </span>
                                         </div>
                                     </div>
                                     <div class="mt-3 text-right">
                                         <a href="/consultations/<%= e.id %>" class="text-xs text-blue-600 hover:text-blue-800 font-bold inline-flex items-center gap-1">
-                                            Voir le détail <i class="fas fa-arrow-right text-[10px]"></i>
+                                            Voir la fiche clinique <i class="fas fa-arrow-right text-[10px]"></i>
                                         </a>
                                     </div>
                                 </div>
                             <% } else { %>
-                                <span class="absolute -left-3 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-white text-xs shadow">
+                                <span class="absolute -left-3 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-white text-xs shadow">
                                     <i class="fas fa-file-invoice-dollar"></i>
                                 </span>
-                                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <div class="bg-emerald-50/60 border border-emerald-200 rounded-lg p-4">
                                     <div class="flex justify-between items-start">
                                         <div>
-                                            <span class="text-xs font-bold uppercase text-green-700 tracking-wider">Facturation</span>
+                                            <span class="text-xs font-bold uppercase text-emerald-700 tracking-wider">Facturation</span>
                                             <h4 class="font-bold text-gray-900 mt-0.5"><%= e.title %></h4>
-                                            <p class="text-sm text-gray-800 font-semibold mt-1">Montant : <%= (e.total).toLocaleString('fr-FR') %> FCFA</p>
+                                            <p class="text-xs text-gray-800 font-bold mt-1">Montant : <%= (e.total).toLocaleString('fr-FR') %> FCFA</p>
                                             <% if (e.reste > 0) { %>
-                                                <p class="text-xs text-red-600 font-semibold">Reste à régler : <%= (e.reste).toLocaleString('fr-FR') %> FCFA</p>
+                                                <p class="text-xs text-red-600 font-bold">Reste à régler : <%= (e.reste).toLocaleString('fr-FR') %> FCFA</p>
                                             <% } else { %>
-                                                <p class="text-xs text-green-700 font-semibold">Réglée intégralement</p>
+                                                <p class="text-xs text-emerald-700 font-bold">Réglée intégralement</p>
                                             <% } %>
                                         </div>
                                         <div class="text-right">
                                             <span class="text-xs font-medium text-gray-500 block"><%= e.date.toLocaleDateString('fr-FR') %></span>
-                                            <span class="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-semibold <%= e.statut === 'payee' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800' %>">
+                                            <span class="text-[11px] px-2 py-0.5 rounded-full mt-1 inline-block font-bold <%= e.statut === 'payee' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800' %>">
                                                 <%= e.statut === 'payee' ? 'Payée' : e.statut %>
                                             </span>
                                         </div>
                                     </div>
                                     <div class="mt-3 text-right flex justify-end gap-3">
                                         <a href="/factures/<%= e.id %>/print" target="_blank" class="text-xs text-gray-600 hover:text-gray-900 font-bold">
-                                            <i class="fas fa-print"></i> Imprimer
+                                            <i class="fas fa-print"></i> Imprimer A4
                                         </a>
-                                        <a href="/factures/<%= e.id %>" class="text-xs text-green-700 hover:text-green-900 font-bold inline-flex items-center gap-1">
+                                        <a href="/factures/<%= e.id %>" class="text-xs text-emerald-700 hover:text-emerald-900 font-bold inline-flex items-center gap-1">
                                             Consulter <i class="fas fa-arrow-right text-[10px]"></i>
                                         </a>
                                     </div>
@@ -187,79 +407,45 @@
             <% } %>
         </div>
 
-        <!-- Consultations Tab -->
-        <div x-show="tab === 'consultations'" style="display: none;">
-            <div class="bg-white shadow rounded-lg overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Praticien</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motif</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <% if (typeof consultations !== 'undefined' && consultations.length > 0) { %>
-                            <% consultations.forEach(consultation => { %>
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= new Date(consultation.date_entree).toLocaleString('fr-FR') %></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= consultation.praticiens ? consultation.praticiens.nom + ' ' + consultation.praticiens.prenom : (consultation.praticien_nom || '-') %></td>
-                                    <td class="px-6 py-4 text-sm text-gray-500"><%= consultation.motif || '-' %></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= consultation.statut %></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <a href="/consultations/<%= consultation.id %>" class="text-blue-600 hover:text-blue-900">Voir</a>
-                                    </td>
-                                </tr>
-                            <% }); %>
-                        <% } else { %>
-                            <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Aucune consultation</td></tr>
-                        <% } %>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
         <!-- Factures Tab -->
         <div x-show="tab === 'factures'" style="display: none;">
-            <div class="bg-white shadow rounded-lg overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
+            <div class="bg-white shadow-sm border border-gray-200 rounded-xl overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">N° Facture</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant TTC</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reste à payer</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">N° Facture</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Montant Net</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Reste à payer</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Statut</th>
+                            <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         <% if (typeof factures !== 'undefined' && factures.length > 0) { %>
                             <% factures.forEach(facture => { %>
-                                <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><%= facture.numero_facture || '-' %></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><%= new Date(facture.date_facture).toLocaleDateString('fr-FR') %></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= (facture.total_net || 0).toLocaleString('fr-FR') %> FCFA</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><%= (facture.reste_a_payer || 0).toLocaleString('fr-FR') %> FCFA</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="px-6 py-4 whitespace-nowrap font-mono font-bold text-blue-600">N° <%= facture.numero_facture || '-' %></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-gray-600"><%= new Date(facture.date_facture).toLocaleDateString('fr-FR') %></td>
+                                    <td class="px-6 py-4 whitespace-nowrap font-black text-gray-900"><%= (facture.total_net || 0).toLocaleString('fr-FR') %> FCFA</td>
+                                    <td class="px-6 py-4 whitespace-nowrap font-bold <%= facture.reste_a_payer > 0 ? 'text-red-600' : 'text-emerald-600' %>"><%= (facture.reste_a_payer || 0).toLocaleString('fr-FR') %> FCFA</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-bold rounded-full 
                                             <%= facture.statut === 'payee' ? 'bg-green-100 text-green-800' : 
                                                (facture.statut === 'brouillon' ? 'bg-gray-100 text-gray-800' : 
                                                (facture.statut === 'validee' ? 'bg-blue-100 text-blue-800' : 
                                                (facture.statut === 'partiellement_payee' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'))) %>">
-                                            <%= facture.statut %>
+                                            <%= facture.statut === 'payee' ? 'Payée' : (facture.statut === 'validee' ? 'Validée' : facture.statut) %>
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex gap-2">
-                                        <a href="/factures/<%= facture.id %>" class="text-blue-600 hover:text-blue-900">Détails</a>
-                                        <a href="/factures/<%= facture.id %>/print" target="_blank" class="text-gray-600 hover:text-gray-900">Imprimer</a>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right font-medium space-x-2">
+                                        <a href="/factures/<%= facture.id %>" class="text-blue-600 hover:text-blue-900 font-bold">Détails</a>
+                                        <a href="/factures/<%= facture.id %>/print" target="_blank" class="text-gray-600 hover:text-gray-900 font-bold">Imprimer A4</a>
                                     </td>
                                 </tr>
                             <% }); %>
                         <% } else { %>
-                            <tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Aucune facture</td></tr>
+                            <tr><td colspan="6" class="px-6 py-6 text-center text-gray-500">Aucune facture émise pour ce patient.</td></tr>
                         <% } %>
                     </tbody>
                 </table>
@@ -267,4 +453,3 @@
         </div>
     </div>
 </div>
-<!-- Make sure to include AlpineJS in the layout -->

@@ -1,126 +1,359 @@
 <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+    <!-- En-tête -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Détail Consultation</h1>
+        <div>
+            <a href="/consultations" class="text-xs text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1 mb-1">
+                <i class="fas fa-arrow-left"></i> Retour aux consultations
+            </a>
+            <h1 class="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                <i class="fas fa-notes-medical text-red-600"></i>
+                Fiche d'Examen Clinique & Consultation
+            </h1>
+            <p class="text-xs text-gray-500 font-mono">Dossier N° <%= consultation.numero_dossier %> — <%= consultation.patient_nom %> <%= consultation.patient_prenom %></p>
+        </div>
         <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-            <a href="/consultations/<%= consultation.id %>/ordonnance" target="_blank" class="flex-1 sm:flex-none text-center bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5" title="Imprimer l'ordonnance médicale">
+            <a href="/consultations/<%= consultation.id %>/ordonnance" target="_blank" class="flex-1 sm:flex-none text-center bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5" title="Imprimer l'ordonnance médicale">
                 <i class="fas fa-file-prescription"></i>
                 <span>Ordonnance</span>
             </a>
-            <a href="/consultations/<%= consultation.id %>/edit" class="flex-1 sm:flex-none text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Modifier</a>
-            <a href="/factures/create?consultation_id=<%= consultation.id %>" class="flex-1 sm:flex-none text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Facturer</a>
-            <a href="/consultations" class="flex-1 sm:flex-none text-center bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 sm:px-4 rounded text-xs sm:text-sm">Retour</a>
+            <a href="/consultations/<%= consultation.id %>/edit" class="flex-1 sm:flex-none text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm inline-flex items-center justify-center gap-1.5">
+                <i class="fas fa-edit"></i>
+                <span>Modifier</span>
+            </a>
+            <a href="/factures/create?consultation_id=<%= consultation.id %>" class="flex-1 sm:flex-none text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm inline-flex items-center justify-center gap-1.5">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Facturer</span>
+            </a>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Main details -->
-        <div class="md:col-span-2 space-y-6">
-            <div class="bg-white shadow rounded-lg p-6">
-                <div class="flex justify-between items-start mb-4 pb-4 border-b">
+    <% 
+        const clin = (consultation && consultation.clinical) ? consultation.clinical : {}; 
+        const hasVitals = clin.poids || clin.taille || clin.temperature || clin.tension || clin.pouls || clin.frequence_respiratoire;
+        const imcVal = parseFloat(clin.imc);
+        let imcLabel = '—';
+        let imcBadgeClass = 'bg-gray-100 text-gray-700';
+        if (imcVal > 0) {
+            if (imcVal < 18.5) { imcLabel = 'Insuffisance pondérale'; imcBadgeClass = 'bg-amber-100 text-amber-800'; }
+            else if (imcVal < 25) { imcLabel = 'Poids normal'; imcBadgeClass = 'bg-emerald-100 text-emerald-800'; }
+            else if (imcVal < 30) { imcLabel = 'Surpoids'; imcBadgeClass = 'bg-orange-100 text-orange-800'; }
+            else { imcLabel = 'Obésité'; imcBadgeClass = 'bg-red-100 text-red-800'; }
+        }
+    %>
+
+    <!-- Bannière Décision d'Arrêt / Modèle 8 / Issue -->
+    <% if (clin.repos_type && clin.repos_type !== 'aucun') { %>
+        <div class="mb-6 p-4 rounded-xl border-l-4 <%= clin.repos_type === 'modele8' ? 'bg-red-50 border-red-600' : 'bg-indigo-50 border-indigo-600' %> flex items-start justify-between shadow-sm">
+            <div class="flex items-start gap-3">
+                <div class="p-2.5 rounded-lg <%= clin.repos_type === 'modele8' ? 'bg-red-100 text-red-700' : 'bg-indigo-100 text-indigo-700' %> text-lg">
+                    <i class="fas fa-user-clock"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold <%= clin.repos_type === 'modele8' ? 'text-red-900' : 'text-indigo-900' %> uppercase tracking-wide">
+                        <%= clin.repos_type === 'modele8' ? 'Modèle 8 Militaire GSPM — Arrêt / Exemption de service' : (clin.repos_type === 'exemption' ? 'Exemption de service' : 'Repos Médical') %>
+                    </h3>
+                    <p class="text-xs <%= clin.repos_type === 'modele8' ? 'text-red-700' : 'text-indigo-700' %> mt-0.5">
+                        Durée accordée : <strong class="font-extrabold text-sm"><%= clin.repos_nb_jours || '-' %> jour(s)</strong>
+                        <%= clin.repos_duree ? ' (' + clin.repos_duree + ')' : '' %>
+                    </p>
+                </div>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase <%= clin.repos_type === 'modele8' ? 'bg-red-600 text-white' : 'bg-indigo-600 text-white' %>">
+                <%= clin.repos_type === 'modele8' ? 'Modèle 8' : (clin.repos_type === 'exemption' ? 'Exemption' : 'Repos') %>
+            </span>
+        </div>
+    <% } %>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Colonne Principale (Fiche clinique officielle) -->
+        <div class="lg:col-span-2 space-y-6">
+
+            <!-- Fiche Clinique & Diagnostic -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-5">
+                <div class="flex justify-between items-start border-b border-gray-200 pb-3 flex-wrap gap-2">
                     <div>
-                        <h2 class="text-xl font-bold text-gray-800">Informations Cliniques</h2>
-                        <p class="text-sm text-gray-500 mt-1">Date d'entrée: <%= new Date(consultation.date_entree).toLocaleString('fr-FR') %></p>
-                        <% if (consultation.date_sortie) { %>
-                            <p class="text-sm text-gray-500">Date de sortie: <%= new Date(consultation.date_sortie).toLocaleString('fr-FR') %></p>
-                        <% } %>
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block">Motif de consultation</span>
+                        <h2 class="text-lg font-black text-gray-900 mt-0.5"><%= consultation.motif || 'Non renseigné' %></h2>
                     </div>
-                    <span class="px-3 py-1 inline-flex text-sm font-semibold rounded-full 
+                    <span class="px-3 py-1 inline-flex text-xs font-bold rounded-full 
                         <%= consultation.statut === 'termine' ? 'bg-green-100 text-green-800' : 
                            (consultation.statut === 'en_cours' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800') %>">
                         <%= consultation.statut === 'en_cours' ? 'En cours' : (consultation.statut === 'termine' ? 'Terminé' : 'Annulé') %>
                     </span>
                 </div>
 
-                <div class="space-y-4">
-                    <!-- Constantes vitales du patient -->
-                    <% 
-                        const v = consultation.vitals || {};
-                        const hasV = v.tension || v.temperature || v.poids || v.taille || v.pouls;
-                    %>
-                    <% if (hasV) { %>
-                    <div>
-                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                            <i class="fas fa-heartbeat text-red-600"></i>
-                            Constantes Vitales du Patient
-                        </h3>
-                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-red-50/40 border border-red-100 rounded-lg p-3">
-                            <div class="bg-white p-2.5 rounded border border-gray-200 text-center shadow-xs">
-                                <span class="text-[11px] text-gray-500 block">Tension (TA)</span>
-                                <strong class="text-sm font-bold text-gray-800"><%= v.tension ? (v.tension + ' mmHg') : '-' %></strong>
-                            </div>
-                            <div class="bg-white p-2.5 rounded border border-gray-200 text-center shadow-xs">
-                                <span class="text-[11px] text-gray-500 block">Température</span>
-                                <strong class="text-sm font-bold text-gray-800"><%= v.temperature ? (v.temperature + ' °C') : '-' %></strong>
-                            </div>
-                            <div class="bg-white p-2.5 rounded border border-gray-200 text-center shadow-xs">
-                                <span class="text-[11px] text-gray-500 block">Poids</span>
-                                <strong class="text-sm font-bold text-gray-800"><%= v.poids ? (v.poids + ' kg') : '-' %></strong>
-                            </div>
-                            <div class="bg-white p-2.5 rounded border border-gray-200 text-center shadow-xs">
-                                <span class="text-[11px] text-gray-500 block">Pouls</span>
-                                <strong class="text-sm font-bold text-gray-800"><%= v.pouls ? (v.pouls + ' bpm') : '-' %></strong>
-                            </div>
-                            <div class="bg-white p-2.5 rounded border border-gray-200 text-center shadow-xs">
-                                <span class="text-[11px] text-gray-500 block">Taille</span>
-                                <strong class="text-sm font-bold text-gray-800"><%= v.taille ? (v.taille + ' cm') : '-' %></strong>
-                            </div>
+                <!-- Constantes physiques -->
+                <div>
+                    <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                        <i class="fas fa-heartbeat text-red-600"></i>
+                        Constantes Physiques du Patient
+                    </h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2.5">
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">Tension (TA)</span>
+                            <span class="text-sm font-black text-gray-900"><%= clin.tension ? (clin.tension + ' mmHg') : '-' %></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">Température</span>
+                            <span class="text-sm font-black text-gray-900"><%= clin.temperature ? (clin.temperature + ' °C') : '-' %></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">Poids</span>
+                            <span class="text-sm font-black text-gray-900"><%= clin.poids ? (clin.poids + ' kg') : '-' %></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">Taille</span>
+                            <span class="text-sm font-black text-gray-900"><%= clin.taille ? (clin.taille + ' cm') : '-' %></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">IMC</span>
+                            <span class="text-sm font-black text-gray-900"><%= clin.imc ? (clin.imc + ' kg/m²') : '-' %></span>
+                            <% if (clin.imc) { %>
+                                <span class="text-[9px] font-bold block mt-0.5 px-1 rounded <%= imcBadgeClass %>"><%= imcLabel %></span>
+                            <% } %>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">Fréq. Respiratoire</span>
+                            <span class="text-sm font-black text-gray-900"><%= clin.frequence_respiratoire ? (clin.frequence_respiratoire + ' c/mn') : '-' %></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">Pouls</span>
+                            <span class="text-sm font-black text-gray-900"><%= clin.pouls ? (clin.pouls + ' bpm') : '-' %></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">Périm. Brachial</span>
+                            <span class="text-sm font-black text-gray-900"><%= clin.perimetre_brachial ? (clin.perimetre_brachial + ' cm') : '-' %></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">Périm. Crânien</span>
+                            <span class="text-sm font-black text-gray-900"><%= clin.perimetre_cranien ? (clin.perimetre_cranien + ' cm') : '-' %></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+                            <span class="text-[10px] uppercase font-bold text-gray-500 block">Z-score Enfant</span>
+                            <span class="text-sm font-black text-gray-900"><%= clin.zscore || '-' %></span>
                         </div>
                     </div>
-                    <% } %>
+                </div>
 
+                <!-- Dépistage Tuberculose -->
+                <div class="bg-amber-50/70 border border-amber-200 rounded-lg p-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div>
-                        <h3 class="text-sm font-medium text-gray-500 uppercase">Motif</h3>
-                        <p class="mt-1 text-gray-900 bg-gray-50 p-3 rounded-md"><%= consultation.motif || 'Non renseigné' %></p>
+                        <span class="text-gray-600 block">Recherche active Tuberculose :</span>
+                        <strong class="font-bold text-gray-900 uppercase"><%= clin.recherche_tb || 'Non renseigné' %></strong>
                     </div>
                     <div>
-                        <h3 class="text-sm font-medium text-gray-500 uppercase">Observations</h3>
-                        <p class="mt-1 text-gray-900 bg-gray-50 p-3 rounded-md whitespace-pre-wrap"><%= consultation.observations_clean || consultation.observations || 'Aucune observation' %></p>
+                        <span class="text-gray-600 block">Signes d'imprégnation Tuberculose :</span>
+                        <strong class="font-bold text-gray-900 uppercase"><%= clin.signes_tb || 'Non renseigné' %></strong>
                     </div>
-                    <div>
-                        <h3 class="text-sm font-medium text-gray-500 uppercase">Diagnostic</h3>
-                        <p class="mt-1 text-gray-900 bg-gray-50 p-3 rounded-md whitespace-pre-wrap"><%= consultation.diagnostic || 'Aucun diagnostic' %></p>
+                </div>
+
+                <!-- Diagnostic & Examen physique -->
+                <div class="space-y-3 pt-2">
+                    <div class="p-3 bg-red-50/50 border border-red-200 rounded-lg">
+                        <span class="text-xs font-bold text-red-900 uppercase block">Diagnostic Retenu :</span>
+                        <p class="text-base font-extrabold text-red-800 mt-0.5"><%= consultation.diagnostic || clin.diagnostic || 'Non spécifié' %></p>
+                        <% if (clin.autres_pathologies) { %>
+                            <p class="text-xs text-red-700 mt-1"><strong>Autres pathologies associées :</strong> <%= clin.autres_pathologies %></p>
+                        <% } %>
+                    </div>
+
+                    <% if (clin.examen_physique) { %>
+                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <span class="text-xs font-bold text-gray-600 uppercase block mb-1">Examen Physique :</span>
+                            <p class="text-xs text-gray-800 whitespace-pre-wrap"><%= clin.examen_physique %></p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Examens Complémentaires & Dépistages -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-4">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5 border-b pb-2">
+                    <i class="fas fa-vial text-emerald-600"></i>
+                    Examens Complémentaires & Laboratoire
+                </h3>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <!-- TDR Paludisme -->
+                    <div class="p-3 rounded-lg border <%= clin.tdr_palu === 'positif' ? 'bg-red-50 border-red-300' : (clin.tdr_palu === 'negatif' ? 'bg-emerald-50 border-emerald-300' : 'bg-gray-50 border-gray-200') %>">
+                        <span class="text-gray-500 block uppercase font-bold text-[10px]">TDR Paludisme</span>
+                        <strong class="text-sm font-black <%= clin.tdr_palu === 'positif' ? 'text-red-700' : (clin.tdr_palu === 'negatif' ? 'text-emerald-700' : 'text-gray-700') %> capitalize">
+                            <%= clin.tdr_palu ? clin.tdr_palu.replace('_', ' ') : 'Non réalisé' %>
+                        </strong>
+                    </div>
+
+                    <!-- Goutte Épaisse -->
+                    <div class="p-3 rounded-lg border <%= clin.goutte_epaisse === 'positive' ? 'bg-red-50 border-red-300' : (clin.goutte_epaisse === 'negative' ? 'bg-emerald-50 border-emerald-300' : 'bg-gray-50 border-gray-200') %>">
+                        <span class="text-gray-500 block uppercase font-bold text-[10px]">Goutte Épaisse (GE)</span>
+                        <strong class="text-sm font-black <%= clin.goutte_epaisse === 'positive' ? 'text-red-700' : (clin.goutte_epaisse === 'negative' ? 'text-emerald-700' : 'text-gray-700') %> capitalize">
+                            <%= clin.goutte_epaisse ? clin.goutte_epaisse.replace('_', ' ') : 'Non réalisé' %>
+                        </strong>
+                    </div>
+
+                    <!-- Glycémie -->
+                    <div class="p-3 rounded-lg border bg-gray-50 border-gray-200">
+                        <span class="text-gray-500 block uppercase font-bold text-[10px]">Glycémie</span>
+                        <strong class="text-sm font-black text-gray-900">
+                            <%= clin.glycemie ? (clin.glycemie + ' g/L') : '-' %>
+                        </strong>
+                        <span class="text-[10px] text-gray-500 block mt-0.5">
+                            <%= clin.glycemie_type === 'a_jeun' ? 'À jeun' : (clin.glycemie_type === 'non_a_jeun' ? 'Non à jeun' : 'NA') %>
+                        </span>
+                    </div>
+
+                    <!-- CDIP VIH -->
+                    <div class="p-3 rounded-lg border bg-gray-50 border-gray-200 sm:col-span-2">
+                        <span class="text-gray-500 block uppercase font-bold text-[10px]">CDIP (Conseil & Dépistage VIH)</span>
+                        <p class="text-xs text-gray-800 mt-1">
+                            Proposé : <strong class="uppercase"><%= clin.cdip_propose || '-' %></strong> — 
+                            Réalisé : <strong class="uppercase"><%= clin.cdip_realise || '-' %></strong>
+                            <% if (clin.code_depistage) { %>
+                                <span class="ml-2 font-mono bg-white px-1.5 py-0.5 rounded border border-gray-300">Code: <%= clin.code_depistage %></span>
+                            <% } %>
+                        </p>
+                    </div>
+
+                    <!-- Autres examens -->
+                    <div class="p-3 rounded-lg border bg-gray-50 border-gray-200">
+                        <span class="text-gray-500 block uppercase font-bold text-[10px]">Autres Examens</span>
+                        <strong class="text-xs font-semibold text-gray-800"><%= clin.autres_examens || 'Aucun' %></strong>
                     </div>
                 </div>
             </div>
+
+            <!-- Conduite à Tenir Traitement & MILDA -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-200 pb-2">
+                    <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fas fa-prescription-bottle-alt text-teal-600"></i>
+                        Conduite à Tenir : Traitement & MILDA
+                    </h3>
+                    <a href="/consultations/<%= consultation.id %>/ordonnance" target="_blank" class="text-xs text-teal-700 hover:text-teal-900 font-bold inline-flex items-center gap-1">
+                        <i class="fas fa-print"></i> Imprimer ordonnance
+                    </a>
+                </div>
+
+                <div class="p-4 bg-teal-50/40 rounded-xl border border-teal-200">
+                    <span class="text-xs font-bold text-teal-900 uppercase block mb-1">Prescription Médicale :</span>
+                    <p class="text-sm text-gray-800 whitespace-pre-wrap font-sans leading-relaxed">
+                        <%= clin.traitement_prescrit || 'Aucun traitement consigné' %>
+                    </p>
+                </div>
+
+                <!-- MILDA Enfant -->
+                <% if (clin.milda_eligible || clin.milda_remis) { %>
+                <div class="grid grid-cols-2 gap-3 text-xs bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <div>
+                        <span class="text-gray-500">MILDA Enfant 12-59 mois éligible :</span>
+                        <strong class="uppercase text-gray-800 block"><%= clin.milda_eligible || '-' %></strong>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Remise MILDA Enfant 12-59 mois :</span>
+                        <strong class="uppercase text-gray-800 block"><%= clin.milda_remis || '-' %></strong>
+                    </div>
+                </div>
+                <% } %>
+            </div>
+
+            <!-- Observations Libres -->
+            <% if (consultation.observations_clean) { %>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-2">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider">Observations Complémentaires</h3>
+                <p class="text-xs text-gray-800 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg border border-gray-200"><%= consultation.observations_clean %></p>
+            </div>
+            <% } %>
         </div>
 
-        <!-- Sidebar (Patient, Praticien) -->
+        <!-- Colonne Latérale (Patient, Médecin, Issue de visite, Facturation) -->
         <div class="space-y-6">
-            <div class="bg-white shadow rounded-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Patient</h3>
-                <div class="text-sm">
-                    <p class="font-medium text-lg text-blue-600 mb-1"><a href="/patients/<%= consultation.patient_id %>"><%= consultation.patient_nom %> <%= consultation.patient_prenom %></a></p>
-                    <p class="text-gray-600 mb-1">N° Dossier: <%= consultation.numero_dossier %></p>
-                    <p class="text-gray-600">Assurance: <%= consultation.type_assurance %></p>
+            
+            <!-- Issue de la visite -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-3">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
+                    <i class="fas fa-door-open text-indigo-600"></i> Issue de Consultation
+                </h3>
+                <div>
+                    <span class="text-xs text-gray-500 block">Décision de sortie :</span>
+                    <strong class="text-sm font-black text-indigo-800 capitalize block mt-0.5">
+                        <% 
+                            const issuesMap = {
+                                'sorti': 'Sorti(e) (Domicile)',
+                                'hospitalise': 'Hospitalisé(e)',
+                                'mo': 'Mise en Observation (M.O)',
+                                'refere_interne': 'Référé(e) en interne',
+                                'refere_externe': 'Référé(e) externe',
+                                'tb_refere': 'Cas présumé TB référé',
+                                'a_revoir': 'À revoir',
+                                'decede': 'Décédé(e)'
+                            };
+                        %>
+                        <%= issuesMap[clin.issue_consultation] || clin.issue_consultation || 'Sorti(e)' %>
+                    </strong>
                 </div>
+
+                <% if (clin.issue_consultation === 'mo' && (clin.mo_debut || clin.mo_fin)) { %>
+                    <div class="p-2.5 bg-indigo-50 rounded-lg text-xs border border-indigo-200 space-y-1">
+                        <div><span class="text-gray-500">Début M.O :</span> <strong><%= clin.mo_debut ? new Date(clin.mo_debut).toLocaleString('fr-FR') : '-' %></strong></div>
+                        <div><span class="text-gray-500">Fin M.O :</span> <strong><%= clin.mo_fin ? new Date(clin.mo_fin).toLocaleString('fr-FR') : '-' %></strong></div>
+                    </div>
+                <% } %>
             </div>
 
-            <div class="bg-white shadow rounded-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Praticien</h3>
-                <div class="text-sm">
-                    <p class="font-medium text-gray-900 mb-1"><%= consultation.praticien_nom %></p>
-                    <p class="text-gray-600"><%= consultation.praticien_specialite || '-' %></p>
-                    <% if (consultation.praticien_matricule) { %>
-                        <p class="text-xs text-gray-500 mt-1">Matricule : <strong class="text-gray-700"><%= consultation.praticien_matricule %></strong></p>
+            <!-- Fiche Patient -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-3">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
+                    <i class="fas fa-user text-blue-600"></i> Dossier Patient
+                </h3>
+                <div>
+                    <a href="/patients/<%= consultation.patient_id %>" class="text-base font-black text-blue-600 hover:text-blue-800 hover:underline block">
+                        <%= consultation.patient_nom %> <%= consultation.patient_prenom %>
+                    </a>
+                    <span class="text-xs font-mono text-gray-500">Dossier N° <%= consultation.numero_dossier %></span>
+                </div>
+                <div class="text-xs text-gray-600 space-y-1 pt-1">
+                    <div><span class="text-gray-500">Couverture :</span> <strong class="text-gray-800"><%= consultation.type_assurance %></strong></div>
+                    <div><span class="text-gray-500">Entrée :</span> <%= new Date(consultation.date_entree).toLocaleString('fr-FR') %></div>
+                    <% if (consultation.date_sortie) { %>
+                        <div><span class="text-gray-500">Sortie :</span> <%= new Date(consultation.date_sortie).toLocaleString('fr-FR') %></div>
                     <% } %>
                 </div>
             </div>
-            
+
+            <!-- Praticien Consultant -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-2">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
+                    <i class="fas fa-user-md text-emerald-600"></i> Praticien Consultant
+                </h3>
+                <p class="text-sm font-bold text-gray-900"><%= consultation.praticien_nom %></p>
+                <p class="text-xs text-gray-500"><%= consultation.praticien_specialite || 'Médecin Généraliste' %></p>
+                <% if (consultation.praticien_matricule) { %>
+                    <span class="inline-block mt-1 font-mono text-[11px] font-bold px-2 py-0.5 bg-gray-100 text-gray-700 rounded border border-gray-200">
+                        Matricule : <%= consultation.praticien_matricule %>
+                    </span>
+                <% } %>
+            </div>
+
+            <!-- Facturation liée -->
             <% if (typeof factures !== 'undefined' && factures.length > 0) { %>
-            <div class="bg-white shadow rounded-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Factures liées</h3>
-                <ul class="space-y-2">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 space-y-3">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider border-b pb-2 flex items-center gap-1.5">
+                    <i class="fas fa-receipt text-blue-600"></i> Factures associées
+                </h3>
+                <ul class="space-y-2 text-xs">
                     <% factures.forEach(facture => { %>
-                        <li>
-                            <a href="/factures/<%= facture.id %>" class="text-blue-600 hover:underline flex justify-between">
-                                <span>N°<%= facture.numero_facture %></span>
-                                <span><%= (facture.total_net || 0).toLocaleString('fr-FR') %> FCFA</span>
+                        <li class="flex items-center justify-between p-2 bg-slate-50 rounded-lg hover:bg-slate-100 transition">
+                            <a href="/factures/<%= facture.id %>" class="font-mono font-bold text-blue-600 hover:underline">
+                                N° <%= facture.numero_facture %>
                             </a>
+                            <span class="font-extrabold text-gray-800"><%= (facture.total_net || 0).toLocaleString('fr-FR') %> FCFA</span>
                         </li>
                     <% }); %>
                 </ul>
             </div>
             <% } %>
+
         </div>
+
     </div>
 </div>
