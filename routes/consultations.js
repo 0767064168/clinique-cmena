@@ -112,12 +112,53 @@ router.post('/', async (req, res) => {
             nombre_jours = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
         }
 
-        const packedObs = packClinicalData(observations, req.body);
+        let finalPatientId = patient_id;
+
+        // Si mode saisie manuelle ou patient non enregistré au préalable
+        if ((!finalPatientId || req.body.mode_patient === 'nouveau') && req.body.nouveau_patient_nom) {
+            const nom = req.body.nouveau_patient_nom.trim().toUpperCase();
+            const prenom = (req.body.nouveau_patient_prenom || '').trim();
+
+            // Calculer date de naissance approximative si seul l'âge a été saisi
+            let dateNaissance = req.body.nouveau_patient_date_naissance || null;
+            if (!dateNaissance && req.body.nouveau_patient_age) {
+                const age = parseInt(req.body.nouveau_patient_age, 10);
+                if (!isNaN(age) && age >= 0) {
+                    const annee = new Date().getFullYear() - age;
+                    dateNaissance = `${annee}-01-01`;
+                }
+            }
+
+            const patientData = {
+                nom,
+                prenom,
+                sexe: req.body.nouveau_patient_sexe || 'M',
+                date_naissance: dateNaissance,
+                telephone: req.body.nouveau_patient_telephone || null,
+                adresse: req.body.nouveau_patient_adresse || null,
+                allergies: req.body.nouveau_patient_allergies || null
+            };
+
+            const { data: newPatient, error: errNewPatient } = await supabase
+                .from('patients')
+                .insert([patientData])
+                .select()
+                .single();
+
+            if (errNewPatient) throw errNewPatient;
+            finalPatientId = newPatient.id;
+        }
+
+        if (!finalPatientId) {
+            throw new Error('Veuillez sélectionner un patient existant ou renseigner le nom du nouveau patient');
+        }
+
+        const packedObs = packClinicalData(observations || '', req.body);
 
         const { data: consultation, error } = await supabase
             .from('consultations')
             .insert([{ 
-                patient_id, 
+                patient_id: finalPatientId, 
                 praticien_id: praticien_id || null, 
                 date_entree: date_entree ? new Date(date_entree) : new Date(), 
                 date_sortie: date_sortie ? new Date(date_sortie) : null, 
@@ -271,7 +312,7 @@ router.put('/:id', async (req, res) => {
             nombre_jours = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
         }
 
-        const packedObs = packClinicalData(observations, req.body);
+        const packedObs = packClinicalData(observations || '', req.body);
 
         const { error } = await supabase
             .from('consultations')
