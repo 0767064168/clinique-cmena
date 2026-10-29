@@ -316,7 +316,8 @@ router.post('/', async (req, res) => {
                 pourcentage: pct,
                 montant,
                 part_assure: montant,
-                part_assureur: 0
+                part_assureur: 0,
+                type_ligne: 'prestation'
             });
         });
 
@@ -338,7 +339,8 @@ router.post('/', async (req, res) => {
                 pourcentage: 100,
                 montant,
                 part_assure: montant,
-                part_assureur: 0
+                part_assureur: 0,
+                type_ligne: 'ordonnance'
             });
         });
 
@@ -540,7 +542,7 @@ router.put('/:id', async (req, res) => {
 // POST /factures/:id/lignes — ajout d'une ligne
 router.post('/:id/lignes', async (req, res) => {
     try {
-        const { libelle, acte_id, nom_praticien, prix_unitaire, quantite, pourcentage } = req.body;
+        const { libelle, acte_id, nom_praticien, prix_unitaire, quantite, pourcentage, type_ligne } = req.body;
         const pu = parseFloat(prix_unitaire || 0);
         const qte = parseInt(quantite || 1);
         const pct = parseFloat(pourcentage || 100);
@@ -557,7 +559,8 @@ router.post('/:id/lignes', async (req, res) => {
                 quantite: qte,
                 pourcentage: pct,
                 montant,
-                part_assure: montant
+                part_assure: montant,
+                type_ligne: type_ligne || 'prestation'
             }]);
 
         if (error) throw error;

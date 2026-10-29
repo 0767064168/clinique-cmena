@@ -161,6 +161,7 @@ CREATE TABLE facture_lignes (
     montant DECIMAL(12,2) NOT NULL,
     part_assureur DECIMAL(12,2) DEFAULT 0,
     part_assure DECIMAL(12,2) NOT NULL,
+    type_ligne VARCHAR(50) DEFAULT 'prestation',
     ordre INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
