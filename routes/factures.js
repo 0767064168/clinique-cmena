@@ -92,7 +92,7 @@ router.get('/create', async (req, res) => {
         // Patients actifs
         const { data: patients } = await supabase
             .from('patients')
-            .select('id, nom, prenom')
+            .select('id, nom, prenom, numero_dossier')
             .order('nom');
 
         // Actes disponibles
@@ -102,12 +102,20 @@ router.get('/create', async (req, res) => {
             .eq('actif', true)
             .order('libelle');
 
+        // Produits de pharmacie disponibles (pour autocomplétion / ordonnances)
+        const { data: produits } = await supabase
+            .from('produits_pharmacie')
+            .select('id, code, designation, prix_vente, stock_actuel, unite')
+            .eq('actif', true)
+            .order('designation');
+
         res.render('factures/create', {
             title: 'Nouvelle Facture',
             selectedConsultation,
             consultations: consultations || [],
             patients: patients || [],
-            actes: actes || []
+            actes: actes || [],
+            produits: produits || []
         });
     } catch (error) {
         console.error(error);
@@ -248,7 +256,9 @@ router.post('/', async (req, res) => {
         const {
             patient_id, consultation_id, remise,
             libelle, acte_id, prix_unitaire, quantite, pourcentage,
-            nom_praticien, action
+            nom_praticien,
+            ord_denomination, ord_quantite, ord_cout_unitaire,
+            action
         } = req.body;
 
         const statut = action === 'valider' ? 'validee' : 'brouillon';
@@ -271,7 +281,7 @@ router.post('/', async (req, res) => {
 
         if (errFacture) throw errFacture;
 
-        // Normaliser les entrées pour supporter 1 ou plusieurs lignes
+        // 1. Normaliser les prestations
         const libelles = Array.isArray(libelle) ? libelle : (libelle ? [libelle] : []);
         const pus = Array.isArray(prix_unitaire) ? prix_unitaire : (prix_unitaire !== undefined ? [prix_unitaire] : []);
         const qtes = Array.isArray(quantite) ? quantite : (quantite !== undefined ? [quantite] : []);
@@ -279,42 +289,74 @@ router.post('/', async (req, res) => {
         const actes = Array.isArray(acte_id) ? acte_id : (acte_id ? [acte_id] : []);
         const praticiens = Array.isArray(nom_praticien) ? nom_praticien : (nom_praticien ? [nom_praticien] : []);
 
-        if (libelles.length > 0) {
-            let total = 0;
-            const lignes = libelles.map((l, index) => {
-                const pu = parseFloat(pus[index] !== undefined ? pus[index] : 0) || 0;
-                const qte = parseInt(qtes[index] !== undefined ? qtes[index] : 1, 10) || 1;
-                const pct = parseFloat(pcts[index] !== undefined ? pcts[index] : 100) || 100;
-                const montant = pu * qte * (pct / 100);
-                total += montant;
+        // 2. Normaliser les lignes d'ordonnance / médicaments
+        const ordDenominations = Array.isArray(ord_denomination) ? ord_denomination : (ord_denomination ? [ord_denomination] : []);
+        const ordQtes = Array.isArray(ord_quantite) ? ord_quantite : (ord_quantite !== undefined ? [ord_quantite] : []);
+        const ordCouts = Array.isArray(ord_cout_unitaire) ? ord_cout_unitaire : (ord_cout_unitaire !== undefined ? [ord_cout_unitaire] : []);
 
-                return {
-                    facture_id: facture.id,
-                    acte_id: actes[index] || null,
-                    libelle: l,
-                    nom_praticien: praticiens[index] || null,
-                    prix_unitaire: pu,
-                    quantite: qte,
-                    pourcentage: pct,
-                    montant,
-                    part_assure: montant  // par défaut 100% à la charge du patient
-                };
+        let total = 0;
+        const allLignes = [];
+
+        // Traiter les prestations
+        libelles.forEach((l, index) => {
+            if (!l || !l.trim()) return;
+            const pu = parseFloat(pus[index] !== undefined ? pus[index] : 0) || 0;
+            const qte = parseInt(qtes[index] !== undefined ? qtes[index] : 1, 10) || 1;
+            const pct = parseFloat(pcts[index] !== undefined ? pcts[index] : 100) || 100;
+            const montant = Math.round(pu * qte * (pct / 100));
+            total += montant;
+
+            allLignes.push({
+                facture_id: facture.id,
+                acte_id: actes[index] || null,
+                libelle: l.trim(),
+                nom_praticien: praticiens[index] || null,
+                prix_unitaire: pu,
+                quantite: qte,
+                pourcentage: pct,
+                montant,
+                part_assure: montant,
+                part_assureur: 0
             });
+        });
 
-            const { error: errLignes } = await supabase.from('facture_lignes').insert(lignes);
+        // Traiter les lignes d'ordonnance (médicaments)
+        ordDenominations.forEach((d, index) => {
+            if (!d || !d.trim()) return;
+            const pu = parseFloat(ordCouts[index] !== undefined ? ordCouts[index] : 0) || 0;
+            const qte = parseInt(ordQtes[index] !== undefined ? ordQtes[index] : 1, 10) || 1;
+            const montant = Math.round(pu * qte);
+            total += montant;
+
+            allLignes.push({
+                facture_id: facture.id,
+                acte_id: null,
+                libelle: d.trim(),
+                nom_praticien: null,
+                prix_unitaire: pu,
+                quantite: qte,
+                pourcentage: 100,
+                montant,
+                part_assure: montant,
+                part_assureur: 0
+            });
+        });
+
+        if (allLignes.length > 0) {
+            const { error: errLignes } = await supabase.from('facture_lignes').insert(allLignes);
             if (errLignes) throw errLignes;
-
-            // Recalculer les totaux (le trigger DB le fait aussi, mais on met à jour au cas où)
-            const total_net = total - remiseVal;
-            const taux_euro = 655.957;
-            const total_euro = total_net / taux_euro;
-            const reste_a_payer = total_net;
-
-            await supabase
-                .from('factures')
-                .update({ total, total_net, total_euro, reste_a_payer })
-                .eq('id', facture.id);
         }
+
+        // Recalculer les totaux
+        const total_net = Math.max(0, total - remiseVal);
+        const taux_euro = 655.957;
+        const total_euro = total_net / taux_euro;
+        const reste_a_payer = total_net;
+
+        await supabase
+            .from('factures')
+            .update({ total, total_net, total_euro, reste_a_payer })
+            .eq('id', facture.id);
 
         req.flash('success', 'Facture créée avec succès');
         res.redirect(`/factures/${facture.id}`);
