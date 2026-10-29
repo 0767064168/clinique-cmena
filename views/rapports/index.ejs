@@ -427,8 +427,8 @@
     </div>
 </div>
 
-<!-- Chart.js 4.4.x -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- Chart.js 4.4.x (Local, zéro dépendance Internet) -->
+<script src="/vendor/chartjs/chart.umd.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const evolutionData = <%- JSON.stringify(typeof evolution !== 'undefined' ? evolution : {}) %>;
