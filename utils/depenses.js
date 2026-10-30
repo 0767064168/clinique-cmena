@@ -68,8 +68,14 @@ function deleteDepense(id) {
     return true;
 }
 
+function getDepenseById(id) {
+    const all = readAllDepenses();
+    return all.find(d => d.id === id) || null;
+}
+
 module.exports = {
     getDepensesByDate,
+    getDepenseById,
     addDepense,
     deleteDepense,
     readAllDepenses

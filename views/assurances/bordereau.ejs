@@ -12,10 +12,13 @@
             <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Bordereau de transmission et récapitulatif tiers-payant</p>
         </div>
         <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-            <a href="/assurances/<%= assurance.id %>/bordereau/print?date_from=<%= dateFrom %>&date_to=<%= dateTo %>" target="_blank" class="flex-1 sm:flex-none text-center bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition">
+            <a href="/assurances/<%= assurance.id %>/bordereau/export?date_from=<%= dateFrom %>&date_to=<%= dateTo %>" class="flex-1 sm:flex-none text-center bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-3.5 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition">
+                <i class="fas fa-file-excel"></i> Exporter Excel / CSV
+            </a>
+            <a href="/assurances/<%= assurance.id %>/bordereau/print?date_from=<%= dateFrom %>&date_to=<%= dateTo %>" target="_blank" class="flex-1 sm:flex-none text-center bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-3.5 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition">
                 <i class="fas fa-print"></i> Imprimer Bordereau A4
             </a>
-            <a href="/assurances/<%= assurance.id %>/edit" class="flex-1 sm:flex-none text-center bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition">
+            <a href="/assurances/<%= assurance.id %>/edit" class="flex-1 sm:flex-none text-center bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold py-2 px-3.5 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition">
                 <i class="fas fa-cog"></i> Configurer
             </a>
         </div>

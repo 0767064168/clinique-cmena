@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bon de Sortie de Caisse — <%= depense.motif %></title>
+    <link href="/css/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <style>
+        @page { size: A5 landscape; margin: 8mm; }
+        @media print {
+            body { padding: 0 !important; margin: 0 !important; background: white !important; font-size: 11px; }
+            .no-print { display: none !important; }
+        }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f8fafc; color: #1e293b; }
+    </style>
+</head>
+<body class="bg-white">
+    <!-- Contrôles d'impression -->
+    <div class="no-print fixed top-4 right-4 z-50 flex gap-2">
+        <button onclick="window.print()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg text-xs shadow-lg inline-flex items-center gap-1.5 cursor-pointer">
+            <i class="fas fa-print"></i> Imprimer le Bon
+        </button>
+        <button onclick="window.close()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-xs cursor-pointer">
+            Fermer
+        </button>
+    </div>
+
+    <div class="max-w-3xl mx-auto p-4 border-2 border-gray-300 rounded-xl my-4 bg-white shadow-sm">
+        <!-- En-tête officiel GSPM -->
+        <div class="flex justify-between items-start mb-3">
+            <img src="/images/logo_gspm.jpg" alt="Logo GSPM" class="h-12 w-12 object-contain" onerror="this.style.display='none'">
+            <div class="text-center">
+                <p class="text-[10px] font-bold uppercase tracking-wider">République de Côte d'Ivoire</p>
+                <p class="text-[10px] font-bold">Ministère de la Défense</p>
+                <p class="text-[10px] font-bold text-red-700">Groupement de Sapeurs-Pompiers Militaires</p>
+                <p class="text-[9px] text-gray-600 font-semibold">Centre Médical — 3e Compagnie GSPM Bouaké</p>
+            </div>
+            <img src="/images/logo_defense.jpg" alt="Logo Défense" class="h-12 w-12 object-contain" onerror="this.style.display='none'">
+        </div>
+
+        <!-- Ligne tricolore -->
+        <div class="mb-3" style="height: 3px; background: linear-gradient(to right, #FF6600, #FFFFFF, #009900);"></div>
+
+        <!-- Titre et N° de Pièce -->
+        <div class="flex justify-between items-center bg-gray-50 border border-gray-200 px-4 py-2 rounded-lg mb-4">
+            <div>
+                <h1 class="text-sm font-black uppercase tracking-wider text-gray-900">
+                    <i class="fas fa-receipt text-red-600 mr-1.5"></i> Bon de Décaissement / Sortie de Caisse
+                </h1>
+                <p class="text-[10px] text-gray-500">Pièce justificative de caisse en espèces</p>
+            </div>
+            <div class="text-right">
+                <span class="text-[10px] font-bold text-gray-500 uppercase block">N° Pièce</span>
+                <span class="text-xs font-mono font-black text-red-700">BS-<%= depense.id.slice(0, 8).toUpperCase() %></span>
+            </div>
+        </div>
+
+        <!-- Informations détaillées -->
+        <div class="grid grid-cols-2 gap-4 text-xs mb-4">
+            <div class="space-y-2">
+                <div class="flex">
+                    <span class="w-28 text-gray-500 font-semibold">Date & Heure :</span>
+                    <span class="font-bold text-gray-900"><%= new Date(depense.date + 'T12:00:00').toLocaleDateString('fr-FR') %> à <%= depense.heure || '-' %></span>
+                </div>
+                <div class="flex">
+                    <span class="w-28 text-gray-500 font-semibold">Bénéficiaire :</span>
+                    <span class="font-bold text-gray-900 uppercase"><%= depense.beneficiaire || '-' %></span>
+                </div>
+                <div class="flex">
+                    <span class="w-28 text-gray-500 font-semibold">Catégorie :</span>
+                    <span class="capitalize px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-800"><%= depense.categorie || 'Autre' %></span>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <div class="flex">
+                    <span class="w-28 text-gray-500 font-semibold">Établi par :</span>
+                    <span class="font-bold text-gray-800"><%= depense.utilisateur_nom || (user ? (user.nom + ' ' + user.prenom) : 'Caissier') %></span>
+                </div>
+                <div class="flex">
+                    <span class="w-28 text-gray-500 font-semibold">Mode de sortie :</span>
+                    <span class="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded text-[10px]"><i class="fas fa-money-bill-wave mr-1"></i> Espèces</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Motif et Montant -->
+        <div class="border border-gray-200 rounded-lg p-3 bg-gray-50/50 mb-4">
+            <div class="flex justify-between items-start gap-4">
+                <div class="flex-grow">
+                    <span class="text-[10px] uppercase font-bold text-gray-500 block">Motif de la dépense / Objet</span>
+                    <p class="text-xs font-semibold text-gray-900 mt-1"><%= depense.motif %></p>
+                </div>
+                <div class="text-right pl-4 border-l border-gray-200">
+                    <span class="text-[10px] uppercase font-bold text-gray-500 block">Montant Payé</span>
+                    <p class="text-xl font-black text-red-700"><%= (depense.montant || 0).toLocaleString('fr-FR') %> <span class="text-xs font-normal">FCFA</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signatures à 3 volets -->
+        <div class="grid grid-cols-3 gap-4 text-xs mt-6 pt-2">
+            <div class="text-center">
+                <p class="font-bold uppercase text-[9px] text-gray-700 mb-8">Le Bénéficiaire (Émargement)</p>
+                <div class="border-b border-gray-400 mb-1"></div>
+                <p class="text-gray-400 text-[8px]">Signature pour réception des fonds</p>
+            </div>
+            <div class="text-center">
+                <p class="font-bold uppercase text-[9px] text-gray-700 mb-8">Le Caissier (Agent Payeur)</p>
+                <div class="border-b border-gray-400 mb-1"></div>
+                <p class="text-gray-600 text-[9px] font-semibold"><%= depense.utilisateur_nom || 'Caissier' %></p>
+                <p class="text-gray-400 text-[8px]">Visa & Signature</p>
+            </div>
+            <div class="text-center">
+                <p class="font-bold uppercase text-[9px] text-gray-700 mb-8">Le Médecin-Chef / Commandant</p>
+                <div class="border-b border-gray-400 mb-1"></div>
+                <p class="text-gray-400 text-[8px]">Vu et approuvé (Cachet)</p>
+            </div>
+        </div>
+
+        <!-- Bas de page officiel -->
+        <p class="text-center text-[8px] text-gray-400 mt-6 pt-2 border-t">
+            CSA 3e COMPAGNIE GSPM BOUAKÉ — DOCUMENT COMPTABLE INTERNE — SAUVER OU PÉRIR
+        </p>
+    </div>
+</body>
+</html>

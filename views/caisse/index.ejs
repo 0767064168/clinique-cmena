@@ -16,10 +16,13 @@
             <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Bilan des encaissements, sorties de caisse et PV journalier</p>
         </div>
         <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-            <button type="button" @click="openDepenseModal = true" class="flex-1 sm:flex-none text-center bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition cursor-pointer">
+            <button type="button" @click="openDepenseModal = true" class="flex-1 sm:flex-none text-center bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3.5 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition cursor-pointer">
                 <i class="fas fa-minus-circle"></i> Sortie de Caisse
             </button>
-            <a href="/caisse/print?date=<%= dateSelected %>" target="_blank" class="flex-1 sm:flex-none text-center bg-gray-900 hover:bg-black text-white font-bold py-2 px-4 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition">
+            <a href="/caisse/export?date=<%= dateSelected %>" class="flex-1 sm:flex-none text-center bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-3.5 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition">
+                <i class="fas fa-file-excel"></i> Exporter Excel / CSV
+            </a>
+            <a href="/caisse/print?date=<%= dateSelected %>" target="_blank" class="flex-1 sm:flex-none text-center bg-gray-900 hover:bg-black text-white font-bold py-2 px-3.5 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition">
                 <i class="fas fa-print"></i> Imprimer PV de Caisse
             </a>
         </div>
@@ -139,7 +142,10 @@
                         </td>
                         <td class="px-4 py-3 text-gray-500 text-xs"><%= d.utilisateur_nom %></td>
                         <td class="px-4 py-3 text-right font-black text-red-700">- <%= d.montant.toLocaleString('fr-FR') %> FCFA</td>
-                        <td class="px-4 py-3 text-center">
+                        <td class="px-4 py-3 text-center whitespace-nowrap">
+                            <a href="/caisse/depenses/<%= d.id %>/print" target="_blank" class="text-blue-600 hover:text-blue-800 mr-2 transition" title="Imprimer le Bon de Décaissement">
+                                <i class="fas fa-print text-xs"></i>
+                            </a>
                             <form action="/caisse/depenses/<%= d.id %>/delete" method="POST" onsubmit="return confirm('Confirmer la suppression de cette sortie de caisse ?');" class="inline">
                                 <input type="hidden" name="date" value="<%= dateSelected %>">
                                 <button type="submit" class="text-gray-400 hover:text-red-600 transition" title="Supprimer">
