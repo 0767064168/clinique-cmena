@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z de Caisse — <%= new Date(dateSelected + 'T12:00:00').toLocaleDateString('fr-FR') %></title>
+    <link href="/css/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <style>
+        @page {
+            size: 80mm auto;
+            margin: 2mm 3mm;
+        }
+        @media print {
+            body {
+                width: 74mm !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                background: white !important;
+                font-size: 11px !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .ticket-container {
+                border: none !important;
+                box-shadow: none !important;
+                width: 100% !important;
+                padding: 0 !important;
+            }
+        }
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body class="py-4">
+    <!-- Barre d'actions non imprimée -->
+    <div class="no-print max-w-[76mm] mx-auto mb-3 flex items-center justify-between gap-1 text-xs">
+        <button onclick="window.print()" class="bg-gray-900 hover:bg-black text-white font-bold py-1.5 px-3 rounded text-[11px] inline-flex items-center gap-1 shadow cursor-pointer">
+            <i class="fas fa-print"></i> Imprimer
+        </button>
+        <a href="/caisse/print?date=<%= dateSelected %>" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1.5 px-2.5 rounded text-[11px] inline-flex items-center gap-1">
+            <i class="fas fa-file-alt"></i> Format A4
+        </a>
+        <button onclick="window.close()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 py-1.5 px-2 rounded text-[11px] cursor-pointer">
+            Fermer
+        </button>
+    </div>
+
+    <!-- Ticket thermique de caisse 80mm -->
+    <div class="ticket-container max-w-[74mm] mx-auto bg-white p-3 border border-dashed border-gray-400 text-[11px] leading-tight text-black">
+        <!-- En-tête officiel -->
+        <div class="text-center pb-2">
+            <div class="flex justify-center items-center gap-2 mb-1">
+                <img src="/images/logo_gspm.jpg" alt="Logo" class="h-10 w-10 object-contain" onerror="this.style.display='none'">
+                <div>
+                    <p class="font-black text-[10px] uppercase leading-none">RÉPUBLIQUE DE CÔTE D'IVOIRE</p>
+                    <p class="font-bold text-[9px] uppercase leading-none mt-0.5">MINISTÈRE DE LA DÉFENSE</p>
+                </div>
+            </div>
+            <p class="font-black text-xs uppercase tracking-wide mt-1">GSPM — CSA BOUAKÉ</p>
+            <p class="text-[9px] font-semibold text-gray-700">3e Compagnie Militaire</p>
+        </div>
+
+        <div class="border-t border-b border-dashed border-black py-1 my-1.5 text-center">
+            <p class="font-black text-xs uppercase tracking-wider">CLÔTURE JOURNALIÈRE (Z)</p>
+            <p class="font-bold text-[10px]">JOURNÉE DU <%= new Date(dateSelected + 'T12:00:00').toLocaleDateString('fr-FR') %></p>
+        </div>
+
+        <!-- Informations session -->
+        <div class="space-y-0.5 text-[10px] pb-1.5 border-b border-dashed border-black">
+            <div class="flex justify-between">
+                <span>Tirage le:</span>
+                <span class="font-mono"><%= new Date().toLocaleDateString('fr-FR') %> <%= new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) %></span>
+            </div>
+            <div class="flex justify-between">
+                <span>Caissier:</span>
+                <span class="font-semibold"><%= user ? (user.nom ? `${user.nom} ${user.prenom || ''}`.trim() : user.email) : 'Caisse CSA' %></span>
+            </div>
+            <div class="flex justify-between">
+                <span>Total transactions:</span>
+                <span class="font-bold font-mono"><%= nbTotal %> encaissement(s)</span>
+            </div>
+        </div>
+
+        <!-- Synthèse des Recettes -->
+        <div class="py-2 space-y-1 text-[11px] border-b border-dashed border-black">
+            <p class="font-bold text-[10px] uppercase border-b border-dotted pb-0.5 mb-1">1. RECETTES ENCAISSÉES</p>
+            <div class="flex justify-between">
+                <span>Espèces (<%= nbEspeces %> txn):</span>
+                <span class="font-mono font-bold"><%= totalEspeces.toLocaleString('fr-FR') %></span>
+            </div>
+            <div class="flex justify-between">
+                <span>Mobile Money (<%= nbMobileMoney %> txn):</span>
+                <span class="font-mono font-bold"><%= totalMobileMoney.toLocaleString('fr-FR') %></span>
+            </div>
+            <% if (totalAutres > 0) { %>
+            <div class="flex justify-between">
+                <span>Autres (<%= nbAutres %> txn):</span>
+                <span class="font-mono font-bold"><%= totalAutres.toLocaleString('fr-FR') %></span>
+            </div>
+            <% } %>
+            <div class="flex justify-between items-center pt-1 border-t border-dotted border-gray-400 font-black">
+                <span>TOTAL ENCAISSÉ:</span>
+                <span class="font-mono text-xs"><%= totalJour.toLocaleString('fr-FR') %> FCFA</span>
+            </div>
+        </div>
+
+        <!-- Décaissements / Dépenses -->
+        <div class="py-2 space-y-1 text-[11px] border-b border-dashed border-black">
+            <p class="font-bold text-[10px] uppercase border-b border-dotted pb-0.5 mb-1">2. SORTIES DE CAISSE</p>
+            <div class="flex justify-between">
+                <span>Dépenses (<%= depenses.length %> op):</span>
+                <span class="font-mono font-bold text-red-900">- <%= totalDepenses.toLocaleString('fr-FR') %> FCFA</span>
+            </div>
+            <% if (depenses.length > 0) { %>
+                <div class="text-[9px] text-gray-700 pl-1 border-l-2 border-gray-400 my-1 space-y-0.5">
+                    <% depenses.forEach(d => { %>
+                        <div class="flex justify-between">
+                            <span class="truncate max-w-[44mm]">• <%= d.motif %></span>
+                            <span class="font-mono">-<%= Math.round(d.montant).toLocaleString('fr-FR') %></span>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Solde Réel en Caisse -->
+        <div class="py-2.5 my-1.5 border-y-2 border-black space-y-1 text-center bg-gray-50">
+            <p class="font-black text-[10px] uppercase tracking-wider">SOLDE NET EN ESPÈCES EN TIROIR</p>
+            <p class="font-mono font-black text-base tracking-wide">
+                <%= soldeNetEspeces.toLocaleString('fr-FR') %> FCFA
+            </p>
+            <p class="text-[9px] text-gray-600 italic">Espèces encaissées − Sorties</p>
+        </div>
+
+        <!-- Émargements -->
+        <div class="grid grid-cols-2 gap-2 text-center text-[9px] pt-3 pb-2 border-b border-dashed border-black">
+            <div>
+                <p class="font-bold uppercase">Le Caissier</p>
+                <div class="h-8"></div>
+                <p class="text-gray-500 italic">(Signature)</p>
+            </div>
+            <div>
+                <p class="font-bold uppercase">Le Contrôle</p>
+                <div class="h-8"></div>
+                <p class="text-gray-500 italic">(Signature & Cachet)</p>
+            </div>
+        </div>
+
+        <!-- Bas de ticket -->
+        <div class="pt-2 text-center text-[9px] space-y-0.5">
+            <p class="font-black text-[10px] tracking-widest uppercase">*** SAUVER OU PÉRIR ***</p>
+            <p class="text-[8px] text-gray-500 font-mono">CSA 3e CIE GSPM BOUAKÉ</p>
+        </div>
+    </div>
+</body>
+</html>

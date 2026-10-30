@@ -206,6 +206,67 @@ router.get('/print', async (req, res) => {
     }
 });
 
+// GET /caisse/ticket — Ticket thermique 80mm de clôture journalière (Z de Caisse)
+router.get('/ticket', async (req, res) => {
+    try {
+        const dateStr = req.query.date || new Date().toISOString().split('T')[0];
+        const dateDebut = `${dateStr}T00:00:00`;
+        const dateFin = `${dateStr}T23:59:59`;
+
+        const { data: paiements } = await supabase
+            .from('paiements')
+            .select('*, factures(numero_facture, patients(nom, prenom))')
+            .gte('date_paiement', dateDebut)
+            .lte('date_paiement', dateFin)
+            .order('date_paiement', { ascending: true });
+
+        const listePaiements = (paiements || []).map(p => ({
+            ...p,
+            facture_numero: p.factures ? p.factures.numero_facture : '-',
+            patient_nom: p.factures && p.factures.patients ? `${p.factures.patients.nom} ${p.factures.patients.prenom}` : '-'
+        }));
+
+        let totalEspeces = 0, totalMobileMoney = 0, totalAutres = 0;
+        let nbEspeces = 0, nbMobileMoney = 0, nbAutres = 0;
+
+        listePaiements.forEach(p => {
+            const montant = parseFloat(p.montant) || 0;
+            if (p.mode_paiement === 'especes') { totalEspeces += montant; nbEspeces++; }
+            else if (p.mode_paiement === 'mobile_money') { totalMobileMoney += montant; nbMobileMoney++; }
+            else { totalAutres += montant; nbAutres++; }
+        });
+
+        const totalJour = totalEspeces + totalMobileMoney + totalAutres;
+
+        const depenses = getDepensesByDate(dateStr);
+        const totalDepenses = depenses.reduce((acc, d) => acc + (parseFloat(d.montant) || 0), 0);
+        const soldeNetEspeces = totalEspeces - totalDepenses;
+
+        res.render('caisse/ticket', {
+            layout: false,
+            title: `Z de Caisse — ${dateStr}`,
+            dateSelected: dateStr,
+            paiements: listePaiements,
+            depenses,
+            totalDepenses,
+            soldeNetEspeces,
+            totalEspeces,
+            totalMobileMoney,
+            totalAutres,
+            totalJour,
+            nbEspeces,
+            nbMobileMoney,
+            nbAutres,
+            nbTotal: listePaiements.length,
+            user: (req.session && req.session.user) ? req.session.user : null
+        });
+    } catch (error) {
+        console.error('Erreur impression ticket caisse:', error);
+        req.flash('error', 'Erreur lors de la génération du ticket de caisse');
+        res.redirect('/caisse');
+    }
+});
+
 // GET /caisse/export — Export CSV / Excel du journal de caisse
 router.get('/export', async (req, res) => {
     try {

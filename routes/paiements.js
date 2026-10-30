@@ -112,6 +112,40 @@ router.get('/:id/print', async (req, res) => {
     }
 });
 
+// GET /paiements/:id/ticket — Reçu de caisse format Ticket Thermique (80mm)
+router.get('/:id/ticket', async (req, res) => {
+    try {
+        const { data: paiement, error: errPaiement } = await supabase
+            .from('paiements')
+            .select('*, factures(*, patients(*), facture_lignes(*))')
+            .eq('id', req.params.id)
+            .single();
+
+        if (errPaiement || !paiement) {
+            req.flash('error', 'Reçu de paiement introuvable');
+            return res.redirect('/paiements');
+        }
+
+        const facture = paiement.factures || null;
+        const patient = facture ? facture.patients : null;
+        const lignes = (facture && facture.facture_lignes) ? facture.facture_lignes : [];
+
+        res.render('paiements/ticket', {
+            layout: false,
+            title: `Ticket RC-${paiement.id.slice(0, 8).toUpperCase()}`,
+            paiement,
+            facture,
+            patient,
+            lignes,
+            user: (req.session && req.session.user) ? req.session.user : null
+        });
+    } catch (error) {
+        console.error('Erreur impression ticket caisse:', error);
+        req.flash('error', 'Erreur lors de la génération du ticket thermique');
+        res.redirect('/paiements');
+    }
+});
+
 router.post('/', async (req, res) => {
     try {
         const { facture_id, montant, mode_paiement, reference } = req.body;

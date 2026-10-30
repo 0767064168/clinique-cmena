@@ -237,8 +237,12 @@
                         <td class="px-6 py-4 text-sm text-gray-600 capitalize"><%= p.mode_paiement %></td>
                         <td class="px-6 py-4 text-sm text-gray-500 font-mono"><%= p.reference || '—' %></td>
                         <td class="px-6 py-4 text-sm font-bold text-emerald-700"><%= (p.montant || 0).toLocaleString('fr-FR') %> FCFA</td>
-                        <td class="px-6 py-4 text-sm text-center">
-                            <a href="/paiements/<%= p.id %>/print" target="_blank" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded text-xs font-semibold shadow-sm transition" title="Imprimer le reçu client">
+                        <td class="px-6 py-4 text-sm text-center whitespace-nowrap">
+                            <a href="/paiements/<%= p.id %>/ticket" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-900 hover:bg-black text-white rounded text-xs font-semibold shadow-sm transition mr-1" title="Ticket Thermique 80mm">
+                                <i class="fas fa-receipt text-xs"></i>
+                                <span>Ticket</span>
+                            </a>
+                            <a href="/paiements/<%= p.id %>/print" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded text-xs font-semibold shadow-sm transition" title="Imprimer le reçu client (Format A5)">
                                 <i class="fas fa-print text-gray-600"></i>
                                 <span>Reçu</span>
                             </a>

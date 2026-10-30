@@ -34,10 +34,13 @@
 <body class="py-6 px-2 sm:px-4">
     <!-- Barre d'actions non imprimable -->
     <div class="max-w-md mx-auto mb-4 flex justify-between items-center no-print bg-white p-3 rounded-lg shadow-sm border border-gray-200">
-        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-xs inline-flex items-center gap-2 shadow">
-            <i class="fas fa-print"></i> Imprimer le Reçu
+        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded text-xs inline-flex items-center gap-1.5 shadow cursor-pointer">
+            <i class="fas fa-print"></i> Imprimer
         </button>
-        <button onclick="window.close()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3 rounded text-xs">
+        <a href="/paiements/<%= paiement.id %>/ticket" class="bg-gray-800 hover:bg-black text-white font-semibold py-2 px-3 rounded text-xs inline-flex items-center gap-1.5 shadow">
+            <i class="fas fa-receipt"></i> Ticket (80mm)
+        </a>
+        <button onclick="window.close()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-3 rounded text-xs cursor-pointer">
             Fermer
         </button>
     </div>
