@@ -1,21 +1,32 @@
-<!-- Quick actions -->
-<div class="mb-6 grid grid-cols-1 sm:grid-cols-4 gap-3">
-    <a href="/patients/create" class="inline-flex items-center justify-center gap-x-2 rounded-md bg-primary px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-light">
-        <i class="fas fa-plus-circle"></i>
-        Nouveau Patient
+<!-- Quick actions & Accès Rapides -->
+<% const dashRole = (typeof user !== 'undefined' && user) ? user.role : 'admin'; %>
+<div class="mb-6 flex flex-wrap gap-2.5">
+    <% if (['admin', 'medecin', 'receptionniste'].includes(dashRole)) { %>
+    <a href="/patients/create" class="inline-flex items-center gap-x-2 rounded-lg bg-primary px-3.5 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-primary-light transition">
+        <i class="fas fa-user-plus"></i> Nouveau Patient
     </a>
-    <a href="/consultations/create" class="inline-flex items-center justify-center gap-x-2 rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-        <i class="fas fa-stethoscope text-green-600"></i>
-        Nouvelle Consultation
+    <a href="/consultations/create" class="inline-flex items-center gap-x-2 rounded-lg bg-white px-3.5 py-2 text-xs sm:text-sm font-semibold text-gray-800 shadow-sm border border-gray-300 hover:bg-gray-50 transition">
+        <i class="fas fa-stethoscope text-green-600"></i> Nouvelle Consultation
     </a>
-    <a href="/factures/create" class="inline-flex items-center justify-center gap-x-2 rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-        <i class="fas fa-file-invoice text-red-500"></i>
-        Nouvelle Facture
+    <a href="/consultations/attente" class="inline-flex items-center gap-x-2 rounded-lg bg-amber-500 hover:bg-amber-600 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition">
+        <i class="fas fa-hourglass-half"></i> Salle d'Attente
     </a>
-    <a href="/pharmacie/create" class="inline-flex items-center justify-center gap-x-2 rounded-md bg-emerald-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">
-        <i class="fas fa-pills"></i>
-        Nouveau Produit
+    <% } %>
+
+    <% if (['admin', 'comptable'].includes(dashRole)) { %>
+    <a href="/factures/create" class="inline-flex items-center gap-x-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition">
+        <i class="fas fa-file-invoice"></i> Nouvelle Facture
     </a>
+    <a href="/caisse" class="inline-flex items-center gap-x-2 rounded-lg bg-green-600 hover:bg-green-700 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition">
+        <i class="fas fa-cash-register"></i> Caisse du Jour
+    </a>
+    <% } %>
+
+    <% if (['admin', 'pharmacien'].includes(dashRole)) { %>
+    <a href="/pharmacie/create" class="inline-flex items-center gap-x-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 text-xs sm:text-sm font-semibold text-white shadow-sm transition">
+        <i class="fas fa-pills"></i> Nouveau Produit
+    </a>
+    <% } %>
 </div>
 
 <!-- Stats Grid -->

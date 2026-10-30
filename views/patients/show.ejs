@@ -152,6 +152,35 @@
                 </div>
             <% } %>
 
+            <!-- Évolution Graphique des Constantes Vitales -->
+            <% if (typeof vitalsHistory !== 'undefined' && vitalsHistory.length >= 2) { %>
+            <div class="bg-white shadow-sm border border-gray-200 rounded-xl p-5" x-data="{ mode: 'tension' }">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 pb-3 border-b border-gray-100">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-chart-line text-blue-600 text-lg"></i>
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wider">Évolution des Constantes Vitales</h3>
+                            <p class="text-[11px] text-gray-400">Historique sur les <%= vitalsHistory.length %> consultations</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg text-xs font-semibold">
+                        <button type="button" @click="mode = 'tension'; updateVitalsChart('tension')" :class="mode === 'tension' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-800'" class="px-2.5 py-1 rounded-md transition">
+                            <i class="fas fa-heartbeat text-red-500 mr-1"></i> Tension & Pouls
+                        </button>
+                        <button type="button" @click="mode = 'temperature'; updateVitalsChart('temperature')" :class="mode === 'temperature' ? 'bg-white text-orange-700 shadow-sm' : 'text-gray-500 hover:text-gray-800'" class="px-2.5 py-1 rounded-md transition">
+                            <i class="fas fa-thermometer-half text-orange-500 mr-1"></i> Température
+                        </button>
+                        <button type="button" @click="mode = 'poids'; updateVitalsChart('poids')" :class="mode === 'poids' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-800'" class="px-2.5 py-1 rounded-md transition">
+                            <i class="fas fa-weight text-emerald-500 mr-1"></i> Poids
+                        </button>
+                    </div>
+                </div>
+                <div class="relative h-64 sm:h-72 w-full">
+                    <canvas id="vitalsChart"></canvas>
+                </div>
+            </div>
+            <% } %>
+
             <!-- Profil & Antécédents -->
             <div class="bg-white shadow-sm border border-gray-200 rounded-xl p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -453,3 +482,116 @@
         </div>
     </div>
 </div>
+
+<% if (typeof vitalsHistory !== 'undefined' && vitalsHistory.length >= 2) { %>
+<script src="/vendor/chartjs/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const historyData = <%- JSON.stringify(vitalsHistory) %>;
+    const ctx = document.getElementById('vitalsChart');
+    if (!ctx) return;
+
+    const labels = historyData.map(h => h.date);
+
+    const datasets = {
+        tension: [
+            {
+                label: 'Systole (mmHg)',
+                data: historyData.map(h => h.systole),
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                borderWidth: 2.5,
+                tension: 0.3,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                fill: false
+            },
+            {
+                label: 'Diastole (mmHg)',
+                data: historyData.map(h => h.diastole),
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2.5,
+                tension: 0.3,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                fill: false
+            },
+            {
+                label: 'Pouls (bpm)',
+                data: historyData.map(h => h.pouls),
+                borderColor: '#10b981',
+                borderDash: [4, 4],
+                borderWidth: 2,
+                tension: 0.3,
+                pointRadius: 3,
+                fill: false
+            }
+        ],
+        temperature: [
+            {
+                label: 'Température (°C)',
+                data: historyData.map(h => h.temperature),
+                borderColor: '#f97316',
+                backgroundColor: 'rgba(249, 115, 22, 0.15)',
+                borderWidth: 2.5,
+                tension: 0.3,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                fill: true
+            }
+        ],
+        poids: [
+            {
+                label: 'Poids (kg)',
+                data: historyData.map(h => h.poids),
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                borderWidth: 2.5,
+                tension: 0.3,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                fill: true
+            }
+        ]
+    };
+
+    const chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets.tension
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { boxWidth: 12, font: { size: 11, weight: 'bold' } }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: { color: 'rgba(226, 232, 240, 0.8)' }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    window.updateVitalsChart = function(mode) {
+        if (!chartInstance) return;
+        chartInstance.data.datasets = datasets[mode] || datasets.tension;
+        chartInstance.update();
+    };
+});
+</script>
+<% } %>

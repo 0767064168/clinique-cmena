@@ -309,11 +309,36 @@ router.get('/:id', async (req, res) => {
             resteTotal: facturesActives.reduce((acc, f) => acc + (parseFloat(f.reste_a_payer) || 0), 0)
         };
 
+        // Historique chronologique des constantes pour graphiques
+        const vitalsHistory = (consultations || [])
+            .filter(c => c.clinical && (c.clinical.tension || c.clinical.temperature || c.clinical.poids || c.clinical.pouls))
+            .sort((a, b) => new Date(a.date_entree) - new Date(b.date_entree))
+            .map(c => {
+                let systole = null;
+                let diastole = null;
+                if (c.clinical.tension) {
+                    const parts = c.clinical.tension.toString().split(/[\/,\s-]/).map(p => parseFloat(p)).filter(p => !isNaN(p));
+                    if (parts.length >= 2) {
+                        systole = parts[0] > 30 ? parts[0] : parts[0] * 10;
+                        diastole = parts[1] > 30 ? parts[1] : parts[1] * 10;
+                    }
+                }
+                return {
+                    date: new Date(c.date_entree).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }),
+                    temperature: parseFloat(c.clinical.temperature) || null,
+                    poids: parseFloat(c.clinical.poids) || null,
+                    pouls: parseFloat(c.clinical.pouls) || null,
+                    systole,
+                    diastole
+                };
+            });
+
         res.render('patients/show', {
             title: 'Détails du Patient',
             patient,
             bilanPatient,
             consultations: consultations || [],
+            vitalsHistory: vitalsHistory || [],
             factures: factures || []
         });
     } catch (error) {
