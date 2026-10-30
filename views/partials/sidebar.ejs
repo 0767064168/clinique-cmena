@@ -36,123 +36,52 @@
 
     <!-- Navigation -->
     <nav aria-label="Navigation principale" class="flex flex-1 flex-col overflow-y-auto px-4 py-4 mt-2">
-        <% const userRole = (typeof user !== 'undefined' && user) ? user.role : 'receptionniste'; %>
-        <ul role="list" class="flex flex-1 flex-col gap-y-2">
-            <!-- Tableau de bord : accessible à tous -->
+        <% 
+            const userRole = (typeof user !== 'undefined' && user) ? user.role : 'receptionniste'; 
+            const navItems = [
+                { label: 'Tableau de bord', href: '/', icon: 'fas fa-chart-pie', allowed: ['admin', 'medecin', 'receptionniste', 'comptable', 'pharmacien'], exact: true },
+                { label: 'Patients', href: '/patients', icon: 'fas fa-users', allowed: ['admin', 'medecin', 'receptionniste'] },
+                { label: 'Praticiens', href: '/praticiens', icon: 'fas fa-user-md', allowed: ['admin', 'medecin', 'receptionniste'] },
+                { label: 'Consultations', href: '/consultations', icon: 'fas fa-stethoscope', allowed: ['admin', 'medecin', 'receptionniste'], exact: true },
+                { label: 'Salle d\'Attente', href: '/consultations/attente', icon: 'fas fa-hourglass-half', accent: 'amber', allowed: ['admin', 'medecin', 'receptionniste'], exact: true },
+                { label: 'Factures', href: '/factures', icon: 'fas fa-file-invoice', allowed: ['admin', 'comptable'] },
+                { label: 'Actes Médicaux', href: '/actes', icon: 'fas fa-file-medical-alt', allowed: ['admin', 'medecin', 'comptable'] },
+                { label: 'Pharmacie & Stock', href: '/pharmacie', icon: 'fas fa-pills', accent: 'emerald', allowed: ['admin', 'pharmacien', 'medecin'] },
+                { label: 'Assurances', href: '/assurances', icon: 'fas fa-building', allowed: ['admin', 'comptable'] },
+                { label: 'Paiements', href: '/paiements', icon: 'fas fa-money-bill-wave', allowed: ['admin', 'comptable'] },
+                { label: 'Caisse du Jour', href: '/caisse', icon: 'fas fa-cash-register', accent: 'green', allowed: ['admin', 'comptable'] },
+                { label: 'Rapports', href: '/rapports', icon: 'fas fa-chart-line', allowed: ['admin', 'medecin', 'comptable'] },
+                { label: 'Journal d\'Audit', href: '/audit', icon: 'fas fa-history', accent: 'red', allowed: ['admin'] },
+                { label: 'Utilisateurs', href: '/utilisateurs', icon: 'fas fa-user-shield', accent: 'red', allowed: ['admin'] },
+                { label: 'Paramètres', href: '/settings', icon: 'fas fa-cog', accent: 'red', allowed: ['admin'] }
+            ];
+        %>
+        <ul role="list" class="flex flex-1 flex-col gap-y-1.5">
+            <% navItems.forEach(item => { 
+                const isAllowed = item.allowed.includes(userRole);
+                const isActive = isAllowed && (typeof currentPath !== 'undefined' && (item.exact ? currentPath === item.href : currentPath.startsWith(item.href)));
+                const borderAccent = item.accent === 'amber' ? 'border-amber-400' : 
+                                    (item.accent === 'emerald' ? 'border-emerald-400' : 
+                                    (item.accent === 'green' ? 'border-green-400' : 
+                                    (item.accent === 'red' ? 'border-red-500' : 'border-blue-400')));
+            %>
             <li>
-                <a href="/" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath === '/' ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-chart-pie w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath === '/' ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Tableau de bord
-                </a>
+                <% if (isAllowed) { %>
+                    <a href="<%= item.href %>" 
+                       class="group flex items-center gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 transition <%= isActive ? 'bg-primary text-white border-l-4 ' + borderAccent : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                        <i class="<%= item.icon %> w-6 text-center text-lg <%= isActive ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                        <span class="truncate"><%= item.label %></span>
+                    </a>
+                <% } else { %>
+                    <div title="Accès restreint (non autorisé pour votre profil <%= userRole %>)" 
+                         class="group flex items-center gap-x-3 rounded-md p-2 text-sm font-medium leading-6 text-gray-500 opacity-40 bg-black/20 cursor-not-allowed select-none border-l-4 border-transparent">
+                        <i class="<%= item.icon %> w-6 text-center text-lg text-gray-500"></i>
+                        <span class="truncate text-gray-400"><%= item.label %></span>
+                        <i class="fas fa-lock text-[10px] ml-auto text-gray-500" aria-hidden="true"></i>
+                    </div>
+                <% } %>
             </li>
-
-            <!-- Espace Médical & Accueil -->
-            <% if (['admin', 'medecin', 'receptionniste'].includes(userRole)) { %>
-            <li>
-                <a href="/patients" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/patients') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-users w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/patients') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Patients
-                </a>
-            </li>
-            <li>
-                <a href="/praticiens" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/praticiens') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-user-md w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/praticiens') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Praticiens
-                </a>
-            </li>
-            <li>
-                <a href="/consultations" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath === '/consultations' ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-stethoscope w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath === '/consultations' ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Consultations
-                </a>
-            </li>
-            <li>
-                <a href="/consultations/attente" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath === '/consultations/attente' ? 'bg-primary text-white border-l-4 border-amber-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-hourglass-half w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath === '/consultations/attente' ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Salle d'Attente
-                </a>
-            </li>
-            <% } %>
-
-            <!-- Actes Médicaux -->
-            <% if (['admin', 'medecin', 'comptable'].includes(userRole)) { %>
-            <li>
-                <a href="/actes" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/actes') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-file-medical-alt w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/actes') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Actes Médicaux
-                </a>
-            </li>
-            <% } %>
-
-            <!-- Pharmacie & Stock -->
-            <% if (['admin', 'pharmacien', 'medecin'].includes(userRole)) { %>
-            <li>
-                <a href="/pharmacie" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/pharmacie') ? 'bg-primary text-white border-l-4 border-emerald-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-pills w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/pharmacie') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Pharmacie & Stock
-                </a>
-            </li>
-            <% } %>
-
-            <!-- Facturation, Caisse & Finances -->
-            <% if (['admin', 'comptable'].includes(userRole)) { %>
-            <li>
-                <a href="/factures" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/factures') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-file-invoice w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/factures') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Factures
-                </a>
-            </li>
-            <li>
-                <a href="/paiements" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/paiements') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-money-bill-wave w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/paiements') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Paiements
-                </a>
-            </li>
-            <li>
-                <a href="/caisse" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/caisse') ? 'bg-primary text-white border-l-4 border-green-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-cash-register w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/caisse') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Caisse du Jour
-                </a>
-            </li>
-            <li>
-                <a href="/assurances" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/assurances') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-building w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/assurances') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Assurances
-                </a>
-            </li>
-            <% } %>
-
-            <!-- Rapports & Statistiques -->
-            <% if (['admin', 'medecin', 'comptable'].includes(userRole)) { %>
-            <li>
-                <a href="/rapports" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/rapports') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-chart-line w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/rapports') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Rapports
-                </a>
-            </li>
-            <% } %>
-
-            <!-- Administration système -->
-            <% if (userRole === 'admin') { %>
-            <li>
-                <a href="/audit" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/audit') ? 'bg-primary text-white border-l-4 border-red-500' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-history w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/audit') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Journal d'Audit
-                </a>
-            </li>
-            <li>
-                <a href="/utilisateurs" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/utilisateurs') ? 'bg-primary text-white border-l-4 border-red-500' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-user-shield w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/utilisateurs') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Utilisateurs
-                </a>
-            </li>
-            <li>
-                <a href="/settings" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/settings') ? 'bg-primary text-white border-l-4 border-red-500' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-cog w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/settings') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Paramètres
-                </a>
-            </li>
-            <% } %>
+            <% }); %>
         </ul>
     </nav>
     
