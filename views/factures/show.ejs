@@ -108,7 +108,113 @@
         </div>
     </div>
 
+    <!-- Détails des Prestations -->
+    <% 
+        const prestations = (lignes || []).filter(l => l.type_ligne !== 'ordonnance');
+        const ordonnances = (lignes || []).filter(l => l.type_ligne === 'ordonnance');
+    %>
 
+    <% if (prestations.length > 0) { %>
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b bg-blue-50/50 flex items-center gap-2">
+            <i class="fas fa-file-medical text-blue-600"></i>
+            <h2 class="text-lg font-semibold text-gray-700">Détails des Prestations</h2>
+            <span class="ml-auto text-xs font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full"><%= prestations.length %> ligne(s)</span>
+        </div>
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Désignation</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Praticien</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Qté</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">P.U. (FCFA)</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">%</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Montant (FCFA)</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                <% prestations.forEach((l, idx) => { %>
+                    <tr class="<%= idx % 2 === 0 ? '' : 'bg-gray-50/50' %> hover:bg-blue-50/30 transition">
+                        <td class="px-6 py-3 text-sm font-medium text-gray-900"><%= l.libelle %></td>
+                        <td class="px-4 py-3 text-sm text-gray-600"><%= l.nom_praticien || '—' %></td>
+                        <td class="px-4 py-3 text-sm text-center text-gray-700 font-semibold"><%= l.quantite %></td>
+                        <td class="px-4 py-3 text-sm text-right text-gray-700"><%= (l.prix_unitaire || 0).toLocaleString('fr-FR') %></td>
+                        <td class="px-4 py-3 text-sm text-center text-gray-600"><%= l.pourcentage || 100 %>%</td>
+                        <td class="px-4 py-3 text-sm text-right font-bold text-gray-900"><%= (l.montant || 0).toLocaleString('fr-FR') %></td>
+                    </tr>
+                <% }); %>
+                <tr class="bg-blue-50 font-bold">
+                    <td colspan="5" class="px-6 py-3 text-sm text-right text-blue-800">Sous-total Prestations</td>
+                    <td class="px-4 py-3 text-sm text-right text-blue-900"><%= prestations.reduce((a, l) => a + (parseFloat(l.montant) || 0), 0).toLocaleString('fr-FR') %> FCFA</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <% } %>
+
+    <% if (ordonnances.length > 0) { %>
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b bg-emerald-50/50 flex items-center gap-2">
+            <i class="fas fa-pills text-emerald-600"></i>
+            <h2 class="text-lg font-semibold text-gray-700">Médicaments Délivrés (Ordonnance)</h2>
+            <span class="ml-auto text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full"><%= ordonnances.length %> ligne(s)</span>
+        </div>
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dénomination</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Quantité</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Coût Unitaire (FCFA)</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Montant (FCFA)</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                <% ordonnances.forEach((l, idx) => { %>
+                    <tr class="<%= idx % 2 === 0 ? '' : 'bg-gray-50/50' %> hover:bg-emerald-50/30 transition">
+                        <td class="px-6 py-3 text-sm font-medium text-gray-900"><i class="fas fa-capsules text-emerald-400 mr-1.5"></i><%= l.libelle %></td>
+                        <td class="px-4 py-3 text-sm text-center text-gray-700 font-semibold"><%= l.quantite %></td>
+                        <td class="px-4 py-3 text-sm text-right text-gray-700"><%= (l.prix_unitaire || 0).toLocaleString('fr-FR') %></td>
+                        <td class="px-4 py-3 text-sm text-right font-bold text-gray-900"><%= (l.montant || 0).toLocaleString('fr-FR') %></td>
+                    </tr>
+                <% }); %>
+                <tr class="bg-emerald-50 font-bold">
+                    <td colspan="3" class="px-6 py-3 text-sm text-right text-emerald-800">Sous-total Ordonnance</td>
+                    <td class="px-4 py-3 text-sm text-right text-emerald-900"><%= ordonnances.reduce((a, l) => a + (parseFloat(l.montant) || 0), 0).toLocaleString('fr-FR') %> FCFA</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <% } %>
+
+    <!-- Récapitulatif financier -->
+    <% if ((lignes || []).length > 0) { %>
+    <div class="bg-white shadow rounded-lg p-6 mb-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div class="space-y-1 text-sm">
+                <div class="flex gap-8">
+                    <span class="text-gray-500">Total brut :</span>
+                    <span class="font-bold text-gray-900"><%= (facture.total || 0).toLocaleString('fr-FR') %> FCFA</span>
+                </div>
+                <% if (facture.remise > 0) { %>
+                <div class="flex gap-8">
+                    <span class="text-gray-500">Remise :</span>
+                    <span class="font-bold text-amber-700">- <%= (facture.remise || 0).toLocaleString('fr-FR') %> FCFA</span>
+                </div>
+                <% } %>
+            </div>
+            <div class="text-right">
+                <p class="text-xs text-gray-500 uppercase font-bold">Net à payer</p>
+                <p class="text-2xl font-black text-blue-700"><%= (facture.total_net || 0).toLocaleString('fr-FR') %> FCFA</p>
+                <% if (facture.total_euro) { %>
+                    <p class="text-xs text-gray-400">≈ <%= parseFloat(facture.total_euro || 0).toFixed(2) %> €</p>
+                <% } %>
+                <% if ((facture.montant_paye || 0) > 0) { %>
+                    <p class="text-xs mt-1"><span class="text-emerald-600 font-bold">Payé : <%= (facture.montant_paye || 0).toLocaleString('fr-FR') %> FCFA</span> — <span class="text-red-600 font-bold">Reste : <%= (facture.reste_a_payer || 0).toLocaleString('fr-FR') %> FCFA</span></p>
+                <% } %>
+            </div>
+        </div>
+    </div>
+    <% } %>
 
     <!-- Paiements -->
     <% if (paiements && paiements.length > 0) { %>

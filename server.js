@@ -45,6 +45,7 @@ const utilisateursRoutes = require('./routes/utilisateurs');
 const settingsRoutes = require('./routes/settings');
 const auditRoutes = require('./routes/audit');
 const pharmacieRoutes = require('./routes/pharmacie');
+const caisseRoutes = require('./routes/caisse');
 const authRoutes = require('./routes/auth');
 const { requireAuth, requireAdmin } = require('./middleware/auth');
 
@@ -271,6 +272,7 @@ app.use('/actes', requireAuth, actesRoutes);
 app.use('/pharmacie', requireAuth, pharmacieRoutes);
 app.use('/assurances', requireAuth, assurancesRoutes);
 app.use('/paiements', requireAuth, paiementsRoutes);
+app.use('/caisse', requireAuth, caisseRoutes);
 app.use('/rapports', requireAuth, rapportsRoutes);
 app.use('/audit', requireAuth, requireAdmin, auditRoutes);
 app.use('/utilisateurs', requireAuth, requireAdmin, utilisateursRoutes);

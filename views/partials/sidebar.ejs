@@ -56,9 +56,15 @@
                 </a>
             </li>
             <li>
-                <a href="/consultations" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/consultations') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-stethoscope w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/consultations') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                <a href="/consultations" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath === '/consultations' ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-stethoscope w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath === '/consultations' ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
                     Consultations
+                </a>
+            </li>
+            <li>
+                <a href="/consultations/attente" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath === '/consultations/attente' ? 'bg-primary text-white border-l-4 border-amber-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-hourglass-half w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath === '/consultations/attente' ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Salle d'Attente
                 </a>
             </li>
             <li>
@@ -89,6 +95,12 @@
                 <a href="/paiements" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/paiements') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
                     <i class="fas fa-money-bill-wave w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/paiements') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
                     Paiements
+                </a>
+            </li>
+            <li>
+                <a href="/caisse" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/caisse') ? 'bg-primary text-white border-l-4 border-green-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-cash-register w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/caisse') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Caisse du Jour
                 </a>
             </li>
             <li>

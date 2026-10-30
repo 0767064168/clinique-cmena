@@ -1,0 +1,134 @@
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+    <!-- En-tête -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Caisse du Jour</h1>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                    <%= nbTotal %> encaissement(s)
+                </span>
+            </div>
+            <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Bilan des encaissements et PV de caisse journalier</p>
+        </div>
+        <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+            <a href="/caisse/print?date=<%= dateSelected %>" target="_blank" class="flex-1 sm:flex-none text-center bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5">
+                <i class="fas fa-print"></i> Imprimer PV de Caisse
+            </a>
+        </div>
+    </div>
+
+    <!-- Sélecteur de date -->
+    <form action="/caisse" method="GET" class="bg-white p-4 rounded-xl shadow-sm mb-6 border border-gray-100">
+        <div class="flex flex-col sm:flex-row items-end gap-3">
+            <div class="flex-grow">
+                <label for="caisse-date" class="block text-sm text-gray-600 mb-1 font-medium">Date de la journée</label>
+                <input type="date" id="caisse-date" name="date" value="<%= dateSelected %>" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500">
+            </div>
+            <button type="submit" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-5 rounded-lg text-sm shadow-sm">
+                <i class="fas fa-search mr-1"></i> Consulter
+            </button>
+        </div>
+    </form>
+
+    <!-- Métriques du jour -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-gray-500 block">Total Encaissé</span>
+                    <span class="text-xl font-black text-gray-900"><%= totalJour.toLocaleString('fr-FR') %> <span class="text-xs font-normal">FCFA</span></span>
+                </div>
+                <div class="p-2.5 bg-green-50 text-green-600 rounded-lg"><i class="fas fa-coins text-lg"></i></div>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1"><%= nbTotal %> transaction(s)</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-gray-500 block">Espèces</span>
+                    <span class="text-xl font-black text-emerald-700"><%= totalEspeces.toLocaleString('fr-FR') %> <span class="text-xs font-normal">FCFA</span></span>
+                </div>
+                <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg"><i class="fas fa-money-bill-wave text-lg"></i></div>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1"><%= nbEspeces %> transaction(s)</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-gray-500 block">Mobile Money</span>
+                    <span class="text-xl font-black text-orange-700"><%= totalMobileMoney.toLocaleString('fr-FR') %> <span class="text-xs font-normal">FCFA</span></span>
+                </div>
+                <div class="p-2.5 bg-orange-50 text-orange-600 rounded-lg"><i class="fas fa-mobile-alt text-lg"></i></div>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1"><%= nbMobileMoney %> transaction(s) — Wave / Orange / MTN</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-gray-500 block">Facturation du jour</span>
+                    <span class="text-xl font-black text-blue-700"><%= totalFacture.toLocaleString('fr-FR') %> <span class="text-xs font-normal">FCFA</span></span>
+                </div>
+                <div class="p-2.5 bg-blue-50 text-blue-600 rounded-lg"><i class="fas fa-file-invoice text-lg"></i></div>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1"><%= nbFactures %> facture(s) — <%= nbConsultations %> consultation(s)</p>
+        </div>
+    </div>
+
+    <!-- Tableau des encaissements -->
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b flex items-center justify-between flex-wrap gap-2">
+            <h2 class="text-lg font-semibold text-gray-700">Détail des Encaissements — <%= new Date(dateSelected + 'T12:00:00').toLocaleDateString('fr-FR', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'}) %></h2>
+        </div>
+
+        <% if (paiements.length === 0) { %>
+            <div class="px-6 py-12 text-center">
+                <i class="fas fa-cash-register text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 font-medium">Aucun encaissement enregistré pour cette date</p>
+            </div>
+        <% } else { %>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Heure</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">N° Facture</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mode</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Référence</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Montant (FCFA)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <% paiements.forEach((p, idx) => { %>
+                            <tr class="<%= idx % 2 === 0 ? '' : 'bg-gray-50/50' %> hover:bg-green-50/30 transition">
+                                <td class="px-4 py-3 text-sm text-gray-600 font-mono"><%= new Date(p.date_paiement).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) %></td>
+                                <td class="px-4 py-3 text-sm">
+                                    <a href="/factures/<%= p.facture_id %>" class="text-blue-600 hover:text-blue-800 font-semibold">N° <%= p.facture_numero %></a>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-700 font-medium"><%= p.patient_nom %></td>
+                                <td class="px-4 py-3 text-sm">
+                                    <% if (p.mode_paiement === 'especes') { %>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800"><i class="fas fa-money-bill-wave"></i> Espèces</span>
+                                    <% } else if (p.mode_paiement === 'mobile_money') { %>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-800"><i class="fas fa-mobile-alt"></i> Mobile Money</span>
+                                    <% } else { %>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-800"><%= p.mode_paiement %></span>
+                                    <% } %>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-500 font-mono"><%= p.reference || '—' %></td>
+                                <td class="px-4 py-3 text-sm text-right font-bold text-emerald-700"><%= (p.montant || 0).toLocaleString('fr-FR') %></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                    <tfoot>
+                        <tr class="bg-green-50 border-t-2 border-green-200">
+                            <td colspan="5" class="px-4 py-3 text-sm font-bold text-right text-green-800">TOTAL DU JOUR</td>
+                            <td class="px-4 py-3 text-sm text-right font-black text-green-900 text-base"><%= totalJour.toLocaleString('fr-FR') %> FCFA</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        <% } %>
+    </div>
+</div>

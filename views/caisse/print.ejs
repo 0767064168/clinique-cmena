@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PV de Caisse — <%= new Date(dateSelected + 'T12:00:00').toLocaleDateString('fr-FR') %></title>
+    <link href="/css/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <style>
+        @page { size: A4; margin: 10mm; }
+        @media print {
+            body { padding: 0 !important; margin: 0 !important; background: white !important; font-size: 11px; }
+            .no-print { display: none !important; }
+        }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f8fafc; color: #1e293b; }
+    </style>
+</head>
+<body class="bg-white">
+    <div class="no-print fixed top-4 right-4 z-50 flex gap-2">
+        <button onclick="window.print()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg text-sm shadow-lg"><i class="fas fa-print mr-1"></i> Imprimer</button>
+        <button onclick="window.close()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-sm">Fermer</button>
+    </div>
+
+    <div class="max-w-3xl mx-auto p-6">
+        <!-- En-tête officiel -->
+        <div class="text-center mb-4">
+            <div class="flex justify-between items-start">
+                <img src="/images/logo_gspm.jpg" alt="Logo GSPM" class="h-14 w-14 object-contain" onerror="this.style.display='none'">
+                <div>
+                    <p class="text-xs font-bold uppercase">République de Côte d'Ivoire</p>
+                    <p class="text-xs font-bold">Ministère de la Défense</p>
+                    <p class="text-xs font-bold">Groupement de Sapeurs Pompiers Militaires</p>
+                    <p class="text-[10px] text-gray-600">CSA 3e Compagnie GSPM Bouaké</p>
+                </div>
+                <img src="/images/logo_defense.jpg" alt="Logo Défense" class="h-14 w-14 object-contain" onerror="this.style.display='none'">
+            </div>
+            <div class="mt-3 mb-1" style="height:4px; background: linear-gradient(to right, #FF6600, #FFFFFF, #009900);"></div>
+        </div>
+
+        <h1 class="text-center text-xl font-black uppercase tracking-wider mb-1">Procès-Verbal de Caisse</h1>
+        <p class="text-center text-sm text-gray-600 mb-6">Journée du <strong><%= new Date(dateSelected + 'T12:00:00').toLocaleDateString('fr-FR', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'}) %></strong></p>
+
+        <!-- Synthèse -->
+        <div class="border border-gray-300 rounded-lg p-4 mb-5">
+            <h2 class="text-sm font-bold uppercase text-gray-700 mb-3 border-b pb-2">Synthèse des Encaissements</h2>
+            <table class="w-full text-sm">
+                <tbody>
+                    <tr class="border-b">
+                        <td class="py-2 text-gray-600">Espèces</td>
+                        <td class="py-2 text-center text-gray-500"><%= nbEspeces %> transaction(s)</td>
+                        <td class="py-2 text-right font-bold"><%= totalEspeces.toLocaleString('fr-FR') %> FCFA</td>
+                    </tr>
+                    <tr class="border-b">
+                        <td class="py-2 text-gray-600">Mobile Money (Wave / Orange / MTN)</td>
+                        <td class="py-2 text-center text-gray-500"><%= nbMobileMoney %> transaction(s)</td>
+                        <td class="py-2 text-right font-bold"><%= totalMobileMoney.toLocaleString('fr-FR') %> FCFA</td>
+                    </tr>
+                    <% if (totalAutres > 0) { %>
+                    <tr class="border-b">
+                        <td class="py-2 text-gray-600">Autres modes</td>
+                        <td class="py-2 text-center text-gray-500"><%= nbAutres %> transaction(s)</td>
+                        <td class="py-2 text-right font-bold"><%= totalAutres.toLocaleString('fr-FR') %> FCFA</td>
+                    </tr>
+                    <% } %>
+                    <tr class="bg-green-50 font-black">
+                        <td class="py-3 text-green-900">TOTAL ENCAISSÉ</td>
+                        <td class="py-3 text-center text-green-700"><%= nbTotal %> transaction(s)</td>
+                        <td class="py-3 text-right text-green-900 text-base"><%= totalJour.toLocaleString('fr-FR') %> FCFA</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Détail -->
+        <% if (paiements.length > 0) { %>
+        <div class="border border-gray-300 rounded-lg overflow-hidden mb-5">
+            <h2 class="text-sm font-bold uppercase text-gray-700 px-4 py-2 bg-gray-50 border-b">Détail des Encaissements</h2>
+            <table class="w-full text-xs">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-3 py-2 text-left">Heure</th>
+                        <th class="px-3 py-2 text-left">N° Facture</th>
+                        <th class="px-3 py-2 text-left">Patient</th>
+                        <th class="px-3 py-2 text-left">Mode</th>
+                        <th class="px-3 py-2 text-left">Référence</th>
+                        <th class="px-3 py-2 text-right">Montant</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% paiements.forEach((p, idx) => { %>
+                        <tr class="<%= idx % 2 === 0 ? '' : 'bg-gray-50' %> border-b border-gray-100">
+                            <td class="px-3 py-1.5 font-mono"><%= new Date(p.date_paiement).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) %></td>
+                            <td class="px-3 py-1.5">N° <%= p.facture_numero %></td>
+                            <td class="px-3 py-1.5 font-medium"><%= p.patient_nom %></td>
+                            <td class="px-3 py-1.5 capitalize"><%= p.mode_paiement === 'mobile_money' ? 'Mobile Money' : (p.mode_paiement || '-') %></td>
+                            <td class="px-3 py-1.5 text-gray-500"><%= p.reference || '—' %></td>
+                            <td class="px-3 py-1.5 text-right font-bold"><%= (p.montant || 0).toLocaleString('fr-FR') %> FCFA</td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+                <tfoot>
+                    <tr class="bg-green-50 font-black border-t-2 border-green-300">
+                        <td colspan="5" class="px-3 py-2 text-right">TOTAL</td>
+                        <td class="px-3 py-2 text-right text-sm"><%= totalJour.toLocaleString('fr-FR') %> FCFA</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <% } %>
+
+        <!-- Signatures -->
+        <div class="grid grid-cols-2 gap-12 mt-10 text-xs">
+            <div class="text-center">
+                <p class="font-bold uppercase mb-12">Le Caissier / Comptable</p>
+                <div class="border-b border-gray-400 mb-1"></div>
+                <p class="text-gray-500"><%= user ? (user.nom + ' ' + user.prenom) : '..............................' %></p>
+                <p class="text-gray-400 text-[10px]">Nom, Signature et Cachet</p>
+            </div>
+            <div class="text-center">
+                <p class="font-bold uppercase mb-12">Le Médecin Chef / Commandant</p>
+                <div class="border-b border-gray-400 mb-1"></div>
+                <p class="text-gray-500">..............................</p>
+                <p class="text-gray-400 text-[10px]">Nom, Signature et Cachet</p>
+            </div>
+        </div>
+
+        <p class="text-center text-[9px] text-gray-400 mt-8">CSA 3e COMPAGNIE GSPM BOUAKÉ — Document généré automatiquement le <%= new Date().toLocaleDateString('fr-FR') %> à <%= new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) %> — SAUVER OU PÉRIR</p>
+    </div>
+</body>
+</html>

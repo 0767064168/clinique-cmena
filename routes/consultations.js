@@ -182,6 +182,50 @@ router.post('/', async (req, res) => {
     }
 });
 
+// GET /consultations/attente — Salle d'attente en temps réel
+router.get('/attente', async (req, res) => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+
+        const { data: rawConsultations, error } = await supabase
+            .from('consultations')
+            .select('*, patients(nom, prenom, numero_dossier), praticiens(nom, prenom)')
+            .gte('date_entree', `${today}T00:00:00`)
+            .lte('date_entree', `${today}T23:59:59`)
+            .order('date_entree', { ascending: true });
+
+        if (error) throw error;
+
+        const consultations = (rawConsultations || []).map(c => {
+            const clinical = unpackClinicalData(c.observations);
+            return {
+                ...c,
+                patient_nom: c.patients ? c.patients.nom : '-',
+                patient_prenom: c.patients ? c.patients.prenom : '',
+                numero_dossier: c.patients ? c.patients.numero_dossier : null,
+                praticien_nom: c.praticiens ? `Dr. ${c.praticiens.nom} ${c.praticiens.prenom}` : null,
+                clinical
+            };
+        });
+
+        const enAttente = consultations.filter(c => c.statut === 'en_cours' && !c.diagnostic);
+        const enCours = consultations.filter(c => c.statut === 'en_cours' && c.diagnostic);
+        const termines = consultations.filter(c => c.statut === 'termine');
+
+        res.render('consultations/attente', {
+            title: "Salle d'Attente",
+            enAttente,
+            enCours,
+            termines,
+            totalJour: consultations.filter(c => c.statut !== 'annule').length
+        });
+    } catch (error) {
+        console.error('Erreur salle attente:', error);
+        req.flash('error', 'Erreur lors du chargement de la salle d\'attente');
+        res.redirect('/consultations');
+    }
+});
+
 router.get('/:id', async (req, res) => {
     try {
         const { data: consultation, error } = await supabase

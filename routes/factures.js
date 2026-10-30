@@ -360,6 +360,10 @@ router.post('/', async (req, res) => {
             .update({ total, total_net, total_euro, reste_a_payer })
             .eq('id', facture.id);
 
+        if (statut === 'validee') {
+            await deductStockForFacture(facture.id, req.session ? req.session.user : null);
+        }
+
         req.flash('success', 'Facture créée avec succès');
         res.redirect(`/factures/${facture.id}`);
     } catch (error) {
@@ -493,6 +497,127 @@ async function recalculateFactureTotals(factureId) {
         .eq('id', factureId);
 }
 
+// Helper pour déduire automatiquement le stock des médicaments lors de la validation d'une facture
+async function deductStockForFacture(factureId, user = null) {
+    try {
+        const { data: lignes, error: errLignes } = await supabase
+            .from('facture_lignes')
+            .select('*')
+            .eq('facture_id', factureId)
+            .eq('type_ligne', 'ordonnance');
+
+        if (errLignes || !lignes || lignes.length === 0) return;
+
+        const { data: facture } = await supabase
+            .from('factures')
+            .select('numero_facture')
+            .eq('id', factureId)
+            .single();
+        const numFacture = facture ? facture.numero_facture : factureId;
+
+        for (const ligne of lignes) {
+            const designation = (ligne.libelle || '').trim();
+            if (!designation) continue;
+
+            const { data: prods } = await supabase
+                .from('produits_pharmacie')
+                .select('*')
+                .ilike('designation', designation)
+                .limit(1);
+
+            const produit = (prods && prods[0]) ? prods[0] : null;
+            if (!produit) continue;
+
+            const qte = parseInt(ligne.quantite, 10) || 1;
+            const stockAvant = Number(produit.stock_actuel || 0);
+            if (stockAvant <= 0) continue;
+
+            const qteSortie = Math.min(stockAvant, qte);
+            const stockApres = stockAvant - qteSortie;
+
+            await supabase
+                .from('mouvements_stock')
+                .insert([{
+                    produit_id: produit.id,
+                    type_mouvement: 'sortie',
+                    quantite: qteSortie,
+                    stock_avant: stockAvant,
+                    stock_apres: stockApres,
+                    motif: `Délivrance ordonnance Facture N° ${numFacture}`,
+                    reference: `FAC-${numFacture}`,
+                    utilisateur_id: user ? user.id : null,
+                    utilisateur_nom: user ? `${user.nom} ${user.prenom}` : 'Système Facturation'
+                }]);
+
+            await supabase
+                .from('produits_pharmacie')
+                .update({ stock_actuel: stockApres, updated_at: new Date() })
+                .eq('id', produit.id);
+        }
+    } catch (e) {
+        console.error('Erreur deductStockForFacture:', e);
+    }
+}
+
+// Helper pour réintégrer le stock en cas d'annulation ou retour brouillon
+async function restoreStockForFacture(factureId, user = null) {
+    try {
+        const { data: lignes, error: errLignes } = await supabase
+            .from('facture_lignes')
+            .select('*')
+            .eq('facture_id', factureId)
+            .eq('type_ligne', 'ordonnance');
+
+        if (errLignes || !lignes || lignes.length === 0) return;
+
+        const { data: facture } = await supabase
+            .from('factures')
+            .select('numero_facture')
+            .eq('id', factureId)
+            .single();
+        const numFacture = facture ? facture.numero_facture : factureId;
+
+        for (const ligne of lignes) {
+            const designation = (ligne.libelle || '').trim();
+            if (!designation) continue;
+
+            const { data: prods } = await supabase
+                .from('produits_pharmacie')
+                .select('*')
+                .ilike('designation', designation)
+                .limit(1);
+
+            const produit = (prods && prods[0]) ? prods[0] : null;
+            if (!produit) continue;
+
+            const qte = parseInt(ligne.quantite, 10) || 1;
+            const stockAvant = Number(produit.stock_actuel || 0);
+            const stockApres = stockAvant + qte;
+
+            await supabase
+                .from('mouvements_stock')
+                .insert([{
+                    produit_id: produit.id,
+                    type_mouvement: 'entree',
+                    quantite: qte,
+                    stock_avant: stockAvant,
+                    stock_apres: stockApres,
+                    motif: `Réintégration annulation Facture N° ${numFacture}`,
+                    reference: `ANNUL-${numFacture}`,
+                    utilisateur_id: user ? user.id : null,
+                    utilisateur_nom: user ? `${user.nom} ${user.prenom}` : 'Système Facturation'
+                }]);
+
+            await supabase
+                .from('produits_pharmacie')
+                .update({ stock_actuel: stockApres, updated_at: new Date() })
+                .eq('id', produit.id);
+        }
+    } catch (e) {
+        console.error('Erreur restoreStockForFacture:', e);
+    }
+}
+
 // GET /factures/:id/edit
 router.get('/:id/edit', async (req, res) => {
     try {
@@ -612,6 +737,8 @@ router.put('/:id/valider', async (req, res) => {
             description: `Validation de la facture ID ${req.params.id}`
         });
 
+        await deductStockForFacture(req.params.id, req.session ? req.session.user : null);
+
         req.flash('success', 'Facture validée');
         res.redirect(`/factures/${req.params.id}`);
     } catch (error) {
@@ -651,6 +778,8 @@ router.put('/:id/brouillon', async (req, res) => {
             .eq('id', req.params.id);
 
         if (error) throw error;
+
+        await restoreStockForFacture(req.params.id, req.session ? req.session.user : null);
 
         await logAudit({
             req,
@@ -770,6 +899,8 @@ router.post('/:id/annuler', async (req, res) => {
             .eq('id', req.params.id);
 
         if (error) throw error;
+
+        await restoreStockForFacture(req.params.id, req.session ? req.session.user : null);
 
         await logAudit({
             req,
