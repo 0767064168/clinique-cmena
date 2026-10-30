@@ -36,13 +36,18 @@
 
     <!-- Navigation -->
     <nav aria-label="Navigation principale" class="flex flex-1 flex-col overflow-y-auto px-4 py-4 mt-2">
+        <% const userRole = (typeof user !== 'undefined' && user) ? user.role : 'receptionniste'; %>
         <ul role="list" class="flex flex-1 flex-col gap-y-2">
+            <!-- Tableau de bord : accessible à tous -->
             <li>
                 <a href="/" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath === '/' ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
                     <i class="fas fa-chart-pie w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath === '/' ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
                     Tableau de bord
                 </a>
             </li>
+
+            <!-- Espace Médical & Accueil -->
+            <% if (['admin', 'medecin', 'receptionniste'].includes(userRole)) { %>
             <li>
                 <a href="/patients" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/patients') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
                     <i class="fas fa-users w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/patients') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
@@ -67,28 +72,34 @@
                     Salle d'Attente
                 </a>
             </li>
-            <li>
-                <a href="/factures" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/factures') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-file-invoice w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/factures') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Factures
-                </a>
-            </li>
+            <% } %>
+
+            <!-- Actes Médicaux -->
+            <% if (['admin', 'medecin', 'comptable'].includes(userRole)) { %>
             <li>
                 <a href="/actes" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/actes') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
                     <i class="fas fa-file-medical-alt w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/actes') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
                     Actes Médicaux
                 </a>
             </li>
+            <% } %>
+
+            <!-- Pharmacie & Stock -->
+            <% if (['admin', 'pharmacien', 'medecin'].includes(userRole)) { %>
             <li>
                 <a href="/pharmacie" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/pharmacie') ? 'bg-primary text-white border-l-4 border-emerald-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
                     <i class="fas fa-pills w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/pharmacie') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
                     Pharmacie & Stock
                 </a>
             </li>
+            <% } %>
+
+            <!-- Facturation, Caisse & Finances -->
+            <% if (['admin', 'comptable'].includes(userRole)) { %>
             <li>
-                <a href="/assurances" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/assurances') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
-                    <i class="fas fa-building w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/assurances') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
-                    Assurances
+                <a href="/factures" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/factures') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-file-invoice w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/factures') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Factures
                 </a>
             </li>
             <li>
@@ -104,12 +115,25 @@
                 </a>
             </li>
             <li>
+                <a href="/assurances" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/assurances') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
+                    <i class="fas fa-building w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/assurances') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
+                    Assurances
+                </a>
+            </li>
+            <% } %>
+
+            <!-- Rapports & Statistiques -->
+            <% if (['admin', 'medecin', 'comptable'].includes(userRole)) { %>
+            <li>
                 <a href="/rapports" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/rapports') ? 'bg-primary text-white border-l-4 border-blue-400' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
                     <i class="fas fa-chart-line w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/rapports') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
                     Rapports
                 </a>
             </li>
-            <% if (typeof user !== 'undefined' && user && user.role === 'admin') { %>
+            <% } %>
+
+            <!-- Administration système -->
+            <% if (userRole === 'admin') { %>
             <li>
                 <a href="/audit" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/audit') ? 'bg-primary text-white border-l-4 border-red-500' : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
                     <i class="fas fa-history w-6 text-center text-lg <%= typeof currentPath !== 'undefined' && currentPath.startsWith('/audit') ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
@@ -132,11 +156,36 @@
         </ul>
     </nav>
     
-    <!-- User / Logout -->
-    <div class="p-4 bg-black bg-opacity-20 mt-auto">
-        <a href="/logout" class="group flex items-center gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-300 hover:bg-red-600 hover:text-white transition-colors">
-            <i class="fas fa-sign-out-alt w-6 text-center text-lg text-gray-400 group-hover:text-white"></i>
-            Déconnexion
-        </a>
+    <!-- Profil connecté & Déconnexion -->
+    <div class="bg-black bg-opacity-25 mt-auto border-t border-white/10">
+        <% if (typeof user !== 'undefined' && user) { %>
+        <div class="px-4 py-3 flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white text-xs uppercase shadow shrink-0">
+                <%= (user.prenom ? user.prenom[0] : '') + (user.nom ? user.nom[0] : '') %>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-white truncate"><%= user.prenom %> <%= user.nom %></p>
+                <% 
+                    const roleBadges = {
+                        'admin': { label: 'Administrateur', class: 'bg-red-500/20 text-red-300 border-red-500/40' },
+                        'medecin': { label: 'Médecin', class: 'bg-blue-500/20 text-blue-300 border-blue-500/40' },
+                        'receptionniste': { label: 'Réceptionniste', class: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+                        'comptable': { label: 'Comptable', class: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+                        'pharmacien': { label: 'Pharmacien', class: 'bg-teal-500/20 text-teal-300 border-teal-500/40' }
+                    };
+                    const badge = roleBadges[user.role] || { label: user.role, class: 'bg-gray-500/20 text-gray-300 border-gray-500/40' };
+                %>
+                <span class="inline-block px-1.5 py-0.5 text-[9px] font-semibold border rounded-full <%= badge.class %>">
+                    <%= badge.label %>
+                </span>
+            </div>
+        </div>
+        <% } %>
+        <div class="px-3 pb-3">
+            <a href="/logout" class="group flex items-center gap-x-2 rounded-md p-2 text-xs font-semibold text-gray-300 hover:bg-red-600 hover:text-white transition-colors">
+                <i class="fas fa-sign-out-alt w-5 text-center text-sm text-gray-400 group-hover:text-white"></i>
+                Déconnexion
+            </a>
+        </div>
     </div>
 </div>

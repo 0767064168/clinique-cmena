@@ -47,7 +47,7 @@ const auditRoutes = require('./routes/audit');
 const pharmacieRoutes = require('./routes/pharmacie');
 const caisseRoutes = require('./routes/caisse');
 const authRoutes = require('./routes/auth');
-const { requireAuth, requireAdmin } = require('./middleware/auth');
+const { requireAuth, requireAdmin, requireRole } = require('./middleware/auth');
 
 // Initialisation de l'application Express
 const app = express();
@@ -261,19 +261,19 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes protégées par authentification obligatoire
+// Routes protégées par authentification et contrôle des rôles (RBAC)
 app.use('/', requireAuth, dashboardRoutes);
 app.use('/dashboard', requireAuth, dashboardRoutes);
-app.use('/patients', requireAuth, patientsRoutes);
-app.use('/praticiens', requireAuth, praticiensRoutes);
-app.use('/factures', requireAuth, facturesRoutes);
-app.use('/consultations', requireAuth, consultationsRoutes);
-app.use('/actes', requireAuth, actesRoutes);
-app.use('/pharmacie', requireAuth, pharmacieRoutes);
-app.use('/assurances', requireAuth, assurancesRoutes);
-app.use('/paiements', requireAuth, paiementsRoutes);
-app.use('/caisse', requireAuth, caisseRoutes);
-app.use('/rapports', requireAuth, rapportsRoutes);
+app.use('/patients', requireAuth, requireRole(['admin', 'medecin', 'receptionniste']), patientsRoutes);
+app.use('/praticiens', requireAuth, requireRole(['admin', 'medecin', 'receptionniste']), praticiensRoutes);
+app.use('/consultations', requireAuth, requireRole(['admin', 'medecin', 'receptionniste']), consultationsRoutes);
+app.use('/actes', requireAuth, requireRole(['admin', 'medecin', 'comptable']), actesRoutes);
+app.use('/factures', requireAuth, requireRole(['admin', 'comptable']), facturesRoutes);
+app.use('/paiements', requireAuth, requireRole(['admin', 'comptable']), paiementsRoutes);
+app.use('/caisse', requireAuth, requireRole(['admin', 'comptable']), caisseRoutes);
+app.use('/assurances', requireAuth, requireRole(['admin', 'comptable']), assurancesRoutes);
+app.use('/pharmacie', requireAuth, requireRole(['admin', 'pharmacien', 'medecin']), pharmacieRoutes);
+app.use('/rapports', requireAuth, requireRole(['admin', 'medecin', 'comptable']), rapportsRoutes);
 app.use('/audit', requireAuth, requireAdmin, auditRoutes);
 app.use('/utilisateurs', requireAuth, requireAdmin, utilisateursRoutes);
 app.use('/settings', requireAuth, requireAdmin, settingsRoutes);
