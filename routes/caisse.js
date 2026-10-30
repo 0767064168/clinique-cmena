@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
+const { getDepensesByDate, addDepense, deleteDepense } = require('../utils/depenses');
 
 // GET /caisse — Bilan de caisse du jour (ou date sélectionnée)
 router.get('/', async (req, res) => {
@@ -50,6 +51,11 @@ router.get('/', async (req, res) => {
         const totalJour = totalEspeces + totalMobileMoney + totalAutres;
         const nbTotal = listePaiements.length;
 
+        // Dépenses / Décaissements du jour
+        const depenses = getDepensesByDate(dateStr);
+        const totalDepenses = depenses.reduce((acc, d) => acc + (parseFloat(d.montant) || 0), 0);
+        const soldeNetEspeces = totalEspeces - totalDepenses;
+
         // Factures créées le jour
         const { data: facturesJour } = await supabase
             .from('factures')
@@ -72,6 +78,9 @@ router.get('/', async (req, res) => {
             title: 'Caisse du Jour',
             dateSelected: dateStr,
             paiements: listePaiements,
+            depenses,
+            totalDepenses,
+            soldeNetEspeces,
             totalEspeces,
             totalMobileMoney,
             totalAutres,
@@ -88,6 +97,50 @@ router.get('/', async (req, res) => {
         console.error('Erreur caisse:', error);
         req.flash('error', 'Erreur lors du chargement de la caisse');
         res.redirect('/dashboard');
+    }
+});
+
+// POST /caisse/depenses — Enregistrer une sortie de caisse
+router.post('/depenses', async (req, res) => {
+    try {
+        const { date, motif, montant, beneficiaire, categorie } = req.body;
+        const user = req.session && req.session.user ? req.session.user : null;
+        const utilisateur_nom = user ? `${user.prenom} ${user.nom}` : 'Caissier';
+
+        if (!motif || !montant || parseFloat(montant) <= 0) {
+            req.flash('error', 'Le motif et un montant valide sont obligatoires pour enregistrer une sortie de caisse.');
+            return res.redirect(`/caisse?date=${date || ''}`);
+        }
+
+        addDepense({
+            date: date || new Date().toISOString().split('T')[0],
+            motif,
+            montant: parseFloat(montant),
+            beneficiaire,
+            categorie,
+            utilisateur_nom
+        });
+
+        req.flash('success', 'Sortie de caisse enregistrée avec succès');
+        res.redirect(`/caisse?date=${date || ''}`);
+    } catch (error) {
+        console.error('Erreur enregistrement depense:', error);
+        req.flash('error', 'Erreur lors de l\'enregistrement de la sortie de caisse');
+        res.redirect('/caisse');
+    }
+});
+
+// POST /caisse/depenses/:id/delete — Annuler une sortie de caisse
+router.post('/depenses/:id/delete', async (req, res) => {
+    try {
+        const { date } = req.body;
+        deleteDepense(req.params.id);
+        req.flash('success', 'Sortie de caisse supprimée');
+        res.redirect(`/caisse?date=${date || ''}`);
+    } catch (error) {
+        console.error('Erreur suppression depense:', error);
+        req.flash('error', 'Erreur lors de la suppression de la dépense');
+        res.redirect('/caisse');
     }
 });
 
@@ -123,11 +176,19 @@ router.get('/print', async (req, res) => {
 
         const totalJour = totalEspeces + totalMobileMoney + totalAutres;
 
+        // Dépenses
+        const depenses = getDepensesByDate(dateStr);
+        const totalDepenses = depenses.reduce((acc, d) => acc + (parseFloat(d.montant) || 0), 0);
+        const soldeNetEspeces = totalEspeces - totalDepenses;
+
         res.render('caisse/print', {
             layout: false,
             title: 'PV de Caisse',
             dateSelected: dateStr,
             paiements: listePaiements,
+            depenses,
+            totalDepenses,
+            soldeNetEspeces,
             totalEspeces,
             totalMobileMoney,
             totalAutres,

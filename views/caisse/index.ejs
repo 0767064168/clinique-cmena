@@ -1,4 +1,4 @@
-<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+<div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8" x-data="{ openDepenseModal: false }">
     <!-- En-tête -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
         <div>
@@ -7,11 +7,19 @@
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
                     <%= nbTotal %> encaissement(s)
                 </span>
+                <% if ((depenses || []).length > 0) { %>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">
+                    <%= depenses.length %> dépense(s)
+                </span>
+                <% } %>
             </div>
-            <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Bilan des encaissements et PV de caisse journalier</p>
+            <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Bilan des encaissements, sorties de caisse et PV journalier</p>
         </div>
         <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-            <a href="/caisse/print?date=<%= dateSelected %>" target="_blank" class="flex-1 sm:flex-none text-center bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5">
+            <button type="button" @click="openDepenseModal = true" class="flex-1 sm:flex-none text-center bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition cursor-pointer">
+                <i class="fas fa-minus-circle"></i> Sortie de Caisse
+            </button>
+            <a href="/caisse/print?date=<%= dateSelected %>" target="_blank" class="flex-1 sm:flex-none text-center bg-gray-900 hover:bg-black text-white font-bold py-2 px-4 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition">
                 <i class="fas fa-print"></i> Imprimer PV de Caisse
             </a>
         </div>
@@ -25,14 +33,15 @@
                 <input type="date" id="caisse-date" name="date" value="<%= dateSelected %>" 
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500">
             </div>
-            <button type="submit" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-5 rounded-lg text-sm shadow-sm">
+            <button type="submit" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-5 rounded-lg text-sm shadow-sm transition cursor-pointer">
                 <i class="fas fa-search mr-1"></i> Consulter
             </button>
         </div>
     </form>
 
     <!-- Métriques du jour -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 mb-6">
+        <!-- Total Encaissé -->
         <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
             <div class="flex items-center justify-between">
                 <div>
@@ -43,16 +52,44 @@
             </div>
             <p class="text-[10px] text-gray-400 mt-1"><%= nbTotal %> transaction(s)</p>
         </div>
+
+        <!-- Espèces Encaissées -->
         <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
             <div class="flex items-center justify-between">
                 <div>
-                    <span class="text-[10px] uppercase font-bold text-gray-500 block">Espèces</span>
+                    <span class="text-[10px] uppercase font-bold text-gray-500 block">Espèces Reçues</span>
                     <span class="text-xl font-black text-emerald-700"><%= totalEspeces.toLocaleString('fr-FR') %> <span class="text-xs font-normal">FCFA</span></span>
                 </div>
                 <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg"><i class="fas fa-money-bill-wave text-lg"></i></div>
             </div>
-            <p class="text-[10px] text-gray-400 mt-1"><%= nbEspeces %> transaction(s)</p>
+            <p class="text-[10px] text-gray-400 mt-1"><%= nbEspeces %> versement(s)</p>
         </div>
+
+        <!-- Dépenses / Décaissements -->
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-red-500">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-red-600 block">Sorties / Dépenses</span>
+                    <span class="text-xl font-black text-red-700">- <%= (totalDepenses || 0).toLocaleString('fr-FR') %> <span class="text-xs font-normal">FCFA</span></span>
+                </div>
+                <div class="p-2.5 bg-red-50 text-red-600 rounded-lg"><i class="fas fa-receipt text-lg"></i></div>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-1"><%= (depenses || []).length %> dépense(s)</p>
+        </div>
+
+        <!-- Solde Net Espèces Physique -->
+        <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-4 rounded-xl shadow-sm border border-slate-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-emerald-400 block">Solde Net Espèces</span>
+                    <span class="text-xl font-black text-white"><%= (soldeNetEspeces || 0).toLocaleString('fr-FR') %> <span class="text-xs font-normal text-slate-300">FCFA</span></span>
+                </div>
+                <div class="p-2.5 bg-white/10 text-emerald-400 rounded-lg"><i class="fas fa-vault text-lg"></i></div>
+            </div>
+            <p class="text-[10px] text-slate-300 mt-1">Cash physique restant en caisse</p>
+        </div>
+
+        <!-- Mobile Money -->
         <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
             <div class="flex items-center justify-between">
                 <div>
@@ -61,19 +98,62 @@
                 </div>
                 <div class="p-2.5 bg-orange-50 text-orange-600 rounded-lg"><i class="fas fa-mobile-alt text-lg"></i></div>
             </div>
-            <p class="text-[10px] text-gray-400 mt-1"><%= nbMobileMoney %> transaction(s) — Wave / Orange / MTN</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-            <div class="flex items-center justify-between">
-                <div>
-                    <span class="text-[10px] uppercase font-bold text-gray-500 block">Facturation du jour</span>
-                    <span class="text-xl font-black text-blue-700"><%= totalFacture.toLocaleString('fr-FR') %> <span class="text-xs font-normal">FCFA</span></span>
-                </div>
-                <div class="p-2.5 bg-blue-50 text-blue-600 rounded-lg"><i class="fas fa-file-invoice text-lg"></i></div>
-            </div>
-            <p class="text-[10px] text-gray-400 mt-1"><%= nbFactures %> facture(s) — <%= nbConsultations %> consultation(s)</p>
+            <p class="text-[10px] text-gray-400 mt-1"><%= nbMobileMoney %> tx — Wave/Orange/MTN</p>
         </div>
     </div>
+
+    <!-- Section Sorties de Caisse (si existantes) -->
+    <% if (depenses && depenses.length > 0) { %>
+    <div class="bg-white shadow rounded-lg overflow-hidden mb-6 border-l-4 border-red-500">
+        <div class="px-6 py-4 border-b bg-red-50/50 flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-receipt text-red-600"></i>
+                <h2 class="text-lg font-semibold text-gray-800">Dépenses & Décaissements du Jour</h2>
+                <span class="text-xs font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full"><%= depenses.length %> sortie(s)</span>
+            </div>
+            <span class="text-sm font-black text-red-700">Total sorties : <%= totalDepenses.toLocaleString('fr-FR') %> FCFA</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Heure</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Motif de la Dépense</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bénéficiaire</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Catégorie</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Auteur</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Montant</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <% depenses.forEach(d => { %>
+                    <tr class="hover:bg-red-50/20 transition">
+                        <td class="px-4 py-3 font-mono text-gray-600 text-xs"><%= d.heure %></td>
+                        <td class="px-4 py-3 font-bold text-gray-900"><%= d.motif %></td>
+                        <td class="px-4 py-3 text-gray-700"><%= d.beneficiaire %></td>
+                        <td class="px-4 py-3">
+                            <span class="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-gray-100 text-gray-700 uppercase">
+                                <%= d.categorie %>
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-500 text-xs"><%= d.utilisateur_nom %></td>
+                        <td class="px-4 py-3 text-right font-black text-red-700">- <%= d.montant.toLocaleString('fr-FR') %> FCFA</td>
+                        <td class="px-4 py-3 text-center">
+                            <form action="/caisse/depenses/<%= d.id %>/delete" method="POST" onsubmit="return confirm('Confirmer la suppression de cette sortie de caisse ?');" class="inline">
+                                <input type="hidden" name="date" value="<%= dateSelected %>">
+                                <button type="submit" class="text-gray-400 hover:text-red-600 transition" title="Supprimer">
+                                    <i class="fas fa-trash-alt text-xs"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <% } %>
 
     <!-- Tableau des encaissements -->
     <div class="bg-white shadow rounded-lg overflow-hidden">
@@ -123,12 +203,75 @@
                     </tbody>
                     <tfoot>
                         <tr class="bg-green-50 border-t-2 border-green-200">
-                            <td colspan="5" class="px-4 py-3 text-sm font-bold text-right text-green-800">TOTAL DU JOUR</td>
+                            <td colspan="5" class="px-4 py-3 text-sm font-bold text-right text-green-800">TOTAL DES ENCAISSEMENTS</td>
                             <td class="px-4 py-3 text-sm text-right font-black text-green-900 text-base"><%= totalJour.toLocaleString('fr-FR') %> FCFA</td>
                         </tr>
+                        <% if (totalDepenses > 0) { %>
+                        <tr class="bg-red-50 text-red-900">
+                            <td colspan="5" class="px-4 py-2.5 text-sm font-bold text-right text-red-800">TOTAL SORTIES DE CAISSE (DÉPENSES)</td>
+                            <td class="px-4 py-2.5 text-sm text-right font-black text-red-900">- <%= totalDepenses.toLocaleString('fr-FR') %> FCFA</td>
+                        </tr>
+                        <tr class="bg-slate-900 text-white font-black text-base border-t-2 border-slate-700">
+                            <td colspan="5" class="px-4 py-3 text-right uppercase tracking-wider text-emerald-400">SOLDE PHYSIQUE NET EN CAISSE (ESPÈCES)</td>
+                            <td class="px-4 py-3 text-right text-emerald-400"><%= soldeNetEspeces.toLocaleString('fr-FR') %> FCFA</td>
+                        </tr>
+                        <% } %>
                     </tfoot>
                 </table>
             </div>
         <% } %>
+    </div>
+
+    <!-- Modal d'enregistrement d'une dépense -->
+    <div x-show="openDepenseModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-black/60 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-slate-800 relative" @click.away="openDepenseModal = false">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b">
+                <h3 class="text-lg font-black text-gray-900 flex items-center gap-2">
+                    <i class="fas fa-minus-circle text-red-600"></i> Nouvelle Sortie de Caisse
+                </h3>
+                <button type="button" @click="openDepenseModal = false" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form action="/caisse/depenses" method="POST" class="space-y-4">
+                <input type="hidden" name="date" value="<%= dateSelected %>">
+                
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Motif de la dépense *</label>
+                    <input type="text" name="motif" required placeholder="Ex: Carburant ambulance, Achat glace vaccins..." class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Montant en FCFA *</label>
+                    <input type="number" step="100" min="100" name="montant" required placeholder="Ex: 5000" class="w-full px-3 py-2 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-red-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Bénéficiaire / Destinataire</label>
+                    <input type="text" name="beneficiaire" placeholder="Ex: Chauffeur Cpl. Touré, Station Total..." class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-700 mb-1">Catégorie</label>
+                    <select name="categorie" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                        <option value="carburant">Carburant / Transport</option>
+                        <option value="fournitures">Fournitures de bureau / Médicales</option>
+                        <option value="pharmacie_urgence">Pharmacie d'urgence</option>
+                        <option value="maintenance">Maintenance / Réparation</option>
+                        <option value="autre">Autre dépense diverse</option>
+                    </select>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" @click="openDepenseModal = false" class="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer">
+                        Annuler
+                    </button>
+                    <button type="submit" class="flex-1 py-2 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold shadow-md cursor-pointer">
+                        Enregistrer la sortie
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>

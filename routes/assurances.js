@@ -137,4 +137,177 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// GET /assurances/:id/bordereau — Bordereau de facturation par assurance
+router.get('/:id/bordereau', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+
+        const dateFrom = req.query.date_from || startOfMonth;
+        const dateTo = req.query.date_to || endOfMonth;
+
+        const { data: assurance, error: errAssurance } = await supabase
+            .from('assurances')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (errAssurance || !assurance) throw errAssurance || new Error('Assurance introuvable');
+
+        // Récupérer les patients affiliés à cette assurance
+        const { data: patientAssurances } = await supabase
+            .from('patient_assurances')
+            .select('patient_id, numero_police, assureur')
+            .ilike('assureur', `%${assurance.nom}%`);
+
+        const patientMap = {};
+        (patientAssurances || []).forEach(pa => {
+            patientMap[pa.patient_id] = pa.numero_police || '-';
+        });
+
+        const patientIds = Object.keys(patientMap);
+
+        let facturesBordereau = [];
+        if (patientIds.length > 0) {
+            const { data: factures } = await supabase
+                .from('factures')
+                .select('id, numero_facture, date_facture, total_net, statut, patient_id, patients(nom, prenom, matricule), facture_lignes(part_assureur, part_assure, montant)')
+                .in('patient_id', patientIds)
+                .gte('date_facture', `${dateFrom}T00:00:00`)
+                .lte('date_facture', `${dateTo}T23:59:59`)
+                .neq('statut', 'annulee')
+                .order('date_facture', { ascending: true });
+
+            const tauxCouverture = parseFloat(assurance.taux_couverture) || 80;
+
+            facturesBordereau = (factures || []).map(f => {
+                const totalLignesAssureur = (f.facture_lignes || []).reduce((acc, l) => acc + (parseFloat(l.part_assureur) || 0), 0);
+                const partAssurance = totalLignesAssureur > 0 ? totalLignesAssureur : Math.round((parseFloat(f.total_net) || 0) * (tauxCouverture / 100));
+                const partPatient = (parseFloat(f.total_net) || 0) - partAssurance;
+
+                return {
+                    id: f.id,
+                    numero_facture: f.numero_facture,
+                    date_facture: f.date_facture,
+                    patient_nom: f.patients ? `${f.patients.nom} ${f.patients.prenom}` : '-',
+                    matricule: f.patients ? f.patients.matricule : null,
+                    numero_police: patientMap[f.patient_id] || '-',
+                    total_facture: parseFloat(f.total_net) || 0,
+                    part_assurance: partAssurance,
+                    part_patient: partPatient,
+                    statut: f.statut
+                };
+            });
+        }
+
+        const totalFacture = facturesBordereau.reduce((acc, f) => acc + f.total_facture, 0);
+        const totalPartAssurance = facturesBordereau.reduce((acc, f) => acc + f.part_assurance, 0);
+        const totalPartPatient = facturesBordereau.reduce((acc, f) => acc + f.part_patient, 0);
+
+        res.render('assurances/bordereau', {
+            title: `Bordereau — ${assurance.nom}`,
+            assurance,
+            factures: facturesBordereau,
+            totalFacture,
+            totalPartAssurance,
+            totalPartPatient,
+            dateFrom,
+            dateTo
+        });
+    } catch (error) {
+        console.error('Erreur bordereau assurance:', error);
+        req.flash('error', 'Erreur lors de la génération du bordereau');
+        res.redirect('/assurances');
+    }
+});
+
+// GET /assurances/:id/bordereau/print — Impression A4 du bordereau
+router.get('/:id/bordereau/print', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+
+        const dateFrom = req.query.date_from || startOfMonth;
+        const dateTo = req.query.date_to || endOfMonth;
+
+        const { data: assurance, error: errAssurance } = await supabase
+            .from('assurances')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (errAssurance || !assurance) throw errAssurance || new Error('Assurance introuvable');
+
+        const { data: patientAssurances } = await supabase
+            .from('patient_assurances')
+            .select('patient_id, numero_police, assureur')
+            .ilike('assureur', `%${assurance.nom}%`);
+
+        const patientMap = {};
+        (patientAssurances || []).forEach(pa => {
+            patientMap[pa.patient_id] = pa.numero_police || '-';
+        });
+
+        const patientIds = Object.keys(patientMap);
+
+        let facturesBordereau = [];
+        if (patientIds.length > 0) {
+            const { data: factures } = await supabase
+                .from('factures')
+                .select('id, numero_facture, date_facture, total_net, statut, patient_id, patients(nom, prenom, matricule), facture_lignes(part_assureur, part_assure, montant)')
+                .in('patient_id', patientIds)
+                .gte('date_facture', `${dateFrom}T00:00:00`)
+                .lte('date_facture', `${dateTo}T23:59:59`)
+                .neq('statut', 'annulee')
+                .order('date_facture', { ascending: true });
+
+            const tauxCouverture = parseFloat(assurance.taux_couverture) || 80;
+
+            facturesBordereau = (factures || []).map(f => {
+                const totalLignesAssureur = (f.facture_lignes || []).reduce((acc, l) => acc + (parseFloat(l.part_assureur) || 0), 0);
+                const partAssurance = totalLignesAssureur > 0 ? totalLignesAssureur : Math.round((parseFloat(f.total_net) || 0) * (tauxCouverture / 100));
+                const partPatient = (parseFloat(f.total_net) || 0) - partAssurance;
+
+                return {
+                    id: f.id,
+                    numero_facture: f.numero_facture,
+                    date_facture: f.date_facture,
+                    patient_nom: f.patients ? `${f.patients.nom} ${f.patients.prenom}` : '-',
+                    matricule: f.patients ? f.patients.matricule : null,
+                    numero_police: patientMap[f.patient_id] || '-',
+                    total_facture: parseFloat(f.total_net) || 0,
+                    part_assurance: partAssurance,
+                    part_patient: partPatient,
+                    statut: f.statut
+                };
+            });
+        }
+
+        const totalFacture = facturesBordereau.reduce((acc, f) => acc + f.total_facture, 0);
+        const totalPartAssurance = facturesBordereau.reduce((acc, f) => acc + f.part_assurance, 0);
+        const totalPartPatient = facturesBordereau.reduce((acc, f) => acc + f.part_patient, 0);
+
+        res.render('assurances/print', {
+            layout: false,
+            title: `Bordereau — ${assurance.nom}`,
+            assurance,
+            factures: facturesBordereau,
+            totalFacture,
+            totalPartAssurance,
+            totalPartPatient,
+            dateFrom,
+            dateTo,
+            user: (req.session && req.session.user) ? req.session.user : null
+        });
+    } catch (error) {
+        console.error('Erreur impression bordereau assurance:', error);
+        req.flash('error', 'Erreur lors de la génération du bordereau');
+        res.redirect('/assurances');
+    }
+});
+
 module.exports = router;

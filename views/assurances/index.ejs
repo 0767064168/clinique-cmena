@@ -67,6 +67,9 @@
                     </div>
 
                     <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                        <a href="/assurances/<%= assurance.id %>/bordereau" class="inline-flex items-center justify-center h-8 px-3 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition">
+                            <i class="fas fa-file-invoice-dollar mr-1"></i> Bordereau
+                        </a>
                         <a href="/assurances/<%= assurance.id %>/edit" class="inline-flex items-center justify-center h-8 px-3 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-indigo-50 text-indigo-700 hover:text-indigo-900 transition">
                             <i class="fas fa-edit mr-1"></i> Modifier
                         </a>
@@ -118,7 +121,10 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <a href="/assurances/<%= assurance.id %>/edit" class="text-indigo-600 hover:text-indigo-900 mr-3 inline-flex items-center gap-1 font-semibold">
+                                    <a href="/assurances/<%= assurance.id %>/bordereau" class="text-indigo-600 hover:text-indigo-900 mr-3 inline-flex items-center gap-1 font-semibold">
+                                        <i class="fas fa-file-invoice-dollar text-xs"></i> Bordereau
+                                    </a>
+                                    <a href="/assurances/<%= assurance.id %>/edit" class="text-gray-600 hover:text-gray-900 mr-3 inline-flex items-center gap-1 font-semibold">
                                         <i class="fas fa-edit text-xs"></i> Modifier
                                     </a>
                                     <form action="/assurances/<%= assurance.id %>?_method=DELETE" method="POST" class="inline" onsubmit="return confirm('Supprimer cette assurance ?');">

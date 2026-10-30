@@ -348,6 +348,57 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// GET /patients/:id/print — Fiche Médicale / Dossier Patient Imprimable A4
+router.get('/:id/print', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const { data: patient, error: errPatient } = await supabase
+            .from('patients')
+            .select('*, patient_assurances(*)')
+            .eq('id', id)
+            .single();
+
+        if (errPatient || !patient) throw errPatient || new Error('Patient introuvable');
+
+        if (patient.patient_assurances && patient.patient_assurances.length > 0) {
+            const ass = patient.patient_assurances[0];
+            patient.type_assurance = ass.type_assurance;
+            patient.assureur = ass.assureur;
+            patient.souscripteur = ass.souscripteur;
+            patient.numero_police = ass.numero_police;
+        }
+
+        const { data: rawConsultations } = await supabase
+            .from('consultations')
+            .select('*, praticiens(nom, prenom)')
+            .eq('patient_id', id)
+            .order('date_entree', { ascending: false });
+
+        const consultations = (rawConsultations || []).map(c => {
+            const clinical = unpackClinicalData(c.observations);
+            return {
+                ...c,
+                clinical,
+                vitals: clinical,
+                observations_clean: clinical.cleanObservations
+            };
+        });
+
+        res.render('patients/print', {
+            layout: false,
+            title: `Dossier Médical — ${patient.nom} ${patient.prenom}`,
+            patient,
+            consultations: consultations || [],
+            user: (req.session && req.session.user) ? req.session.user : null
+        });
+    } catch (error) {
+        console.error('Erreur impression dossier patient:', error);
+        req.flash('error', 'Erreur lors de la génération du dossier médical');
+        res.redirect(`/patients/${req.params.id}`);
+    }
+});
+
 router.get('/:id/edit', async (req, res) => {
     try {
         const { data: patient, error } = await supabase

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dossier Médical — <%= patient ? (patient.nom + ' ' + patient.prenom) : 'Patient' %> (N° <%= patient ? patient.numero_dossier : '' %>)</title>
+    <link href="/css/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <style>
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+        @media print {
+            body {
+                padding: 0 !important;
+                margin: 0 !important;
+                background: white !important;
+                font-size: 11px;
+                color: #0f172a !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+    </style>
+</head>
+<body class="bg-white text-slate-900">
+    <!-- Boutons d'action hors impression -->
+    <div class="no-print fixed top-4 right-4 z-50 flex gap-2">
+        <button onclick="window.print()" class="bg-gray-900 hover:bg-black text-white font-bold py-2 px-4 rounded-lg text-xs sm:text-sm shadow-lg inline-flex items-center gap-1.5 cursor-pointer">
+            <i class="fas fa-print"></i> Imprimer le Dossier
+        </button>
+        <button onclick="window.close()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg text-xs sm:text-sm cursor-pointer">
+            Fermer
+        </button>
+    </div>
+
+    <div class="max-w-4xl mx-auto p-4 sm:p-8">
+        <!-- En-tête officiel GSPM -->
+        <div class="text-center mb-4">
+            <div class="flex justify-between items-start">
+                <img src="/images/logo_gspm.jpg" alt="Logo GSPM" class="h-16 w-16 object-contain" onerror="this.style.display='none'">
+                <div>
+                    <p class="text-xs font-black uppercase tracking-wider">République de Côte d'Ivoire</p>
+                    <p class="text-[11px] font-bold text-gray-700 uppercase">Ministère de la Défense</p>
+                    <p class="text-[11px] font-black text-red-700 uppercase">Groupement de Sapeurs-Pompiers Militaires (GSPM)</p>
+                    <p class="text-[10px] font-bold text-gray-600">CSA 3e Compagnie — Bouaké</p>
+                </div>
+                <img src="/images/logo_defense.jpg" alt="Logo Défense" class="h-16 w-16 object-contain" onerror="this.style.display='none'">
+            </div>
+            <div class="mt-3 mb-2" style="height: 4px; background: linear-gradient(to right, #FF6600, #FFFFFF, #009900);"></div>
+        </div>
+
+        <div class="text-center mb-5">
+            <h1 class="text-lg sm:text-xl font-black uppercase tracking-wide text-gray-900">Dossier Médical Individuel</h1>
+            <p class="text-xs text-gray-500">Document confidentiel soumis au secret médical — Émis le <%= new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+        </div>
+
+        <!-- Fiche d'identification Patient -->
+        <div class="border border-slate-300 rounded-lg p-4 mb-4 bg-slate-50/50">
+            <div class="flex justify-between items-start border-b border-slate-200 pb-2 mb-3">
+                <div>
+                    <h2 class="text-base font-black text-slate-900 uppercase tracking-wide">
+                        <%= patient.nom %> <%= patient.prenom %>
+                    </h2>
+                    <p class="text-xs text-slate-500">
+                        Dossier N° <strong class="text-slate-800 font-mono"><%= patient.numero_dossier %></strong>
+                        <% if (patient.matricule) { %>
+                            — Matricule Militaire : <strong class="text-red-700 font-mono"><%= patient.matricule %></strong>
+                        <% } %>
+                    </p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-block px-3 py-1 bg-red-600 text-white font-black text-xs rounded-full">
+                        Groupe : <%= patient.groupe_sanguin || 'Non renseigné' %>
+                    </span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div>
+                    <span class="text-gray-500 block text-[10px] uppercase font-bold">Sexe</span>
+                    <span class="font-bold text-gray-800"><%= patient.sexe === 'M' ? 'Masculin' : (patient.sexe === 'F' ? 'Féminin' : '-') %></span>
+                </div>
+                <div>
+                    <span class="text-gray-500 block text-[10px] uppercase font-bold">Date de Naissance</span>
+                    <span class="font-bold text-gray-800"><%= patient.date_naissance ? new Date(patient.date_naissance).toLocaleDateString('fr-FR') : '-' %></span>
+                </div>
+                <div>
+                    <span class="text-gray-500 block text-[10px] uppercase font-bold">Téléphone</span>
+                    <span class="font-bold text-gray-800 font-mono"><%= patient.telephone || '-' %></span>
+                </div>
+                <div>
+                    <span class="text-gray-500 block text-[10px] uppercase font-bold">Résidence / Ville</span>
+                    <span class="font-bold text-gray-800"><%= patient.ville || patient.adresse || '-' %></span>
+                </div>
+                <div>
+                    <span class="text-gray-500 block text-[10px] uppercase font-bold">Couverture Médicale</span>
+                    <span class="font-bold text-gray-800"><%= patient.assureur || patient.type_assurance || 'Sans assurance' %></span>
+                </div>
+                <div>
+                    <span class="text-gray-500 block text-[10px] uppercase font-bold">N° Police / Matricule Assuré</span>
+                    <span class="font-bold text-gray-800 font-mono"><%= patient.numero_police || '-' %></span>
+                </div>
+                <div>
+                    <span class="text-gray-500 block text-[10px] uppercase font-bold">Contact d'Urgence</span>
+                    <span class="font-bold text-gray-800"><%= patient.contact_urgence_nom || '-' %> (<%= patient.contact_urgence_tel || '-' %>)</span>
+                </div>
+                <div>
+                    <span class="text-gray-500 block text-[10px] uppercase font-bold">Date d'admission initiale</span>
+                    <span class="font-bold text-gray-800"><%= new Date(patient.created_at).toLocaleDateString('fr-FR') %></span>
+                </div>
+            </div>
+
+            <!-- Allergies et Antécédents -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 pt-3 border-t border-slate-200 text-xs">
+                <div class="p-2.5 rounded bg-amber-50/70 border border-amber-200">
+                    <span class="text-amber-900 font-black uppercase text-[10px] block mb-0.5">
+                        <i class="fas fa-exclamation-triangle text-amber-600 mr-1"></i> Allergies & Intolérances
+                    </span>
+                    <p class="text-gray-800 font-medium"><%= patient.allergies || 'Aucune allergie connue' %></p>
+                </div>
+                <div class="p-2.5 rounded bg-blue-50/70 border border-blue-200">
+                    <span class="text-blue-900 font-black uppercase text-[10px] block mb-0.5">
+                        <i class="fas fa-notes-medical text-blue-600 mr-1"></i> Antécédents Médicaux & Chirurgicaux
+                    </span>
+                    <p class="text-gray-800 font-medium"><%= patient.antecedents || 'Aucun antécédent notoire' %></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historique des Consultations & Soins -->
+        <div class="mb-6">
+            <h2 class="text-xs font-black uppercase tracking-wider text-slate-700 mb-2 pb-1 border-b border-slate-300 flex items-center justify-between">
+                <span><i class="fas fa-history text-slate-500 mr-1"></i> Historique Chronologique des Consultations (<%= consultations.length %>)</span>
+            </h2>
+
+            <% if (consultations.length === 0) { %>
+                <p class="text-xs text-gray-500 italic p-4 text-center border border-dashed rounded">Aucune consultation enregistrée pour ce patient.</p>
+            <% } else { %>
+                <div class="space-y-3">
+                    <% consultations.forEach((c, idx) => { 
+                        const clin = c.clinical || {};
+                    %>
+                    <div class="border border-slate-200 rounded-lg p-3 bg-white text-xs">
+                        <div class="flex justify-between items-start border-b border-slate-100 pb-1.5 mb-2">
+                            <div>
+                                <span class="font-black text-slate-900">
+                                    Consultation du <%= new Date(c.date_entree).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) %>
+                                    à <%= new Date(c.date_entree).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) %>
+                                </span>
+                                <span class="text-slate-500 ml-2">
+                                    — Praticien : <strong><%= c.praticiens ? ('Dr. ' + c.praticiens.nom + ' ' + c.praticiens.prenom) : 'Non précisé' %></strong>
+                                </span>
+                            </div>
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full <%= c.statut === 'termine' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800' %>">
+                                <%= c.statut === 'termine' ? 'Terminée' : c.statut %>
+                            </span>
+                        </div>
+
+                        <!-- Motif et Diagnostic -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                            <div>
+                                <span class="text-gray-400 uppercase text-[9px] font-bold block">Motif de consultation</span>
+                                <p class="text-gray-800 font-medium"><%= c.motif || clin.motif || 'Non précisé' %></p>
+                            </div>
+                            <div>
+                                <span class="text-gray-400 uppercase text-[9px] font-bold block">Diagnostic Retenu</span>
+                                <p class="text-red-800 font-bold"><%= c.diagnostic || clin.diagnostic || 'Non spécifié' %></p>
+                            </div>
+                        </div>
+
+                        <!-- Constantes physiques -->
+                        <% if (clin.tension || clin.temperature || clin.poids || clin.pouls || clin.taille) { %>
+                        <div class="bg-slate-50 p-2 rounded flex flex-wrap gap-3 text-[11px] font-mono text-slate-700 mb-2">
+                            <% if (clin.tension) { %><span><strong>TA :</strong> <%= clin.tension %> mmHg</span><% } %>
+                            <% if (clin.temperature) { %><span><strong>T° :</strong> <%= clin.temperature %> °C</span><% } %>
+                            <% if (clin.poids) { %><span><strong>Poids :</strong> <%= clin.poids %> kg</span><% } %>
+                            <% if (clin.taille) { %><span><strong>Taille :</strong> <%= clin.taille %> cm</span><% } %>
+                            <% if (clin.imc) { %><span><strong>IMC :</strong> <%= clin.imc %></span><% } %>
+                            <% if (clin.pouls) { %><span><strong>Pouls :</strong> <%= clin.pouls %> bpm</span><% } %>
+                            <% if (clin.glycemie) { %><span><strong>Glycémie :</strong> <%= clin.glycemie %> g/L</span><% } %>
+                            <% if (clin.tdr_palu) { %><span><strong>TDR Palu :</strong> <%= clin.tdr_palu.toUpperCase() %></span><% } %>
+                        </div>
+                        <% } %>
+
+                        <!-- Traitement & Repos Militaire -->
+                        <% if (clin.traitement_prescrit || (clin.repos_type && clin.repos_type !== 'aucun')) { %>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-[11px]">
+                            <% if (clin.traitement_prescrit) { %>
+                            <div>
+                                <span class="text-gray-400 uppercase text-[9px] font-bold block">Prescriptions / Traitement</span>
+                                <p class="text-gray-700 whitespace-pre-line"><%= clin.traitement_prescrit %></p>
+                            </div>
+                            <% } %>
+                            <% if (clin.repos_type && clin.repos_type !== 'aucun') { %>
+                            <div>
+                                <span class="text-gray-400 uppercase text-[9px] font-bold block">Statut Militaire / Décision</span>
+                                <p class="font-bold text-red-700">
+                                    <%= clin.repos_type === 'modele8' ? 'Modèle 8 — Repos militaire de ' + clin.repos_nb_jours + ' jours' : (clin.repos_type === 'exemption' ? 'Exemption de service de ' + clin.repos_nb_jours + ' jours' : 'Repos médical de ' + clin.repos_nb_jours + ' jours') %>
+                                </p>
+                            </div>
+                            <% } %>
+                        </div>
+                        <% } %>
+                    </div>
+                    <% }); %>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Cadre de Signature et Validation Médicale -->
+        <div class="mt-8 pt-4 border-t-2 border-slate-300">
+            <div class="grid grid-cols-2 gap-8 text-xs">
+                <div>
+                    <p class="font-bold uppercase text-slate-700">Le Praticien / Médecin Traitant</p>
+                    <p class="text-slate-400 text-[10px] mb-12">Nom, Signature et Cachet</p>
+                    <div class="border-b border-slate-300 w-48"></div>
+                </div>
+                <div class="text-right">
+                    <p class="font-bold uppercase text-slate-700">Le Médecin-Chef CSA / Commandant</p>
+                    <p class="text-slate-400 text-[10px] mb-12">Vu et certifié conforme pour valoir ce que de droit</p>
+                    <div class="border-b border-slate-300 w-48 ml-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bas de page officiel -->
+        <p class="text-center text-[9px] text-slate-400 mt-8 uppercase tracking-wider">
+            CSA 3e COMPAGNIE GSPM BOUAKÉ — DOCUMENT MÉDICAL OFFICIEL — SAUVER OU PÉRIR
+        </p>
+    </div>
+</body>
+</html>
