@@ -30,6 +30,7 @@ const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
 const methodOverride = require('method-override');
 const { numberToFrenchWords } = require('./utils/helpers');
+const { getPharmacieAlerts } = require('./utils/pharmacieAlerts');
 
 // Importation des routes de l'application
 const dashboardRoutes = require('./routes/dashboard');
@@ -141,7 +142,12 @@ app.use(
 );
 
 // Middleware pour les variables globales et utilitaires de vue
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
+  try {
+    res.locals.pharmacieAlerts = await getPharmacieAlerts();
+  } catch (e) {
+    res.locals.pharmacieAlerts = { totalAlertes: 0, enAlerte: 0, enRupture: 0, perimes: 0, expire30j: 0 };
+  }
   // Utilisateur connecté
   res.locals.user = req.session ? req.session.user : null;
   res.locals.currentPath = req.path;

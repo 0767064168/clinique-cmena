@@ -71,6 +71,11 @@
                        class="group flex items-center gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 transition <%= isActive ? 'bg-primary text-white border-l-4 ' + borderAccent : 'text-gray-300 hover:bg-primary-light hover:text-white' %>">
                         <i class="<%= item.icon %> w-6 text-center text-lg <%= isActive ? 'text-white' : 'text-gray-400 group-hover:text-white' %>"></i>
                         <span class="truncate"><%= item.label %></span>
+                        <% if (item.href === '/pharmacie' && typeof pharmacieAlerts !== 'undefined' && pharmacieAlerts && pharmacieAlerts.totalAlertes > 0) { %>
+                            <span class="ml-auto inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-black bg-red-600 text-white shadow-sm" title="<%= pharmacieAlerts.totalAlertes %> alerte(s) de stock / péremption">
+                                <%= pharmacieAlerts.totalAlertes %>
+                            </span>
+                        <% } %>
                     </a>
                 <% } else { %>
                     <div title="Accès restreint (non autorisé pour votre profil <%= userRole %>)" 

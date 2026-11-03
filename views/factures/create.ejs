@@ -4,23 +4,57 @@
         <a href="/factures" class="text-gray-600 hover:text-gray-900 font-medium text-sm">← Retour</a>
     </div>
 
-    <form action="/factures" method="POST" class="bg-white shadow rounded-lg p-4 sm:p-6 space-y-6 sm:space-y-8">
+    <form action="/factures" method="POST" 
+          @submit="if(!selectedPatientId){ alert('Veuillez sélectionner un patient valide dans la liste'); $event.preventDefault(); return false; } isSubmitting = true"
+          class="bg-white shadow rounded-lg p-4 sm:p-6 space-y-6 sm:space-y-8">
 
         <!-- Informations Générales -->
         <section>
             <h2 class="text-xl font-semibold border-b pb-2 mb-4">Informations Générales</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
+                <!-- Sélecteur de Patient avec Recherche Instantanée -->
+                <div class="relative" @click.away="patientDropdownOpen = false">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Patient *</label>
-                    <select name="patient_id" required class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Sélectionner un patient...</option>
-                        <% if (typeof patients !== 'undefined') { %>
-                            <% patients.forEach(p => { %>
-                                <option value="<%= p.id %>" <%= selectedConsultation && selectedConsultation.patient_id == p.id ? 'selected' : '' %>><%= p.numero_dossier %> — <%= p.nom %> <%= p.prenom %></option>
-                            <% }); %>
-                        <% } %>
-                    </select>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 pointer-events-none">
+                            <i class="fas fa-search text-xs"></i>
+                        </span>
+                        <input type="text" 
+                               x-model="searchPatient" 
+                               @focus="patientDropdownOpen = true"
+                               @input="patientDropdownOpen = true; selectedPatientId = ''"
+                               placeholder="Taper un nom, prénom ou N° de dossier..."
+                               class="w-full pl-9 pr-8 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition"
+                               :class="selectedPatientId ? 'border-green-500 bg-green-50/20' : 'border-gray-300'"
+                               autocomplete="off"
+                               required>
+                        <template x-if="selectedPatientId">
+                            <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-green-600" title="Patient sélectionné">
+                                <i class="fas fa-check-circle text-sm"></i>
+                            </span>
+                        </template>
+                    </div>
+                    <input type="hidden" name="patient_id" :value="selectedPatientId" required>
+
+                    <!-- Menu déroulant des résultats -->
+                    <div x-show="patientDropdownOpen" x-cloak
+                         class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto divide-y divide-gray-100">
+                        <template x-for="p in filteredPatients" :key="p.id">
+                            <div @click="selectPatient(p)" 
+                                 class="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer flex justify-between items-center transition">
+                                <div>
+                                    <span class="font-bold text-gray-800" x-text="p.nom + ' ' + (p.prenom || '')"></span>
+                                    <span class="text-xs text-gray-500 ml-2" x-text="'N° ' + (p.numero_dossier || '-')"></span>
+                                </div>
+                                <span class="text-xs text-blue-600 font-semibold">Choisir</span>
+                            </div>
+                        </template>
+                        <div x-show="filteredPatients.length === 0" class="p-3 text-xs text-gray-500 text-center">
+                            Aucun patient correspondant trouvé.
+                        </div>
+                    </div>
                 </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Consultation liée</label>
                     <select name="consultation_id" class="w-full border rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500">
@@ -203,8 +237,17 @@
         <!-- Boutons -->
         <div class="flex justify-end gap-4 border-t pt-4">
             <a href="/factures" class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50">Annuler</a>
-            <button type="submit" name="action" value="brouillon" class="px-4 py-2 border border-blue-300 rounded-md text-blue-700 hover:bg-blue-50">Enregistrer comme brouillon</button>
-            <button type="submit" name="action" value="valider" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-bold">Valider la facture</button>
+            <button type="submit" name="action" value="brouillon" 
+                    :disabled="isSubmitting"
+                    class="px-4 py-2 border border-blue-300 rounded-md text-blue-700 hover:bg-blue-50 disabled:opacity-50">
+                Enregistrer comme brouillon
+            </button>
+            <button type="submit" name="action" value="valider" 
+                    :disabled="isSubmitting"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-bold disabled:opacity-50 inline-flex items-center gap-2">
+                <template x-if="isSubmitting"><i class="fas fa-spinner fa-spin text-xs"></i></template>
+                <span x-text="isSubmitting ? 'Traitement en cours...' : 'Valider la facture'"></span>
+            </button>
         </div>
     </form>
 </div>
@@ -212,8 +255,40 @@
 <script>
     function invoiceForm() {
         const catalogProduits = <%- JSON.stringify(typeof produits !== 'undefined' ? produits : []) %>;
+        const initialPatients = <%- JSON.stringify((typeof patients !== 'undefined' ? patients : []).map(p => ({
+            id: p.id,
+            nom: p.nom,
+            prenom: p.prenom,
+            numero_dossier: p.numero_dossier,
+            label: (p.numero_dossier ? p.numero_dossier + ' — ' : '') + p.nom + ' ' + (p.prenom || '')
+        }))) %>;
+
+        const defaultPatientId = '<%= (typeof selectedConsultation !== "undefined" && selectedConsultation && selectedConsultation.patient_id) ? selectedConsultation.patient_id : "" %>';
+        const defaultPatientObj = initialPatients.find(p => p.id === defaultPatientId);
 
         return {
+            patientsList: initialPatients,
+            searchPatient: defaultPatientObj ? defaultPatientObj.label : '',
+            selectedPatientId: defaultPatientId,
+            patientDropdownOpen: false,
+            isSubmitting: false,
+
+            get filteredPatients() {
+                if (!this.searchPatient) return this.patientsList.slice(0, 50);
+                const q = this.searchPatient.toLowerCase().trim();
+                return this.patientsList.filter(p => 
+                    (p.nom && p.nom.toLowerCase().includes(q)) || 
+                    (p.prenom && p.prenom.toLowerCase().includes(q)) || 
+                    (p.numero_dossier && String(p.numero_dossier).toLowerCase().includes(q))
+                ).slice(0, 50);
+            },
+
+            selectPatient(p) {
+                this.selectedPatientId = p.id;
+                this.searchPatient = p.label;
+                this.patientDropdownOpen = false;
+            },
+
             rows: [
                 { libelle: '', nom_praticien: '', prix_unitaire: 0, quantite: 1, pourcentage: 100 }
             ],
@@ -263,7 +338,7 @@
             calculateTotals() {
                 let prestTotal = 0;
                 this.rows.forEach(r => {
-                    prestTotal += (Number(r.prix_unitaire) || 0) * (Number(r.quantite) || 1) * ((r.pourcentage !== undefined ? Number(r.pourcentage) : 100) / 100);
+                    prestTotal += (Number(r.prix_unitaire) || 0) * (Number(r.quantite) || 1) * ((row => (row.pourcentage !== undefined ? Number(row.pourcentage) : 100) / 100)(r));
                 });
                 this.total_prestations = Math.round(prestTotal);
 

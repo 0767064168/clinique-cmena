@@ -189,7 +189,7 @@ async function getRapportData(date_from, date_to) {
 
     const { data: consultations, error: errConsultations } = await supabase
         .from('consultations')
-        .select('id, statut, date_entree')
+        .select('id, statut, date_entree, motif, diagnostic')
         .gte('date_entree', `${date_from}T00:00:00.000Z`)
         .lte('date_entree', `${date_to}T23:59:59.999Z`);
 
@@ -197,6 +197,27 @@ async function getRapportData(date_from, date_to) {
 
     const totalConsultations = (consultations || []).length;
     const consultationsTerminees = (consultations || []).filter(c => c.statut === 'termine').length;
+
+    // Calcul des pathologies / motifs récurrents (Top 5)
+    const diagMap = {};
+    (consultations || []).forEach(c => {
+        const raw = (c.diagnostic || c.motif || '').trim();
+        if (!raw) return;
+        // Nettoyer les retours à la ligne et isoler le premier libellé
+        const firstLine = raw.split(/\r?\n/)[0].trim().replace(/^[•\-*\s]+/, '');
+        if (firstLine.length < 2) return;
+        const normalized = firstLine.slice(0, 45);
+        diagMap[normalized] = (diagMap[normalized] || 0) + 1;
+    });
+
+    const topDiagnostics = Object.entries(diagMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([label, count]) => ({
+            label,
+            count,
+            percent: totalConsultations > 0 ? Math.round((count / totalConsultations) * 100) : 0
+        }));
 
     const { data: patientsList, count: nouveauxPatients, error: errPatients } = await supabase
         .from('patients')
@@ -226,7 +247,8 @@ async function getRapportData(date_from, date_to) {
             totalConsultations,
             consultationsTerminees,
             nouveauxPatients: nouveauxPatients || 0,
-            modesPaiement
+            modesPaiement,
+            topDiagnostics
         }
     };
 }
