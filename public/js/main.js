@@ -1102,4 +1102,60 @@
     initSidebar
   };
 
+  // Définition propre du composant Alpine pour le centre de notifications
+  window.cmenaNotificationCenter = function(initialItems) {
+    let dismissed = [];
+    try {
+      dismissed = JSON.parse(sessionStorage.getItem('cmena_dismissed_notifs') || '[]');
+      if (!Array.isArray(dismissed)) dismissed = [];
+    } catch (e) {
+      dismissed = [];
+    }
+
+    return {
+      notifOpen: false,
+      activeTab: 'all',
+      dismissedIds: dismissed,
+      items: Array.isArray(initialItems) ? initialItems : [],
+      get visibleItems() {
+        return this.items.filter(i => !this.dismissedIds.includes(i.id));
+      },
+      get filteredItems() {
+        const v = this.visibleItems;
+        if (this.activeTab === 'all') return v;
+        return v.filter(i => i.category === this.activeTab);
+      },
+      get unreadCount() {
+        return this.visibleItems.length;
+      },
+      get hasCritical() {
+        return this.visibleItems.some(i => i.level === 'critical');
+      },
+      dismiss(id) {
+        if (!this.dismissedIds.includes(id)) {
+          this.dismissedIds.push(id);
+          try {
+            sessionStorage.setItem('cmena_dismissed_notifs', JSON.stringify(this.dismissedIds));
+          } catch (e) {}
+        }
+      },
+      dismissAll() {
+        this.items.forEach(i => {
+          if (!this.dismissedIds.includes(i.id)) {
+            this.dismissedIds.push(i.id);
+          }
+        });
+        try {
+          sessionStorage.setItem('cmena_dismissed_notifs', JSON.stringify(this.dismissedIds));
+        } catch (e) {}
+      },
+      resetDismissed() {
+        this.dismissedIds = [];
+        try {
+          sessionStorage.removeItem('cmena_dismissed_notifs');
+        } catch (e) {}
+      }
+    };
+  };
+
 })(window, document);

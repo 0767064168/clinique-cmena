@@ -35,42 +35,7 @@
                 const initialItems = sysNotifs.items || [];
             %>
             <div class="relative" 
-                 x-data="{
-                    notifOpen: false,
-                    activeTab: 'all',
-                    dismissedIds: JSON.parse(sessionStorage.getItem('cmena_dismissed_notifs') || '[]'),
-                    items: <%- JSON.stringify(initialItems) %>,
-                    get visibleItems() {
-                        return this.items.filter(i => !this.dismissedIds.includes(i.id));
-                    },
-                    get filteredItems() {
-                        const v = this.visibleItems;
-                        if (this.activeTab === 'all') return v;
-                        return v.filter(i => i.category === this.activeTab);
-                    },
-                    get unreadCount() {
-                        return this.visibleItems.length;
-                    },
-                    get hasCritical() {
-                        return this.visibleItems.some(i => i.level === 'critical');
-                    },
-                    dismiss(id) {
-                        if (!this.dismissedIds.includes(id)) {
-                            this.dismissedIds.push(id);
-                            sessionStorage.setItem('cmena_dismissed_notifs', JSON.stringify(this.dismissedIds));
-                        }
-                    },
-                    dismissAll() {
-                        this.items.forEach(i => {
-                            if (!this.dismissedIds.includes(i.id)) this.dismissedIds.push(i.id);
-                        });
-                        sessionStorage.setItem('cmena_dismissed_notifs', JSON.stringify(this.dismissedIds));
-                    },
-                    resetDismissed() {
-                        this.dismissedIds = [];
-                        sessionStorage.removeItem('cmena_dismissed_notifs');
-                    }
-                 }" 
+                 x-data="window.cmenaNotificationCenter ? window.cmenaNotificationCenter(<%- JSON.stringify(initialItems) %>) : { notifOpen: false, visibleItems: [], filteredItems: [], unreadCount: 0, hasCritical: false }" 
                  @keydown.escape="notifOpen = false">
 
                 <!-- Bouton Cloche avec indicateur visuel dynamique -->
