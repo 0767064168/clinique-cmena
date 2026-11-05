@@ -1,7 +1,51 @@
 const express = require('express');
 const router = express.Router();
+const https = require('https');
 const ExcelJS = require('exceljs');
 const { supabase } = require('../config/supabase');
+
+// Helper pour générer un graphique sous forme de Buffer d'image PNG via QuickChart
+function fetchChartImage(chartConfig, width = 780, height = 360) {
+    return new Promise((resolve, reject) => {
+        const postData = JSON.stringify({
+            chart: chartConfig,
+            width,
+            height,
+            backgroundColor: 'white',
+            format: 'png'
+        });
+
+        const options = {
+            hostname: 'quickchart.io',
+            port: 443,
+            path: '/chart',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData)
+            },
+            timeout: 7000
+        };
+
+        const req = https.request(options, (res) => {
+            if (res.statusCode < 200 || res.statusCode >= 300) {
+                return reject(new Error(`QuickChart status: ${res.statusCode}`));
+            }
+            const chunks = [];
+            res.on('data', chunk => chunks.push(chunk));
+            res.on('end', () => resolve(Buffer.concat(chunks)));
+        });
+
+        req.on('error', reject);
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('QuickChart request timeout'));
+        });
+
+        req.write(postData);
+        req.end();
+    });
+}
 
 const formatMoney = (value) => `${Number(value || 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA`;
 const formatPercent = (value) => `${Number(value || 0).toFixed(0)} %`;
@@ -398,7 +442,7 @@ router.get('/export/excel', async (req, res) => {
             return res.redirect('/rapports');
         }
 
-        const { factures, paiements, stats } = await getRapportData(date_from, date_to);
+        const { factures, paiements, stats, evolution } = await getRapportData(date_from, date_to);
 
         const workbook = new ExcelJS.Workbook();
         workbook.creator = 'CSA 3e COMPAGNIE GSPM BOUAKÉ';
@@ -542,9 +586,16 @@ router.get('/export/excel', async (req, res) => {
         totalFacturesRow.getCell(1).value = 'TOTAL';
         totalFacturesRow.getCell(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
         totalFacturesRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
-        totalFacturesRow.getCell(8).value = (factures || []).reduce((sum, f) => sum + Number(f.total_net || 0), 0);
-        totalFacturesRow.getCell(9).value = (factures || []).reduce((sum, f) => sum + Number(f.montant_paye || 0), 0);
-        totalFacturesRow.getCell(10).value = (factures || []).reduce((sum, f) => sum + Number(f.reste_a_payer || 0), 0);
+        const factEndRow = (factures || []).length + 4;
+        if ((factures || []).length > 0) {
+            totalFacturesRow.getCell(8).value = { formula: `SUM(H5:H${factEndRow})`, result: (factures || []).reduce((sum, f) => sum + Number(f.total_net || 0), 0) };
+            totalFacturesRow.getCell(9).value = { formula: `SUM(I5:I${factEndRow})`, result: (factures || []).reduce((sum, f) => sum + Number(f.montant_paye || 0), 0) };
+            totalFacturesRow.getCell(10).value = { formula: `SUM(J5:J${factEndRow})`, result: (factures || []).reduce((sum, f) => sum + Number(f.reste_a_payer || 0), 0) };
+        } else {
+            totalFacturesRow.getCell(8).value = 0;
+            totalFacturesRow.getCell(9).value = 0;
+            totalFacturesRow.getCell(10).value = 0;
+        }
         [8, 9, 10].forEach(col => {
             const cell = totalFacturesRow.getCell(col);
             cell.numFmt = '# ##0 "FCFA"';
@@ -611,7 +662,12 @@ router.get('/export/excel', async (req, res) => {
         totalEncaisseRow.getCell(1).value = 'TOTAL ENCAISSE';
         totalEncaisseRow.getCell(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
         totalEncaisseRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
-        totalEncaisseRow.getCell(6).value = (paiements || []).reduce((sum, p) => sum + Number(p.montant || 0), 0);
+        const encEndRow = (paiements || []).length + 4;
+        if ((paiements || []).length > 0) {
+            totalEncaisseRow.getCell(6).value = { formula: `SUM(F5:F${encEndRow})`, result: (paiements || []).reduce((sum, p) => sum + Number(p.montant || 0), 0) };
+        } else {
+            totalEncaisseRow.getCell(6).value = 0;
+        }
         totalEncaisseRow.getCell(6).numFmt = '# ##0 "FCFA"';
         totalEncaisseRow.getCell(6).font = { bold: true, color: { argb: 'FF0F172A' } };
         totalEncaisseRow.getCell(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
@@ -677,7 +733,12 @@ router.get('/export/excel', async (req, res) => {
         totalModeRow.getCell(1).value = 'TOTAL';
         totalModeRow.getCell(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
         totalModeRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
-        totalModeRow.getCell(2).value = totalPaiements;
+        const modeEndRow = (paymentSummary || []).length + 4;
+        if ((paymentSummary || []).length > 0) {
+            totalModeRow.getCell(2).value = { formula: `SUM(B5:B${modeEndRow})`, result: totalPaiements };
+        } else {
+            totalModeRow.getCell(2).value = 0;
+        }
         totalModeRow.getCell(2).numFmt = '# ##0 "FCFA"';
         totalModeRow.getCell(2).font = { bold: true, color: { argb: 'FF0F172A' } };
         totalModeRow.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
@@ -689,6 +750,241 @@ router.get('/export/excel', async (req, res) => {
             const cell = totalModeRow.getCell(col);
             cell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
         });
+
+        // ---- Onglet 5 : Évolution chronologique ----
+        const evolutionSheet = workbook.addWorksheet('Évolution', {
+            pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
+        });
+
+        evolutionSheet.views = [{ state: 'frozen', ySplit: 4 }];
+        evolutionSheet.autoFilter = { from: 'A4', to: 'E4' };
+
+        evolutionSheet.mergeCells('A1:E1');
+        const evoTitleRow = evolutionSheet.getRow(1);
+        evoTitleRow.getCell(1).value = 'ÉVOLUTION CHRONOLOGIQUE';
+        evoTitleRow.getCell(1).font = { bold: true, size: 13, color: { argb: 'FFFFFFFF' } };
+        evoTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+        evoTitleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+        evoTitleRow.height = 24;
+
+        evolutionSheet.mergeCells('A2:E2');
+        evolutionSheet.getCell('A2').value = `Période : ${date_from} au ${date_to} — ${evolution.isMonthly ? 'Vue mensuelle' : 'Vue journalière'}`;
+        evolutionSheet.getCell('A2').font = { italic: true, color: { argb: 'FF475569' } };
+        evolutionSheet.getCell('A2').alignment = { horizontal: 'center' };
+
+        const evoHeaders = ['Date', 'Facturation (FCFA)', 'Encaissement (FCFA)', 'Consultations', 'Nouveaux Patients'];
+        const evoHeaderRow = evolutionSheet.getRow(4);
+        evoHeaders.forEach((label, index) => {
+            const cell = evoHeaderRow.getCell(index + 1);
+            cell.value = label;
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+            evolutionSheet.getColumn(index + 1).width = [16, 20, 20, 16, 16][index];
+        });
+
+        const evoLabels = evolution.labels || [];
+        let sumFacturation = 0, sumEncaissement = 0, sumConsultations = 0, sumPatients = 0;
+
+        evoLabels.forEach((label, idx) => {
+            const row = evolutionSheet.getRow(idx + 5);
+            const factVal = Number((evolution.facturation || [])[idx] || 0);
+            const encVal = Number((evolution.encaissement || [])[idx] || 0);
+            const consVal = Number((evolution.consultations || [])[idx] || 0);
+            const patVal = Number((evolution.patients || [])[idx] || 0);
+
+            sumFacturation += factVal;
+            sumEncaissement += encVal;
+            sumConsultations += consVal;
+            sumPatients += patVal;
+
+            const values = [label, factVal, encVal, consVal, patVal];
+            values.forEach((value, colIdx) => {
+                const cell = row.getCell(colIdx + 1);
+                cell.value = value;
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: idx % 2 === 0 ? 'FFF8FAFC' : 'FFFFFFFF' } };
+                cell.border = { all: { style: 'thin', color: { argb: 'FFDDDDDD' } } };
+                if (typeof value === 'number' && (colIdx === 1 || colIdx === 2)) {
+                    cell.numFmt = '# ##0 "FCFA"';
+                } else if (typeof value === 'number') {
+                    cell.numFmt = '#,##0';
+                }
+            });
+        });
+
+        // Ligne de total
+        const evoTotalRow = evolutionSheet.getRow(evoLabels.length + 6);
+        evoTotalRow.getCell(1).value = 'TOTAL';
+        evoTotalRow.getCell(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        evoTotalRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+        const evoEndRow = evoLabels.length + 4;
+        if (evoLabels.length > 0) {
+            evoTotalRow.getCell(2).value = { formula: `SUM(B5:B${evoEndRow})`, result: sumFacturation };
+            evoTotalRow.getCell(3).value = { formula: `SUM(C5:C${evoEndRow})`, result: sumEncaissement };
+            evoTotalRow.getCell(4).value = { formula: `SUM(D5:D${evoEndRow})`, result: sumConsultations };
+            evoTotalRow.getCell(5).value = { formula: `SUM(E5:E${evoEndRow})`, result: sumPatients };
+        } else {
+            evoTotalRow.getCell(2).value = 0;
+            evoTotalRow.getCell(3).value = 0;
+            evoTotalRow.getCell(4).value = 0;
+            evoTotalRow.getCell(5).value = 0;
+        }
+        [2, 3, 4, 5].forEach(col => {
+            const cell = evoTotalRow.getCell(col);
+            cell.font = { bold: true, color: { argb: 'FF0F172A' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+            cell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+            if (col <= 3) cell.numFmt = '# ##0 "FCFA"';
+            else cell.numFmt = '#,##0';
+        });
+
+        // Pics d'activité
+        const peaksStartRow = evoLabels.length + 9;
+        const peaks = evolution.peaks || {};
+
+        evolutionSheet.getCell(`A${peaksStartRow}`).value = 'PICS D\'ACTIVITÉ';
+        evolutionSheet.getCell(`A${peaksStartRow}`).font = { bold: true, size: 11, color: { argb: 'FF0F766E' } };
+
+        const peakData = [
+            ['Pic facturation', formatMoney(peaks.peakFacturation ? peaks.peakFacturation.montant : 0), peaks.peakFacturation ? peaks.peakFacturation.date : '-'],
+            ['Pic encaissement', formatMoney(peaks.peakEncaissement ? peaks.peakEncaissement.montant : 0), peaks.peakEncaissement ? peaks.peakEncaissement.date : '-'],
+            ['Pic consultations', peaks.peakConsultations ? `${peaks.peakConsultations.count} consultation(s)` : '-', peaks.peakConsultations ? peaks.peakConsultations.date : '-']
+        ];
+
+        peakData.forEach((peak, idx) => {
+            const row = evolutionSheet.getRow(peaksStartRow + 1 + idx);
+            row.getCell(1).value = peak[0];
+            row.getCell(2).value = peak[1];
+            row.getCell(3).value = peak[2];
+            row.getCell(1).font = { italic: true, color: { argb: 'FF334155' } };
+            row.getCell(2).font = { bold: true, color: { argb: 'FF0F172A' } };
+            row.getCell(3).font = { italic: true, color: { argb: 'FF64748B' } };
+        });
+
+        // ---- Insertion des courbes d'évolution sous forme de graphiques ----
+        try {
+            // Graphique 1 : Évolution Financière (Encaissement vs Facturation)
+            const financeChartConfig = {
+                type: 'line',
+                data: {
+                    labels: evoLabels,
+                    datasets: [
+                        {
+                            label: 'Encaissement Réel (FCFA)',
+                            data: evolution.encaissement || [],
+                            borderColor: '#059669',
+                            backgroundColor: 'rgba(5, 150, 105, 0.12)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 2.5
+                        },
+                        {
+                            label: 'Facturé Net (FCFA)',
+                            data: evolution.facturation || [],
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 2.5
+                        }
+                    ]
+                },
+                options: {
+                    title: {
+                        display: true,
+                        text: `Évolution Financière (${date_from} au ${date_to})`,
+                        fontColor: '#0f172a',
+                        fontSize: 14,
+                        fontStyle: 'bold'
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: { boxWidth: 12, fontSize: 11, fontStyle: 'bold' }
+                    },
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true,
+                                callback: (val) => val >= 1000000 ? (val / 1000000).toFixed(1) + 'M' : (val >= 1000 ? (val / 1000) + 'k' : val)
+                            }
+                        }]
+                    }
+                }
+            };
+
+            // Graphique 2 : Activité Médicale (Consultations & Nouveaux Patients)
+            const activiteChartConfig = {
+                type: 'line',
+                data: {
+                    labels: evoLabels,
+                    datasets: [
+                        {
+                            label: 'Consultations Médicales',
+                            data: evolution.consultations || [],
+                            borderColor: '#7c3aed',
+                            backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                            fill: true,
+                            tension: 0.35,
+                            borderWidth: 2.5
+                        },
+                        {
+                            label: 'Nouveaux Patients',
+                            data: evolution.patients || [],
+                            borderColor: '#ea580c',
+                            backgroundColor: 'rgba(234, 88, 12, 0.08)',
+                            fill: false,
+                            tension: 0.35,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    title: {
+                        display: true,
+                        text: `Activité Médicale & Fréquentation (${date_from} au ${date_to})`,
+                        fontColor: '#0f172a',
+                        fontSize: 14,
+                        fontStyle: 'bold'
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: { boxWidth: 12, fontSize: 11, fontStyle: 'bold' }
+                    },
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true,
+                                precision: 0
+                            }
+                        }]
+                    }
+                }
+            };
+
+            const [imgBufferFinance, imgBufferActivite] = await Promise.all([
+                fetchChartImage(financeChartConfig, 780, 360),
+                fetchChartImage(activiteChartConfig, 780, 360)
+            ]);
+
+            if (imgBufferFinance && imgBufferFinance.length > 0) {
+                const imageIdFinance = workbook.addImage({
+                    buffer: imgBufferFinance,
+                    extension: 'png'
+                });
+                evolutionSheet.addImage(imageIdFinance, 'G4:P22');
+            }
+
+            if (imgBufferActivite && imgBufferActivite.length > 0) {
+                const imageIdActivite = workbook.addImage({
+                    buffer: imgBufferActivite,
+                    extension: 'png'
+                });
+                evolutionSheet.addImage(imageIdActivite, 'G24:P42');
+            }
+        } catch (chartErr) {
+            console.warn('Avertissement: Impossible d\'intégrer les graphiques dans le classeur Excel:', chartErr.message);
+        }
 
         const filename = `Rapports_Activite_Financiers_${date_from}_au_${date_to}.xlsx`;
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

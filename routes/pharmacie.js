@@ -1,8 +1,28 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const ExcelJS = require('exceljs');
 const { supabase } = require('../config/supabase');
 const { logAudit } = require('../utils/audit');
+
+// Configuration Multer en mémoire pour l'import Excel
+const uploadExcel = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // Max 10 Mo
+    fileFilter: (req, file, cb) => {
+        const allowedMime = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+            'application/octet-stream'
+        ];
+        const isXlsx = file.originalname.toLowerCase().endsWith('.xlsx') || file.originalname.toLowerCase().endsWith('.xls');
+        if (allowedMime.includes(file.mimetype) || isXlsx) {
+            cb(null, true);
+        } else {
+            cb(new Error('Format invalide. Seuls les fichiers Excel (.xlsx, .xls) sont acceptés.'));
+        }
+    }
+});
 
 // GET /pharmacie — Liste des produits avec filtres et statistiques
 // Helpers pour l'analyse des délais de péremption
@@ -461,9 +481,9 @@ router.get('/export/excel', async (req, res) => {
         });
 
         sheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 6 }];
-        sheet.autoFilter = { from: 'A6', to: 'P6' };
-        sheet.mergeCells('A1:P1');
-        sheet.mergeCells('A2:P2');
+        sheet.autoFilter = { from: 'A6', to: 'S6' };
+        sheet.mergeCells('A1:S1');
+        sheet.mergeCells('A2:S2');
 
         const titleRow = sheet.getRow(1);
         titleRow.getCell(1).value = 'RAPPORTS D\'ACTIVITÉ & FINANCIERS';
@@ -509,11 +529,14 @@ router.get('/export/excel', async (req, res) => {
             { label: 'Forme', key: 'forme', width: 14 },
             { label: 'Dosage', key: 'dosage', width: 14 },
             { label: 'Unité', key: 'unite', width: 10 },
-            { label: 'Stock actuel', key: 'stock_actuel', width: 12 },
+            { label: 'Stock initial', key: 'stock_initial', width: 14 },
+            { label: 'Total entrées', key: 'total_entrees', width: 14 },
+            { label: 'Total sorties', key: 'total_sorties', width: 14 },
+            { label: 'Stock actuel', key: 'stock_actuel', width: 13 },
             { label: 'Stock min.', key: 'stock_minimum', width: 12 },
-            { label: 'Prix achat (FCFA)', key: 'prix_achat', width: 14 },
-            { label: 'Prix vente (FCFA)', key: 'prix_vente', width: 14 },
-            { label: 'Valeur stock (FCFA)', key: 'valeur_stock', width: 16 },
+            { label: 'Prix achat (FCFA)', key: 'prix_achat', width: 15 },
+            { label: 'Prix vente (FCFA)', key: 'prix_vente', width: 15 },
+            { label: 'Valeur stock (FCFA)', key: 'valeur_stock', width: 18 },
             { label: 'Emplacement', key: 'emplacement', width: 16 },
             { label: 'Fournisseur', key: 'fournisseur', width: 18 },
             { label: 'Date péremption', key: 'date_peremption', width: 15 },
@@ -541,6 +564,10 @@ router.get('/export/excel', async (req, res) => {
         exportProduits.forEach((p, rowIdx) => {
             const row = sheet.getRow(rowIdx + 7);
             const isEven = rowIdx % 2 === 0;
+            const metrics = computeStockMetrics(p, movementsByProduct[p.id]);
+            const stockInitial = Number(metrics.stock_initial || 0);
+            const totalEntrees = Number(metrics.total_entrees || 0);
+            const totalSorties = Number(metrics.total_sorties || 0);
             const stockActuel = Number(p.stock_actuel || 0);
             const stockMinimum = Number(p.stock_minimum || 0);
             const prixVente = Number(p.prix_vente || 0);
@@ -557,6 +584,9 @@ router.get('/export/excel', async (req, res) => {
                 p.forme || '',
                 p.dosage || '',
                 p.unite || '',
+                stockInitial,
+                totalEntrees,
+                totalSorties,
                 stockActuel,
                 stockMinimum,
                 prixAchat,
@@ -581,12 +611,13 @@ router.get('/export/excel', async (req, res) => {
                 };
                 cell.alignment = { vertical: 'middle', wrapText: true };
 
-                if (typeof value === 'number' && (colIdx === 6 || colIdx === 7 || colIdx === 8 || colIdx === 9 || colIdx === 10)) {
-                    cell.numFmt = colIdx === 10 ? '# ##0 "FCFA"' : '# ##0';
+                // Colonnes numériques : stockInitial (7), totalEntrees (8), totalSorties (9), stockActuel (10), stockMin (11), prixAchat (12), prixVente (13), valeurStock (14)
+                if (typeof value === 'number' && colIdx >= 6 && colIdx <= 13) {
+                    cell.numFmt = colIdx === 13 ? '# ##0 "FCFA"' : (colIdx >= 11 ? '# ##0 "FCFA"' : '# ##0');
                     cell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
                 }
 
-                if (colIdx === 14) {
+                if (colIdx === 17) {
                     if (statut === 'Rupture' || statut === 'Alerte') {
                         cell.font = { bold: true, color: { argb: statut === 'Rupture' ? 'FFDC2626' : 'FFD97706' } };
                     } else {
@@ -594,7 +625,7 @@ router.get('/export/excel', async (req, res) => {
                     }
                 }
 
-                if (colIdx === 15 && diffDays !== null) {
+                if (colIdx === 18 && diffDays !== null) {
                     if (diffDays < 0) {
                         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
                         cell.font = { bold: true, color: { argb: 'FFDC2626' } };
@@ -611,13 +642,50 @@ router.get('/export/excel', async (req, res) => {
 
         const totalRowNumber = exportProduits.length + 7;
         const totalRow = sheet.getRow(totalRowNumber);
-        const totalSummary = `Total général : ${exportProduits.length} produit(s) | Valeur totale stock : ${totalValeurStock.toLocaleString('fr-FR')} FCFA`;
-        sheet.mergeCells(`A${totalRowNumber}:P${totalRowNumber}`);
-        totalRow.getCell(1).value = totalSummary;
-        totalRow.getCell(1).font = { bold: true, size: 10, color: { argb: 'FF0F172A' } };
-        totalRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9F99D' } };
-        totalRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
-        totalRow.height = 20;
+        totalRow.height = 22;
+
+        sheet.mergeCells(`A${totalRowNumber}:F${totalRowNumber}`);
+        const totalLabelCell = totalRow.getCell(1);
+        totalLabelCell.value = `TOTAL (${exportProduits.length} produit(s))`;
+        totalLabelCell.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+        totalLabelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+        totalLabelCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        for (let c = 1; c <= 6; c++) {
+            totalRow.getCell(c).border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+        }
+
+        const dataEndRow = exportProduits.length + 6;
+        const sumColumns = [
+            { col: 7, isCurrency: false, result: totalStockInitial }, // Stock initial (G)
+            { col: 8, isCurrency: false, result: totalMedicamentsEntres }, // Total entrées (H)
+            { col: 9, isCurrency: false, result: totalMedicamentsSortis }, // Total sorties (I)
+            { col: 10, isCurrency: false, result: totalMedicamentsRestants }, // Stock actuel (J)
+            { col: 14, isCurrency: true, result: totalValeurStock } // Valeur stock (N)
+        ];
+
+        // Format colonnes intermédiaires
+        [11, 12, 13, 15, 16, 17, 18, 19].forEach(colIdx => {
+            const emptyCell = totalRow.getCell(colIdx);
+            emptyCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+            emptyCell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+        });
+
+        const colLetters = { 7: 'G', 8: 'H', 9: 'I', 10: 'J', 14: 'N' };
+        sumColumns.forEach(sc => {
+            const cell = totalRow.getCell(sc.col);
+            const letter = colLetters[sc.col];
+            if (exportProduits.length > 0) {
+                cell.value = { formula: `SUM(${letter}7:${letter}${dataEndRow})`, result: sc.result };
+            } else {
+                cell.value = 0;
+            }
+            cell.font = { bold: true, color: { argb: 'FF0F172A' }, size: 10 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+            cell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+            cell.numFmt = sc.isCurrency ? '# ##0 "FCFA"' : '# ##0';
+        });
 
         sheet.getRow(1).height = 26;
         sheet.getRow(2).height = 18;
@@ -927,6 +995,243 @@ router.delete('/:id', async (req, res) => {
     } catch (error) {
         console.error('Erreur suppression produit:', error);
         req.flash('error', 'Erreur lors de la suppression');
+        res.redirect('/pharmacie');
+    }
+});
+
+// GET /pharmacie/modele/excel — Télécharger un fichier modèle vierge d'importation Excel
+router.get('/modele/excel', async (req, res) => {
+    try {
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'CSA 3e COMPAGNIE GSPM BOUAKÉ';
+        const sheet = workbook.addWorksheet('Modèle Import Pharmacie');
+
+        sheet.views = [{ state: 'frozen', ySplit: 2 }];
+
+        // Ligne d'instructions
+        sheet.mergeCells('A1:J1');
+        const guideRow = sheet.getRow(1);
+        guideRow.getCell(1).value = 'MODÈLE D\'IMPORTATION PHARMACIE — Remplissez les lignes à partir de la ligne 3 (Désignation obligatoire)';
+        guideRow.getCell(1).font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+        guideRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+        guideRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+        guideRow.height = 24;
+
+        // Ligne d'en-têtes
+        const headers = [
+            { label: 'Code', width: 14 },
+            { label: 'Désignation *', width: 32 },
+            { label: 'Catégorie (medicament/consommable/materiel/dispositif_medical)', width: 24 },
+            { label: 'Forme (comprimé, sirop, etc.)', width: 18 },
+            { label: 'Dosage', width: 14 },
+            { label: 'Unité (boîte, flacon, ampoule)', width: 15 },
+            { label: 'Prix Achat (FCFA)', width: 16 },
+            { label: 'Prix Vente (FCFA)', width: 16 },
+            { label: 'Stock Initial (quantité)', width: 18 },
+            { label: 'Stock Minimum', width: 15 }
+        ];
+
+        const headerRow = sheet.getRow(2);
+        headerRow.height = 22;
+        headers.forEach((h, idx) => {
+            const cell = headerRow.getCell(idx + 1);
+            cell.value = h.label;
+            cell.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+            sheet.getColumn(idx + 1).width = h.width;
+        });
+
+        // 2 exemples pratiques
+        const examples = [
+            ['MED-001', 'Paracétamol 500mg', 'medicament', 'Comprimé', '500 mg', 'boîte', 500, 800, 50, 10],
+            ['CSM-002', 'Compresses stériles 10x10', 'consommable', 'Sachet', '10x10', 'sachet', 1200, 1800, 30, 5]
+        ];
+
+        examples.forEach((ex, rowIdx) => {
+            const row = sheet.getRow(rowIdx + 3);
+            ex.forEach((val, colIdx) => {
+                const cell = row.getCell(colIdx + 1);
+                cell.value = val;
+                cell.font = { size: 9 };
+                cell.border = { all: { style: 'thin', color: { argb: 'FFCBD5E1' } } };
+                if (typeof val === 'number') {
+                    cell.alignment = { horizontal: 'right', vertical: 'middle' };
+                }
+            });
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="modele_import_pharmacie.xlsx"');
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (error) {
+        console.error('Erreur modèle Excel:', error);
+        req.flash('error', 'Erreur lors de la génération du modèle');
+        res.redirect('/pharmacie');
+    }
+});
+
+// POST /pharmacie/import/excel — Importer un fichier Excel de produits
+router.post('/import/excel', uploadExcel.single('fichier_excel'), async (req, res) => {
+    try {
+        if (!req.file || !req.file.buffer) {
+            req.flash('error', 'Veuillez sélectionner un fichier Excel valide (.xlsx)');
+            return res.redirect('/pharmacie');
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(req.file.buffer);
+
+        const sheet = workbook.worksheets[0];
+        if (!sheet) {
+            req.flash('error', 'Le classeur Excel ne contient aucune feuille');
+            return res.redirect('/pharmacie');
+        }
+
+        let importedCount = 0;
+        let updatedCount = 0;
+        let skippedCount = 0;
+        const errors = [];
+
+        // Détection de la ligne de démarrage des données (recherche de l'en-tête ou démarrage ligne 3)
+        let startRow = 3;
+        const row1Val = String(sheet.getRow(1).getCell(1).value || '').toLowerCase();
+        const row2Val = String(sheet.getRow(2).getCell(1).value || '').toLowerCase();
+        if (row1Val.includes('code') || row1Val.includes('désignation') || row1Val.includes('designation')) {
+            startRow = 2;
+        } else if (row2Val.includes('code') || row2Val.includes('désignation') || row2Val.includes('designation')) {
+            startRow = 3;
+        }
+
+        for (let rowNumber = startRow; rowNumber <= sheet.rowCount; rowNumber++) {
+            const row = sheet.getRow(rowNumber);
+            const getVal = (col) => {
+                const cell = row.getCell(col);
+                if (!cell || cell.value === null || cell.value === undefined) return '';
+                if (typeof cell.value === 'object' && cell.value.result !== undefined) return cell.value.result;
+                return String(cell.value).trim();
+            };
+
+            const getNum = (col) => {
+                const cell = row.getCell(col);
+                if (!cell || cell.value === null || cell.value === undefined) return 0;
+                if (typeof cell.value === 'number') return cell.value;
+                const parsed = parseFloat(String(cell.value).replace(/[^0-9.-]/g, ''));
+                return isNaN(parsed) ? 0 : parsed;
+            };
+
+            const code = getVal(1) || null;
+            const designation = getVal(2);
+            if (!designation) {
+                skippedCount++;
+                continue;
+            }
+
+            let categorie = getVal(3).toLowerCase() || 'medicament';
+            if (!['medicament', 'consommable', 'materiel', 'dispositif_medical'].includes(categorie)) {
+                categorie = 'medicament';
+            }
+
+            const forme = getVal(4) || null;
+            const dosage = getVal(5) || null;
+            const unite = getVal(6) || 'boîte';
+            const prix_achat = getNum(7);
+            const prix_vente = getNum(8);
+            const stock_initial = Math.max(0, Math.round(getNum(9)));
+            const stock_minimum = Math.max(0, Math.round(getNum(10))) || 5;
+
+            // Vérifier si un produit existe déjà avec le même code ou désignation
+            let existingQuery = supabase.from('produits_pharmacie').select('id, designation, code, stock_actuel');
+            if (code) {
+                existingQuery = existingQuery.or(`code.eq.${code},designation.ilike.${designation}`);
+            } else {
+                existingQuery = existingQuery.eq('designation', designation);
+            }
+
+            const { data: existingProd, error: findErr } = await existingQuery.limit(1);
+
+            if (!findErr && existingProd && existingProd.length > 0) {
+                // Mise à jour du produit existant
+                const prod = existingProd[0];
+                await supabase
+                    .from('produits_pharmacie')
+                    .update({
+                        prix_achat: prix_achat > 0 ? prix_achat : undefined,
+                        prix_vente: prix_vente > 0 ? prix_vente : undefined,
+                        stock_minimum,
+                        forme: forme || undefined,
+                        dosage: dosage || undefined,
+                        unite: unite || undefined,
+                        updated_at: new Date()
+                    })
+                    .eq('id', prod.id);
+
+                updatedCount++;
+            } else {
+                // Insertion d'un nouveau produit
+                const { data: newProd, error: insertErr } = await supabase
+                    .from('produits_pharmacie')
+                    .insert([{
+                        code,
+                        designation,
+                        categorie,
+                        forme,
+                        dosage,
+                        unite,
+                        prix_achat,
+                        prix_vente,
+                        stock_actuel: stock_initial,
+                        stock_minimum,
+                        actif: true
+                    }])
+                    .select()
+                    .single();
+
+                if (insertErr) {
+                    errors.push(`Ligne ${rowNumber}: ${insertErr.message}`);
+                } else {
+                    importedCount++;
+
+                    // Mouvement de stock initial
+                    if (stock_initial > 0 && newProd) {
+                        await supabase
+                            .from('mouvements_stock')
+                            .insert([{
+                                produit_id: newProd.id,
+                                type_mouvement: 'entree',
+                                quantite: stock_initial,
+                                stock_avant: 0,
+                                stock_apres: stock_initial,
+                                motif: 'Importation Excel',
+                                reference: 'Import fichier Excel',
+                                utilisateur_id: req.session.user ? req.session.user.id : null,
+                                utilisateur_nom: req.session.user ? `${req.session.user.nom} ${req.session.user.prenom}` : 'Import Excel'
+                            }]);
+                    }
+                }
+            }
+        }
+
+        await logAudit({
+            req,
+            action: 'IMPORT_EXCEL_PHARMACIE',
+            entite: 'produits_pharmacie',
+            description: `Importation Excel pharmacie : ${importedCount} nouveaux produits, ${updatedCount} mis à jour (${req.file.originalname})`,
+            details: { importedCount, updatedCount, skippedCount, errorsCount: errors.length }
+        });
+
+        const msg = `Importation terminée avec succès : ${importedCount} produit(s) créé(s), ${updatedCount} mis à jour.`;
+        req.flash('success', msg);
+        if (errors.length > 0) {
+            req.flash('error', `${errors.length} erreur(s) détectée(s) : ${errors.slice(0, 3).join(', ')}`);
+        }
+
+        res.redirect('/pharmacie');
+    } catch (error) {
+        console.error('Erreur import Excel pharmacie:', error);
+        req.flash('error', `Erreur lors de l'importation Excel : ${error.message}`);
         res.redirect('/pharmacie');
     }
 });

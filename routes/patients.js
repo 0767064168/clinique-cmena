@@ -83,8 +83,11 @@ router.get('/export/excel', async (req, res) => {
             pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true }
         });
 
+        sheet.views = [{ state: 'frozen', ySplit: 4 }];
+        sheet.autoFilter = { from: 'A4', to: 'N4' };
+
         // ---- Titre ----
-        sheet.mergeCells('A1:J1');
+        sheet.mergeCells('A1:N1');
         const titleRow = sheet.getRow(1);
         titleRow.getCell(1).value = 'CSA 3e COMPAGNIE GSPM BOUAKÉ — LISTE DES PATIENTS';
         titleRow.getCell(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
@@ -92,7 +95,7 @@ router.get('/export/excel', async (req, res) => {
         titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
         titleRow.height = 28;
 
-        sheet.mergeCells('A2:J2');
+        sheet.mergeCells('A2:N2');
         const subRow = sheet.getRow(2);
         subRow.getCell(1).value = `Exporté le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}${search ? ' — Recherche: ' + search : ''}`;
         subRow.getCell(1).font = { italic: true, size: 9, color: { argb: 'FF555555' } };
@@ -111,6 +114,10 @@ router.get('/export/excel', async (req, res) => {
             { label: 'Ville',          key: 'ville',             width: 15 },
             { label: 'Gr. Sanguin',    key: 'groupe_sanguin',    width: 12 },
             { label: 'Allergies',      key: 'allergies',         width: 25 },
+            { label: 'Adresse',        key: 'adresse',           width: 22 },
+            { label: 'Email',          key: 'email',             width: 20 },
+            { label: 'Contact urgence', key: 'contact_urgence_nom', width: 18 },
+            { label: 'Tél. urgence',   key: 'contact_urgence_tel', width: 14 },
             { label: 'Date inscription', key: 'created_at',      width: 16 },
         ];
 
@@ -135,8 +142,12 @@ router.get('/export/excel', async (req, res) => {
             const row = sheet.getRow(rowIdx + 5);
             const bg = rowIdx % 2 === 0 ? 'FFF2F2F2' : 'FFFFFFFF';
 
+            const numDossier = (p.numero_dossier !== null && p.numero_dossier !== undefined && !isNaN(Number(p.numero_dossier)) && p.numero_dossier !== '')
+                ? Number(p.numero_dossier)
+                : (p.numero_dossier || '');
+
             const vals = [
-                p.numero_dossier || '',
+                numDossier,
                 p.nom || '',
                 p.prenom || '',
                 p.sexe || '',
@@ -145,6 +156,10 @@ router.get('/export/excel', async (req, res) => {
                 p.ville || '',
                 p.groupe_sanguin || '',
                 p.allergies || '',
+                p.adresse || '',
+                p.email || '',
+                p.contact_urgence_nom || '',
+                p.contact_urgence_tel || '',
                 p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR') : '',
             ];
 
@@ -154,6 +169,9 @@ router.get('/export/excel', async (req, res) => {
                 cell.font = { size: 9 };
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
                 cell.alignment = { vertical: 'middle', wrapText: true };
+                if (typeof v === 'number') {
+                    cell.numFmt = '0';
+                }
                 cell.border = {
                     top: { style: 'hair', color: { argb: 'FFCCCCCC' } },
                     bottom: { style: 'hair', color: { argb: 'FFCCCCCC' } },
@@ -166,7 +184,7 @@ router.get('/export/excel', async (req, res) => {
 
         // ---- Ligne de total ----
         const totalRow = sheet.getRow((patients || []).length + 5);
-        sheet.mergeCells(`A${totalRow.number}:I${totalRow.number}`);
+        sheet.mergeCells(`A${totalRow.number}:N${totalRow.number}`);
         totalRow.getCell(1).value = `Total : ${(patients || []).length} patient(s)`;
         totalRow.getCell(1).font = { bold: true, size: 10 };
         totalRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCE6F1' } };

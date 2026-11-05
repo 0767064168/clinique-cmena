@@ -19,8 +19,11 @@
             <button type="button" @click="openDepenseModal = true" class="flex-1 sm:flex-none text-center bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3.5 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition cursor-pointer">
                 <i class="fas fa-minus-circle"></i> Sortie de Caisse
             </button>
-            <a href="/caisse/export?date=<%= dateSelected %>" class="flex-1 sm:flex-none text-center bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-3.5 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition">
-                <i class="fas fa-file-excel"></i> Exporter Excel / CSV
+            <a href="/caisse/export/excel?date=<%= dateSelected %>" class="flex-1 sm:flex-none text-center bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-3.5 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition" title="Exporter le journal de caisse en Excel (.xlsx)">
+                <i class="fas fa-file-excel"></i> Exporter Excel
+            </a>
+            <a href="/caisse/export?date=<%= dateSelected %>" class="flex-1 sm:flex-none text-center bg-slate-700 hover:bg-slate-800 text-white font-bold py-2 px-3 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition" title="Télécharger le fichier CSV">
+                <i class="fas fa-file-csv"></i> CSV
             </a>
             <a href="/caisse/ticket?date=<%= dateSelected %>" target="_blank" class="flex-1 sm:flex-none text-center bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-3 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition">
                 <i class="fas fa-receipt"></i> Ticket 80mm
