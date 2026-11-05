@@ -34,8 +34,9 @@
                     : { totalCount: 0, criticalCount: 0, warningCount: 0, items: [], summary: { pharmacie: 0, attente: 0, facturation: 0 } };
                 const initialItems = sysNotifs.items || [];
             %>
+            <script>window.__CMENA_NOTIF_ITEMS = <%- JSON.stringify(initialItems) %>;</script>
             <div class="relative" 
-                 x-data="window.cmenaNotificationCenter ? window.cmenaNotificationCenter(<%- JSON.stringify(initialItems) %>) : { notifOpen: false, visibleItems: [], filteredItems: [], unreadCount: 0, hasCritical: false }" 
+                 x-data="window.cmenaNotificationCenter ? window.cmenaNotificationCenter(window.__CMENA_NOTIF_ITEMS || []) : { notifOpen: false, visibleItems: [], filteredItems: [], unreadCount: 0, hasCritical: false }" 
                  @keydown.escape="notifOpen = false">
 
                 <!-- Bouton Cloche avec indicateur visuel dynamique -->
