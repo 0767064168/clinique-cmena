@@ -27,91 +27,184 @@
             </h1>
         </div>
         <div class="flex items-center gap-x-4 lg:gap-x-6">
-            <!-- Notifications Menu Dynamique -->
+            <!-- Notifications Menu Dynamique Multi-Modules (Santé, Caisse, Pharmacie) -->
             <% 
-                const pAlerts = (typeof pharmacieAlerts !== 'undefined' && pharmacieAlerts) ? pharmacieAlerts : { totalAlertes: 0, enAlerte: 0, enRupture: 0, perimes: 0, expire30j: 0 };
-                const hasAlerts = pAlerts.totalAlertes > 0;
+                const sysNotifs = (typeof systemNotifications !== 'undefined' && systemNotifications) 
+                    ? systemNotifications 
+                    : { totalCount: 0, criticalCount: 0, warningCount: 0, items: [], summary: { pharmacie: 0, attente: 0, facturation: 0 } };
+                const initialItems = sysNotifs.items || [];
             %>
-            <div class="relative" x-data="{ notifOpen: false }" @keydown.escape="notifOpen = false">
+            <div class="relative" 
+                 x-data="{
+                    notifOpen: false,
+                    activeTab: 'all',
+                    dismissedIds: JSON.parse(sessionStorage.getItem('cmena_dismissed_notifs') || '[]'),
+                    items: <%- JSON.stringify(initialItems) %>,
+                    get visibleItems() {
+                        return this.items.filter(i => !this.dismissedIds.includes(i.id));
+                    },
+                    get filteredItems() {
+                        const v = this.visibleItems;
+                        if (this.activeTab === 'all') return v;
+                        return v.filter(i => i.category === this.activeTab);
+                    },
+                    get unreadCount() {
+                        return this.visibleItems.length;
+                    },
+                    get hasCritical() {
+                        return this.visibleItems.some(i => i.level === 'critical');
+                    },
+                    dismiss(id) {
+                        if (!this.dismissedIds.includes(id)) {
+                            this.dismissedIds.push(id);
+                            sessionStorage.setItem('cmena_dismissed_notifs', JSON.stringify(this.dismissedIds));
+                        }
+                    },
+                    dismissAll() {
+                        this.items.forEach(i => {
+                            if (!this.dismissedIds.includes(i.id)) this.dismissedIds.push(i.id);
+                        });
+                        sessionStorage.setItem('cmena_dismissed_notifs', JSON.stringify(this.dismissedIds));
+                    },
+                    resetDismissed() {
+                        this.dismissedIds = [];
+                        sessionStorage.removeItem('cmena_dismissed_notifs');
+                    }
+                 }" 
+                 @keydown.escape="notifOpen = false">
+
+                <!-- Bouton Cloche avec indicateur visuel dynamique -->
                 <button type="button" @click="notifOpen = !notifOpen" @click.away="notifOpen = false"
-                        class="-m-2.5 p-2.5 text-gray-500 hover:text-gray-700 relative focus:outline-none"
+                        class="-m-2.5 p-2.5 text-gray-500 hover:text-gray-700 relative focus:outline-none transition"
                         aria-label="Voir les alertes et notifications">
                     <i class="far fa-bell text-xl"></i>
-                    <% if (hasAlerts) { %>
-                        <span class="absolute top-2 right-2 block h-2.5 w-2.5 rounded-full bg-red-600 ring-2 ring-white animate-pulse"></span>
-                    <% } %>
+                    <template x-if="unreadCount > 0">
+                        <span class="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-black text-white"
+                              :class="hasCritical ? 'bg-red-600 animate-pulse ring-2 ring-white' : 'bg-amber-500 ring-2 ring-white'"
+                              x-text="unreadCount > 9 ? '9+' : unreadCount">
+                        </span>
+                    </template>
                 </button>
 
-                <!-- Dropdown des alertes -->
+                <!-- Volet Dropdown du Centre de Notifications -->
                 <div x-show="notifOpen" x-cloak
-                     x-transition:enter="transition ease-out duration-100"
-                     x-transition:enter-start="transform opacity-0 scale-95"
-                     x-transition:enter-end="transform opacity-100 scale-100"
-                     x-transition:leave="transition ease-in duration-75"
-                     class="absolute right-0 z-50 mt-2.5 w-80 sm:w-96 origin-top-right rounded-xl bg-white p-3 shadow-2xl ring-1 ring-black/5 divide-y divide-gray-100">
-                    <div class="flex items-center justify-between pb-2">
-                        <span class="text-xs font-bold text-gray-800 uppercase tracking-wide flex items-center gap-1.5">
-                            <i class="fas fa-bell text-blue-600"></i> Centre de Notifications
-                        </span>
-                        <% if (hasAlerts) { %>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-red-100 text-red-700">
-                                <%= pAlerts.totalAlertes %> alerte<%= pAlerts.totalAlertes > 1 ? 's' : '' %>
+                     x-transition:enter="transition ease-out duration-150"
+                     x-transition:enter-start="transform opacity-0 scale-95 translate-y-1"
+                     x-transition:enter-end="transform opacity-100 scale-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-100"
+                     class="absolute right-0 z-50 mt-2.5 w-80 sm:w-[420px] origin-top-right rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10 overflow-hidden divide-y divide-gray-100">
+                    
+                    <!-- En-tête de la boîte -->
+                    <div class="px-4 py-3 bg-slate-900 text-white flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="p-1.5 rounded-lg bg-white/10 text-emerald-400">
+                                <i class="fas fa-bell"></i>
                             </span>
-                        <% } %>
+                            <div>
+                                <h3 class="text-xs font-black uppercase tracking-wider text-slate-100">Centre d'Alertes</h3>
+                                <p class="text-[10px] text-slate-400">Surveillance médicale & administrative</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <template x-if="unreadCount > 0">
+                                <button type="button" @click="dismissAll()" 
+                                        class="text-[10px] font-bold text-slate-300 hover:text-white hover:underline transition"
+                                        title="Masquer toutes les alertes de cette session">
+                                    Tout marquer lu
+                                </button>
+                            </template>
+                            <template x-if="dismissedIds.length > 0 && unreadCount === 0">
+                                <button type="button" @click="resetDismissed()" 
+                                        class="text-[10px] text-emerald-400 hover:text-emerald-300 hover:underline">
+                                    Réafficher
+                                </button>
+                            </template>
+                        </div>
                     </div>
 
-                    <div class="py-2 space-y-2 text-xs">
-                        <% if (pAlerts.enRupture > 0) { %>
-                            <div class="flex items-center justify-between p-2 rounded-lg bg-red-50 text-red-800 border border-red-100">
-                                <div class="flex items-center gap-2">
-                                    <i class="fas fa-times-circle text-red-600"></i>
-                                    <span><strong><%= pAlerts.enRupture %></strong> produit(s) en rupture totale</span>
-                                </div>
-                                <a href="/pharmacie?stock_alert=oui" class="font-bold underline text-red-700">Voir</a>
-                            </div>
-                        <% } %>
-
-                        <% if (pAlerts.enAlerte > 0 && (pAlerts.enAlerte - pAlerts.enRupture) > 0) { %>
-                            <div class="flex items-center justify-between p-2 rounded-lg bg-amber-50 text-amber-800 border border-amber-100">
-                                <div class="flex items-center gap-2">
-                                    <i class="fas fa-exclamation-triangle text-amber-600"></i>
-                                    <span><strong><%= pAlerts.enAlerte - pAlerts.enRupture %></strong> produit(s) sous le seuil d'alerte</span>
-                                </div>
-                                <a href="/pharmacie?stock_alert=oui" class="font-bold underline text-amber-700">Voir</a>
-                            </div>
-                        <% } %>
-
-                        <% if (pAlerts.perimes > 0) { %>
-                            <div class="flex items-center justify-between p-2 rounded-lg bg-rose-50 text-rose-800 border border-rose-100">
-                                <div class="flex items-center gap-2">
-                                    <i class="fas fa-calendar-times text-rose-600"></i>
-                                    <span><strong><%= pAlerts.perimes %></strong> médicament(s) périmé(s)</span>
-                                </div>
-                                <a href="/pharmacie?delai_peremption=perime" class="font-bold underline text-rose-700">Retirer</a>
-                            </div>
-                        <% } %>
-
-                        <% if (pAlerts.expire30j > 0) { %>
-                            <div class="flex items-center justify-between p-2 rounded-lg bg-orange-50 text-orange-800 border border-orange-100">
-                                <div class="flex items-center gap-2">
-                                    <i class="fas fa-hourglass-end text-orange-600"></i>
-                                    <span><strong><%= pAlerts.expire30j %></strong> périment dans ≤ 30 jours</span>
-                                </div>
-                                <a href="/pharmacie?delai_peremption=30" class="font-bold underline text-orange-700">Voir</a>
-                            </div>
-                        <% } %>
-
-                        <% if (!hasAlerts) { %>
-                            <div class="p-4 text-center text-gray-500">
-                                <i class="fas fa-check-circle text-emerald-500 text-2xl mb-1 block"></i>
-                                <span>Aucune alerte active. Tous les stocks et dates de péremption sont sous contrôle.</span>
-                            </div>
-                        <% } %>
+                    <!-- Onglets de filtrage par module -->
+                    <div class="flex items-center gap-1 p-1.5 bg-slate-50 border-b border-gray-100 text-[11px] font-semibold text-gray-600 overflow-x-auto">
+                        <button type="button" @click="activeTab = 'all'"
+                                :class="activeTab === 'all' ? 'bg-white text-slate-900 shadow-sm font-bold' : 'hover:text-slate-900'"
+                                class="px-2.5 py-1 rounded-lg transition whitespace-nowrap">
+                            Toutes (<span x-text="visibleItems.length"></span>)
+                        </button>
+                        <button type="button" @click="activeTab = 'attente'"
+                                :class="activeTab === 'attente' ? 'bg-white text-purple-800 shadow-sm font-bold' : 'hover:text-purple-700'"
+                                class="px-2 py-1 rounded-lg transition whitespace-nowrap flex items-center gap-1">
+                            <i class="fas fa-hospital-user text-purple-600"></i> Attente
+                        </button>
+                        <button type="button" @click="activeTab = 'pharmacie'"
+                                :class="activeTab === 'pharmacie' ? 'bg-white text-emerald-800 shadow-sm font-bold' : 'hover:text-emerald-700'"
+                                class="px-2 py-1 rounded-lg transition whitespace-nowrap flex items-center gap-1">
+                            <i class="fas fa-pills text-emerald-600"></i> Pharmacie
+                        </button>
+                        <button type="button" @click="activeTab = 'facturation'"
+                                :class="activeTab === 'facturation' ? 'bg-white text-blue-800 shadow-sm font-bold' : 'hover:text-blue-700'"
+                                class="px-2 py-1 rounded-lg transition whitespace-nowrap flex items-center gap-1">
+                            <i class="fas fa-coins text-blue-600"></i> Caisse
+                        </button>
                     </div>
 
-                    <div class="pt-2 text-center">
-                        <a href="/pharmacie" class="block w-full py-1.5 text-center text-xs font-bold text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition">
-                            Accéder à la Pharmacie & Stock →
+                    <!-- Liste déroulante des alertes -->
+                    <div class="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                        <template x-for="item in filteredItems" :key="item.id">
+                            <div class="p-3 transition hover:bg-slate-50 relative group" :class="item.bgColor">
+                                <div class="flex items-start gap-2.5">
+                                    <div class="p-2 rounded-lg bg-white shadow-xs shrink-0" :class="item.iconColor">
+                                        <i :class="item.icon" class="text-sm"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0 pr-6">
+                                        <div class="flex items-center gap-1.5 mb-0.5">
+                                            <span class="text-[10px] font-black px-1.5 py-0.2 rounded" :class="item.badgeColor" x-text="item.badgeText"></span>
+                                            <h4 class="text-xs font-bold text-gray-900 truncate" x-text="item.title"></h4>
+                                        </div>
+                                        <p class="text-[11px] text-gray-600 leading-relaxed mb-2" x-text="item.description"></p>
+                                        
+                                        <!-- Actions Rapides (1-Clic) -->
+                                        <div class="flex items-center gap-2">
+                                            <a :href="item.actionUrl" 
+                                               class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold shadow-xs transition">
+                                                <span x-text="item.actionLabel"></span>
+                                                <i class="fas fa-arrow-right text-[9px]"></i>
+                                            </a>
+                                            <button type="button" @click="dismiss(item.id)"
+                                                    class="text-[10px] text-gray-400 hover:text-gray-700 underline transition">
+                                                Masquer
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bouton rapide de fermeture individuelle -->
+                                    <button type="button" @click="dismiss(item.id)" 
+                                            class="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 opacity-60 hover:opacity-100 rounded" 
+                                            title="Marquer comme lu">
+                                        <i class="fas fa-times text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- État vide : Aucune alerte -->
+                        <div x-show="filteredItems.length === 0" class="p-6 text-center text-gray-500">
+                            <i class="fas fa-shield-alt text-emerald-500 text-3xl mb-2 block"></i>
+                            <p class="text-xs font-bold text-gray-800">Situation normale</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">Aucune alerte active dans cette catégorie.</p>
+                        </div>
+                    </div>
+
+                    <!-- Pied de page avec raccourcis directs -->
+                    <div class="p-2.5 bg-gray-50 flex items-center justify-between text-[11px] font-bold">
+                        <a href="/consultations/attente" class="text-purple-700 hover:underline inline-flex items-center gap-1">
+                            <i class="fas fa-user-clock text-xs"></i> Salle d'attente
+                        </a>
+                        <span class="text-gray-300">|</span>
+                        <a href="/pharmacie" class="text-emerald-700 hover:underline inline-flex items-center gap-1">
+                            <i class="fas fa-boxes text-xs"></i> Stocks
+                        </a>
+                        <span class="text-gray-300">|</span>
+                        <a href="/caisse" class="text-blue-700 hover:underline inline-flex items-center gap-1">
+                            <i class="fas fa-cash-register text-xs"></i> Caisse
                         </a>
                     </div>
                 </div>
