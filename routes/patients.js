@@ -3,6 +3,7 @@ const router = express.Router();
 const { supabase } = require('../config/supabase');
 const ExcelJS = require('exceljs');
 const { unpackClinicalData, packClinicalData } = require('../utils/vitals');
+const { getAllRendezVous } = require('../utils/rendezVousStorage');
 
 router.get('/', async (req, res) => {
     try {
@@ -351,13 +352,16 @@ router.get('/:id', async (req, res) => {
                 };
             });
 
+        const patientRdvs = await getAllRendezVous().then(list => list.filter(r => r.patient_id === id)).catch(() => []);
+
         res.render('patients/show', {
             title: 'Détails du Patient',
             patient,
             bilanPatient,
             consultations: consultations || [],
             vitalsHistory: vitalsHistory || [],
-            factures: factures || []
+            factures: factures || [],
+            rendezVous: patientRdvs || []
         });
     } catch (error) {
         console.error(error);

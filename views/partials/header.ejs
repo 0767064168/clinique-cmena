@@ -11,16 +11,16 @@
     <div class="flex flex-1 gap-x-2 sm:gap-x-4 self-stretch items-center justify-between">
         <div class="relative flex flex-1 items-center max-w-xs sm:max-w-md">
             <div class="w-full">
-                <form action="/patients" method="GET" class="relative">
-                    <label for="header-search" class="sr-only">Rechercher</label>
-                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                        <i class="fas fa-search text-gray-400 text-xs sm:text-sm"></i>
-                    </div>
-                    <input id="header-search" name="search" 
-                        class="block w-full rounded-md border-0 bg-white py-1.5 pl-8 sm:pl-10 pr-2 sm:pr-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-red-600 text-xs sm:text-sm" 
-                        placeholder="Recherche patient..." 
-                        type="search">
-                </form>
+                <!-- Déclencheur Palette de Commande Rapide (Ctrl+K) -->
+                <button type="button" 
+                        @click="$dispatch('open-global-search')"
+                        class="group relative flex w-full items-center rounded-xl bg-gray-50 hover:bg-white py-1.5 pl-3 sm:pl-3.5 pr-2 sm:pr-3 text-left text-xs sm:text-sm text-gray-500 ring-1 ring-inset ring-gray-300 hover:ring-primary focus:outline-none focus:ring-2 focus:ring-primary transition shadow-xs">
+                    <i class="fas fa-search text-gray-400 group-hover:text-primary transition mr-2.5 text-xs sm:text-sm"></i>
+                    <span class="truncate flex-1">Recherche rapide (patient, rdv, stock...)</span>
+                    <span class="hidden sm:inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-mono font-bold bg-gray-200 text-gray-600 group-hover:bg-primary group-hover:text-white transition">
+                        <span>Ctrl</span><span>K</span>
+                    </span>
+                </button>
             </div>
             <h1 class="ml-4 text-lg font-semibold leading-6 text-gray-900 hidden lg:block truncate">
                 <%- typeof pageTitle !== 'undefined' ? pageTitle : '' %>

@@ -49,6 +49,8 @@ const auditRoutes = require('./routes/audit');
 const pharmacieRoutes = require('./routes/pharmacie');
 const caisseRoutes = require('./routes/caisse');
 const authRoutes = require('./routes/auth');
+const rendezVousRoutes = require('./routes/rendezVous');
+const rechercheRoutes = require('./routes/recherche');
 const { requireAuth, requireAdmin, requireRole } = require('./middleware/auth');
 
 // Initialisation de l'application Express
@@ -292,6 +294,8 @@ app.use('/', requireAuth, dashboardRoutes);
 app.use('/dashboard', requireAuth, dashboardRoutes);
 app.use('/patients', requireAuth, requireRole(['admin', 'medecin', 'receptionniste']), patientsRoutes);
 app.use('/praticiens', requireAuth, requireRole(['admin', 'medecin', 'receptionniste']), praticiensRoutes);
+app.use('/api/recherche-globale', requireAuth, rechercheRoutes);
+app.use('/rendez-vous', requireAuth, requireRole(['admin', 'medecin', 'receptionniste']), rendezVousRoutes);
 app.use('/consultations', requireAuth, requireRole(['admin', 'medecin', 'receptionniste']), consultationsRoutes);
 app.use('/actes', requireAuth, requireRole(['admin', 'medecin', 'comptable']), actesRoutes);
 app.use('/factures', requireAuth, requireRole(['admin', 'comptable']), facturesRoutes);

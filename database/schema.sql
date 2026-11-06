@@ -625,3 +625,29 @@ CREATE POLICY "Allow all for authenticated users" ON paiements FOR ALL USING (tr
 CREATE POLICY "Allow all for authenticated users" ON parametres_clinique FOR ALL USING (true);
 CREATE POLICY "Allow all for authenticated users" ON produits_pharmacie FOR ALL USING (true);
 CREATE POLICY "Allow all for authenticated users" ON mouvements_stock FOR ALL USING (true);
+
+
+-- 14. rendez_vous (Agenda médical & Planification des consultations)
+CREATE TABLE IF NOT EXISTS rendez_vous (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    praticien_id UUID REFERENCES praticiens(id) ON DELETE SET NULL,
+    date_heure TIMESTAMP WITH TIME ZONE NOT NULL,
+    duree_minutes INTEGER DEFAULT 30 CHECK (duree_minutes > 0),
+    motif VARCHAR(255) NOT NULL,
+    statut VARCHAR(50) DEFAULT 'programme' CHECK (statut IN ('programme', 'confirme', 'en_attente', 'termine', 'annule', 'absent')),
+    notes TEXT,
+    consultation_id UUID REFERENCES consultations(id) ON DELETE SET NULL,
+    rappel_envoye BOOLEAN DEFAULT false,
+    created_by UUID REFERENCES utilisateurs(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_rendez_vous_patient ON rendez_vous(patient_id);
+CREATE INDEX IF NOT EXISTS idx_rendez_vous_praticien ON rendez_vous(praticien_id);
+CREATE INDEX IF NOT EXISTS idx_rendez_vous_date_heure ON rendez_vous(date_heure);
+CREATE INDEX IF NOT EXISTS idx_rendez_vous_statut ON rendez_vous(statut);
+
+ALTER TABLE rendez_vous ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all for authenticated users" ON rendez_vous FOR ALL USING (true);

@@ -1,0 +1,405 @@
+<div class="space-y-6">
+    <!-- En-tête de la page -->
+    <div class="sm:flex sm:items-center sm:justify-between pb-4 border-b border-gray-200">
+        <div>
+            <div class="flex items-center gap-3">
+                <span class="p-2.5 bg-blue-100 text-blue-800 rounded-xl">
+                    <i class="fas fa-calendar-alt text-2xl"></i>
+                </span>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Agenda & Rendez-vous Médicaux</h1>
+                    <p class="text-xs sm:text-sm text-gray-500 mt-0.5">
+                        Planification des consultations, gestion des créneaux et orientation vers la salle d'attente
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 sm:mt-0 flex flex-wrap items-center gap-2">
+            <!-- Bascule Vue Agenda / Liste -->
+            <div class="inline-flex rounded-lg border border-gray-300 bg-white p-0.5 shadow-sm">
+                <a href="/rendez-vous?vue=agenda&date=<%= dateSelected %>&praticien_id=<%= praticien_id %>&statut=<%= statut %>" 
+                   class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold transition <%= vue === 'agenda' ? 'bg-primary text-white shadow-sm' : 'text-gray-700 hover:text-gray-900' %>">
+                    <i class="fas fa-th-list mr-1.5"></i> Vue Créneaux
+                </a>
+                <a href="/rendez-vous?vue=liste&date=<%= dateSelected %>&praticien_id=<%= praticien_id %>&statut=<%= statut %>" 
+                   class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold transition <%= vue === 'liste' ? 'bg-primary text-white shadow-sm' : 'text-gray-700 hover:text-gray-900' %>">
+                    <i class="fas fa-bars mr-1.5"></i> Vue Liste
+                </a>
+            </div>
+
+            <a href="/rendez-vous/nouveau?date=<%= dateSelected %>" 
+               class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-xs sm:text-sm font-semibold rounded-lg text-white bg-primary hover:bg-primary-dark transition focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+                <i class="fas fa-plus mr-2"></i> Prendre Rendez-vous
+            </a>
+        </div>
+    </div>
+
+    <!-- Cartes statistiques du jour sélectionné -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div class="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+            <div class="p-3 bg-blue-50 text-blue-600 rounded-lg shrink-0">
+                <i class="fas fa-calendar-day text-lg"></i>
+            </div>
+            <div>
+                <p class="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Total Prévu</p>
+                <p class="text-xl font-black text-gray-900"><%= stats.total %></p>
+            </div>
+        </div>
+
+        <div class="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg shrink-0">
+                <i class="fas fa-check-circle text-lg"></i>
+            </div>
+            <div>
+                <p class="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Confirmés</p>
+                <p class="text-xl font-black text-emerald-700"><%= stats.confirmes %></p>
+            </div>
+        </div>
+
+        <div class="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+            <div class="p-3 bg-amber-50 text-amber-600 rounded-lg shrink-0">
+                <i class="fas fa-hourglass-half text-lg"></i>
+            </div>
+            <div>
+                <p class="text-[11px] font-medium text-gray-500 uppercase tracking-wider">En Attente</p>
+                <p class="text-xl font-black text-amber-700"><%= stats.enAttente %></p>
+            </div>
+        </div>
+
+        <div class="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+            <div class="p-3 bg-green-50 text-green-600 rounded-lg shrink-0">
+                <i class="fas fa-user-check text-lg"></i>
+            </div>
+            <div>
+                <p class="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Terminés</p>
+                <p class="text-xl font-black text-green-700"><%= stats.termines %></p>
+            </div>
+        </div>
+
+        <div class="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3 col-span-2 sm:col-span-1">
+            <div class="p-3 bg-gray-100 text-gray-500 rounded-lg shrink-0">
+                <i class="fas fa-user-times text-lg"></i>
+            </div>
+            <div>
+                <p class="text-[11px] font-medium text-gray-500 uppercase tracking-wider">Annulés / Absents</p>
+                <p class="text-xl font-black text-gray-600"><%= stats.annulesOuAbsents %></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barre de Contrôle & Navigation par Date -->
+    <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+        <form method="GET" action="/rendez-vous" class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <input type="hidden" name="vue" value="<%= vue %>">
+            
+            <!-- Navigation rapide par date -->
+            <div class="flex items-center gap-2">
+                <% 
+                    const curDate = new Date(dateSelected);
+                    const prevDate = new Date(curDate); prevDate.setDate(prevDate.getDate() - 1);
+                    const prevStr = prevDate.toISOString().split('T')[0];
+                    const nextDate = new Date(curDate); nextDate.setDate(nextDate.getDate() + 1);
+                    const nextStr = nextDate.toISOString().split('T')[0];
+                %>
+                <a href="/rendez-vous?vue=<%= vue %>&date=<%= prevStr %>&praticien_id=<%= praticien_id %>&statut=<%= statut %>" 
+                   title="Jour précédent" class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">
+                    <i class="fas fa-chevron-left text-xs"></i>
+                </a>
+
+                <a href="/rendez-vous?vue=<%= vue %>&date=<%= todayStr %>&praticien_id=<%= praticien_id %>&statut=<%= statut %>" 
+                   class="px-3 py-1.5 rounded-lg text-xs font-bold transition <%= dateSelected === todayStr ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' %>">
+                    Aujourd'hui
+                </a>
+
+                <% 
+                    const tomDate = new Date(); tomDate.setDate(tomDate.getDate() + 1);
+                    const tomStr = tomDate.toISOString().split('T')[0];
+                %>
+                <a href="/rendez-vous?vue=<%= vue %>&date=<%= tomStr %>&praticien_id=<%= praticien_id %>&statut=<%= statut %>" 
+                   class="px-3 py-1.5 rounded-lg text-xs font-bold transition <%= dateSelected === tomStr ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' %>">
+                    Demain
+                </a>
+
+                <a href="/rendez-vous?vue=<%= vue %>&date=<%= nextStr %>&praticien_id=<%= praticien_id %>&statut=<%= statut %>" 
+                   title="Jour suivant" class="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </a>
+
+                <input type="date" name="date" value="<%= dateSelected %>" onchange="this.form.submit()" 
+                       class="rounded-lg border-gray-300 text-xs sm:text-sm font-semibold shadow-sm focus:border-primary focus:ring-primary py-1.5">
+            </div>
+
+            <!-- Filtres Praticien, Statut et Recherche -->
+            <div class="flex flex-wrap items-center gap-2">
+                <select name="praticien_id" onchange="this.form.submit()" 
+                        class="rounded-lg border-gray-300 text-xs shadow-sm focus:border-primary focus:ring-primary py-1.5">
+                    <option value="">Tous les Praticiens</option>
+                    <% praticiens.forEach(p => { %>
+                        <option value="<%= p.id %>" <%= praticien_id === p.id ? 'selected' : '' %>>
+                            Dr. <%= p.nom %> <%= p.prenom %> (<%= p.specialite || 'Général' %>)
+                        </option>
+                    <% }); %>
+                </select>
+
+                <select name="statut" onchange="this.form.submit()" 
+                        class="rounded-lg border-gray-300 text-xs shadow-sm focus:border-primary focus:ring-primary py-1.5">
+                    <option value="">Tous les Statuts</option>
+                    <option value="programme" <%= statut === 'programme' ? 'selected' : '' %>>Programmé</option>
+                    <option value="confirme" <%= statut === 'confirme' ? 'selected' : '' %>>Confirmé</option>
+                    <option value="en_attente" <%= statut === 'en_attente' ? 'selected' : '' %>>En attente</option>
+                    <option value="termine" <%= statut === 'termine' ? 'selected' : '' %>>Terminé</option>
+                    <option value="absent" <%= statut === 'absent' ? 'selected' : '' %>>Absent</option>
+                    <option value="annule" <%= statut === 'annule' ? 'selected' : '' %>>Annulé</option>
+                </select>
+
+                <div class="relative">
+                    <input type="text" name="search" value="<%= search %>" placeholder="Patient, dossier..." 
+                           class="rounded-lg border-gray-300 text-xs pl-7 pr-3 py-1.5 shadow-sm focus:border-primary focus:ring-primary w-36 sm:w-44">
+                    <i class="fas fa-search absolute left-2.5 top-2.5 text-gray-400 text-xs pointer-events-none"></i>
+                </div>
+
+                <% if (praticien_id || statut || search || (vue === 'agenda' && dateSelected !== todayStr)) { %>
+                    <a href="/rendez-vous?vue=<%= vue %>" title="Réinitialiser filtres" class="p-2 text-gray-500 hover:text-red-600 transition">
+                        <i class="fas fa-undo text-xs"></i>
+                    </a>
+                <% } %>
+            </div>
+        </form>
+    </div>
+
+    <!-- Date d'affichage courante formatée -->
+    <div class="flex items-center justify-between px-1">
+        <h2 class="text-base font-bold text-gray-800 flex items-center gap-2">
+            <i class="far fa-calendar text-primary"></i>
+            <%= formatDateFR(dateSelected) %>
+            <% if (dateSelected === todayStr) { %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 text-blue-800">
+                    Aujourd'hui
+                </span>
+            <% } %>
+        </h2>
+        <span class="text-xs font-semibold text-gray-500">
+            <%= rendezVous.length %> rendez-vous programmé(s)
+        </span>
+    </div>
+
+    <!-- CONTENU : VUE AGENDA PAR CRÉNEAUX HORAIRES -->
+    <% if (vue === 'agenda') { %>
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="divide-y divide-gray-100">
+                <% agendaSlots.forEach(slot => { %>
+                    <div class="flex flex-col sm:flex-row sm:items-start group hover:bg-slate-50/70 transition p-3 sm:px-4 sm:py-3.5 border-l-4 <%= slot.rendezVous.length > 0 ? 'border-primary bg-blue-50/20' : 'border-transparent' %>">
+                        <!-- Colonne Heure -->
+                        <div class="sm:w-28 shrink-0 flex items-center sm:block gap-2 mb-2 sm:mb-0">
+                            <span class="text-sm font-black text-gray-800 tracking-tight font-mono"><%= slot.heure %></span>
+                            <span class="text-[10px] text-gray-400 hidden sm:block">+30 min</span>
+                            <% if (slot.rendezVous.length === 0) { %>
+                                <a href="/rendez-vous/nouveau?date=<%= dateSelected %>&heure=<%= slot.heure %>" 
+                                   class="opacity-0 group-hover:opacity-100 text-[10px] font-semibold text-primary hover:underline transition ml-auto sm:ml-0 sm:mt-1 inline-block">
+                                    <i class="fas fa-plus-circle mr-1"></i>Réserver
+                                </a>
+                            <% } %>
+                        </div>
+
+                        <!-- Colonne Rendez-vous -->
+                        <div class="flex-1 space-y-2">
+                            <% if (slot.rendezVous.length === 0) { %>
+                                <p class="text-xs text-gray-300 italic py-1">Créneau disponible</p>
+                            <% } else { %>
+                                <% slot.rendezVous.forEach(r => { 
+                                    let badgeBg = 'bg-blue-100 text-blue-800 border-blue-200';
+                                    let statusLabel = 'Programmé';
+                                    if (r.statut === 'confirme') { badgeBg = 'bg-emerald-100 text-emerald-800 border-emerald-200'; statusLabel = 'Confirmé'; }
+                                    else if (r.statut === 'en_attente') { badgeBg = 'bg-amber-100 text-amber-800 border-amber-200'; statusLabel = 'En salle d\'attente'; }
+                                    else if (r.statut === 'termine') { badgeBg = 'bg-green-100 text-green-800 border-green-200'; statusLabel = 'Terminé'; }
+                                    else if (r.statut === 'absent') { badgeBg = 'bg-red-100 text-red-800 border-red-200'; statusLabel = 'Absent'; }
+                                    else if (r.statut === 'annule') { badgeBg = 'bg-gray-100 text-gray-600 border-gray-200'; statusLabel = 'Annulé'; }
+                                %>
+                                    <div id="rdv-<%= r.id %>" class="bg-white border rounded-xl p-3 shadow-sm hover:shadow transition flex flex-col md:flex-row md:items-center justify-between gap-3 border-gray-200">
+                                        <div class="space-y-1">
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <a href="/patients/<%= r.patient_id %>" class="text-sm font-bold text-gray-900 hover:text-primary transition flex items-center gap-1.5">
+                                                    <i class="fas fa-user-circle text-gray-400"></i>
+                                                    <%= r.patients ? (r.patients.nom + ' ' + r.patients.prenom) : 'Patient inconnu' %>
+                                                </a>
+                                                <% if (r.patients && r.patients.numero_dossier) { %>
+                                                    <span class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">
+                                                        N° <%= r.patients.numero_dossier %>
+                                                    </span>
+                                                <% } %>
+                                                <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border <%= badgeBg %>">
+                                                    <%= statusLabel %>
+                                                </span>
+                                                <span class="text-[10px] text-gray-500 font-medium">
+                                                    <i class="far fa-clock mr-1"></i><%= r.duree_minutes || 30 %> min
+                                                </span>
+                                            </div>
+
+                                            <div class="text-xs text-gray-600 flex flex-wrap items-center gap-x-4 gap-y-1">
+                                                <span class="font-semibold text-gray-800">
+                                                    <i class="fas fa-stethoscope text-primary mr-1"></i><%= r.motif %>
+                                                </span>
+                                                <% if (r.praticiens) { %>
+                                                    <span class="text-gray-500">
+                                                        <i class="fas fa-user-md text-gray-400 mr-1"></i>Dr. <%= r.praticiens.nom %> <%= r.praticiens.prenom %>
+                                                    </span>
+                                                <% } %>
+                                                <% if (r.patients && r.patients.telephone) { %>
+                                                    <span class="text-gray-500">
+                                                        <i class="fas fa-phone-alt text-gray-400 mr-1"></i><%= r.patients.telephone %>
+                                                    </span>
+                                                <% } %>
+                                            </div>
+
+                                            <% if (r.notes) { %>
+                                                <p class="text-xs text-amber-800 bg-amber-50 rounded px-2 py-1 mt-1 border border-amber-100">
+                                                    <i class="fas fa-info-circle mr-1"></i><%= r.notes %>
+                                                </p>
+                                            <% } %>
+                                        </div>
+
+                                        <!-- Boutons d'Action Rapide -->
+                                        <div class="flex items-center gap-1.5 self-end md:self-center shrink-0">
+                                            <!-- Action: Transférer en Salle d'Attente -->
+                                            <% if (r.statut !== 'en_attente' && r.statut !== 'termine') { %>
+                                                <form method="POST" action="/rendez-vous/<%= r.id %>/envoyer-attente" class="inline">
+                                                    <button type="submit" 
+                                                            title="Envoyer en salle d'attente"
+                                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 transition border border-amber-300">
+                                                        <i class="fas fa-hourglass-start"></i>
+                                                        <span class="hidden sm:inline">Salle d'attente</span>
+                                                    </button>
+                                                </form>
+                                            <% } %>
+
+                                            <!-- Statut Confirmer -->
+                                            <% if (r.statut === 'programme') { %>
+                                                <form method="POST" action="/rendez-vous/<%= r.id %>/statut" class="inline">
+                                                    <input type="hidden" name="statut" value="confirme">
+                                                    <button type="submit" title="Confirmer le rendez-vous" 
+                                                            class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition border border-emerald-200">
+                                                        <i class="fas fa-check text-xs"></i>
+                                                    </button>
+                                                </form>
+                                            <% } %>
+
+                                            <!-- Statut Marquer Absent -->
+                                            <% if (r.statut !== 'absent' && r.statut !== 'termine' && r.statut !== 'annule') { %>
+                                                <form method="POST" action="/rendez-vous/<%= r.id %>/statut" class="inline">
+                                                    <input type="hidden" name="statut" value="absent">
+                                                    <button type="submit" title="Marquer absent" 
+                                                            class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition border border-red-200">
+                                                        <i class="fas fa-user-slash text-xs"></i>
+                                                    </button>
+                                                </form>
+                                            <% } %>
+
+                                            <!-- Modifier -->
+                                            <a href="/rendez-vous/<%= r.id %>/edit" title="Modifier" 
+                                               class="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition border border-gray-200">
+                                                <i class="fas fa-edit text-xs"></i>
+                                            </a>
+
+                                            <!-- Supprimer -->
+                                            <form method="POST" action="/rendez-vous/<%= r.id %>/supprimer" class="inline" 
+                                                  onsubmit="return confirm('Confirmer la suppression de ce rendez-vous ?');">
+                                                <button type="submit" title="Supprimer" 
+                                                        class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                                                    <i class="fas fa-trash-alt text-xs"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                <% }); %>
+                            <% } %>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        </div>
+
+    <!-- CONTENU : VUE LISTE DÉTAILLÉE -->
+    <% } else { %>
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 text-left text-xs sm:text-sm">
+                    <thead class="bg-gray-50 text-gray-500 uppercase tracking-wider text-[11px] font-semibold">
+                        <tr>
+                            <th class="px-4 py-3">Date & Heure</th>
+                            <th class="px-4 py-3">Patient</th>
+                            <th class="px-4 py-3">Praticien</th>
+                            <th class="px-4 py-3">Motif & Notes</th>
+                            <th class="px-4 py-3">Statut</th>
+                            <th class="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 bg-white">
+                        <% if (rendezVous.length === 0) { %>
+                            <tr>
+                                <td colspan="6" class="px-4 py-12 text-center text-gray-400 italic">
+                                    <i class="far fa-calendar-times text-3xl mb-2 text-gray-300 block"></i>
+                                    Aucun rendez-vous ne correspond aux critères sélectionnés.
+                                </td>
+                            </tr>
+                        <% } else { %>
+                            <% rendezVous.forEach(r => { 
+                                let badgeBg = 'bg-blue-100 text-blue-800';
+                                if (r.statut === 'confirme') badgeBg = 'bg-emerald-100 text-emerald-800';
+                                else if (r.statut === 'en_attente') badgeBg = 'bg-amber-100 text-amber-800';
+                                else if (r.statut === 'termine') badgeBg = 'bg-green-100 text-green-800';
+                                else if (r.statut === 'absent') badgeBg = 'bg-red-100 text-red-800';
+                                else if (r.statut === 'annule') badgeBg = 'bg-gray-100 text-gray-600';
+                            %>
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <div class="font-bold text-gray-900 font-mono"><%= formatHeure(r.date_heure) %></div>
+                                        <div class="text-[11px] text-gray-500"><%= formatDateFR(r.date_heure) %></div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <a href="/patients/<%= r.patient_id %>" class="font-bold text-gray-900 hover:text-primary transition block">
+                                            <%= r.patients ? (r.patients.nom + ' ' + r.patients.prenom) : '-' %>
+                                        </a>
+                                        <div class="text-[11px] text-gray-400">
+                                            N° <%= r.patients ? r.patients.numero_dossier : '-' %> • <%= r.patients ? (r.patients.telephone || 'Sans tél') : '' %>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <% if (r.praticiens) { %>
+                                            <div class="font-semibold text-gray-800">Dr. <%= r.praticiens.nom %></div>
+                                            <div class="text-[11px] text-gray-400"><%= r.praticiens.specialite || 'Médecine Générale' %></div>
+                                        <% } else { %>
+                                            <span class="text-gray-400 italic">Non assigné</span>
+                                        <% } %>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="font-medium text-gray-900"><%= r.motif %></div>
+                                        <% if (r.notes) { %>
+                                            <div class="text-[11px] text-gray-500 italic mt-0.5"><%= r.notes %></div>
+                                        <% } %>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider <%= badgeBg %>">
+                                            <%= r.statut %>
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-right space-x-1">
+                                        <% if (r.statut !== 'en_attente' && r.statut !== 'termine') { %>
+                                            <form method="POST" action="/rendez-vous/<%= r.id %>/envoyer-attente" class="inline">
+                                                <button type="submit" title="Envoyer en salle d'attente" class="px-2 py-1 text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 rounded transition">
+                                                    <i class="fas fa-hourglass-start"></i>
+                                                </button>
+                                            </form>
+                                        <% } %>
+                                        <a href="/rendez-vous/<%= r.id %>/edit" class="p-1 text-gray-500 hover:text-primary transition">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    <% } %>
+</div>

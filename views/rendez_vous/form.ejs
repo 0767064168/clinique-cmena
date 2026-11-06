@@ -1,0 +1,244 @@
+<div class="max-w-4xl mx-auto space-y-6" x-data="{
+    modePatient: '<%= isEdit || rdv.patient_id ? "existant" : "existant" %>',
+    selectedMotif: '<%= rdv.motif || "" %>',
+    selectedHeure: '<%= rdv.heure || "08:30" %>',
+    duree: '<%= rdv.duree_minutes || 30 %>',
+    setHeure(h) { this.selectedHeure = h; document.getElementById('input-heure').value = h; },
+    setMotif(m) { this.selectedMotif = m; document.getElementById('input-motif').value = m; }
+}">
+    <!-- En-tête -->
+    <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+        <div class="flex items-center gap-3">
+            <a href="/rendez-vous" class="p-2 text-gray-500 hover:text-gray-700 bg-white rounded-lg border border-gray-300 shadow-sm transition">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold text-gray-900">
+                    <%= isEdit ? 'Modifier le Rendez-vous' : 'Planifier un Nouveau Rendez-vous' %>
+                </h1>
+                <p class="text-xs sm:text-sm text-gray-500">
+                    <%= isEdit ? 'Ajustez l\'horaire, le praticien ou le statut de la consultation' : 'Enregistrez une consultation dans l\'agenda médical du CSA GSPM' %>
+                </p>
+            </div>
+        </div>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold <%= isEdit ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800' %>">
+            <i class="fas <%= isEdit ? 'fa-edit' : 'fa-calendar-plus' %>"></i>
+            <%= isEdit ? 'Modification' : 'Nouveau Créneau' %>
+        </span>
+    </div>
+
+    <!-- Formulaire Principal -->
+    <form method="POST" action="<%= isEdit ? '/rendez-vous/' + rdv.id + '/edit' : '/rendez-vous' %>" class="space-y-6">
+        
+        <!-- Bloc 1 : Sélection du Patient -->
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h2 class="text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-blue-100 text-primary flex items-center justify-center text-xs">1</span>
+                    Patient
+                </h2>
+                <% if (!isEdit) { %>
+                    <div class="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50 text-xs font-semibold">
+                        <button type="button" @click="modePatient = 'existant'" 
+                                :class="modePatient === 'existant' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+                                class="px-3 py-1 rounded-md transition">
+                            Patient Existant
+                        </button>
+                        <button type="button" @click="modePatient = 'nouveau'" 
+                                :class="modePatient === 'nouveau' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+                                class="px-3 py-1 rounded-md transition">
+                            Nouveau Patient Rapide
+                        </button>
+                    </div>
+                <% } %>
+            </div>
+
+            <% if (isEdit && typeof patientActuel !== 'undefined' && patientActuel) { %>
+                <!-- Mode Édition : Patient fixe -->
+                <input type="hidden" name="patient_id" value="<%= rdv.patient_id %>">
+                <div class="flex items-center gap-3 p-3 bg-blue-50/60 rounded-xl border border-blue-100">
+                    <div class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                        <%= (patientActuel.nom ? patientActuel.nom[0] : '') + (patientActuel.prenom ? patientActuel.prenom[0] : '') %>
+                    </div>
+                    <div>
+                        <p class="font-bold text-gray-900"><%= patientActuel.nom %> <%= patientActuel.prenom %></p>
+                        <p class="text-xs text-gray-500">
+                            Dossier N° <%= patientActuel.numero_dossier || '-' %> • Tél: <%= patientActuel.telephone || 'Non renseigné' %>
+                        </p>
+                    </div>
+                </div>
+            <% } else { %>
+                <!-- Mode Choix Existant -->
+                <div x-show="modePatient === 'existant'" class="space-y-2">
+                    <label for="select-patient" class="block text-xs font-bold text-gray-700">Sélectionner un dossier patient existant *</label>
+                    <div class="relative">
+                        <select id="select-patient" name="patient_id" class="block w-full rounded-xl border-gray-300 py-2.5 pl-3 pr-10 text-sm shadow-sm focus:border-primary focus:ring-primary">
+                            <option value="">-- Rechercher / Choisir un patient --</option>
+                            <% patients.forEach(p => { %>
+                                <option value="<%= p.id %>" <%= rdv.patient_id === p.id ? 'selected' : '' %>>
+                                    <%= p.nom %> <%= p.prenom %> <%= p.numero_dossier ? `(Dossier N° ${p.numero_dossier})` : '' %> <%= p.telephone ? `— ${p.telephone}` : '' %>
+                                </option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    <p class="text-[11px] text-gray-400">Astuce : Si le patient n'existe pas encore, basculez sur "Nouveau Patient Rapide".</p>
+                </div>
+
+                <!-- Mode Nouveau Patient Rapide -->
+                <div x-show="modePatient === 'nouveau'" class="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <input type="hidden" name="patient_id" value="nouveau" :disabled="modePatient !== 'nouveau'">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Nom de famille *</label>
+                            <input type="text" name="nouveau_patient_nom" placeholder="Ex: KOUASSI" 
+                                   class="w-full rounded-lg border-gray-300 text-sm py-2 shadow-sm focus:border-primary focus:ring-primary uppercase">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Prénom(s) *</label>
+                            <input type="text" name="nouveau_patient_prenom" placeholder="Ex: Jean-Luc" 
+                                   class="w-full rounded-lg border-gray-300 text-sm py-2 shadow-sm focus:border-primary focus:ring-primary">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Téléphone de contact</label>
+                            <input type="tel" name="nouveau_patient_telephone" placeholder="Ex: 07 00 00 00 00" 
+                                   class="w-full rounded-lg border-gray-300 text-sm py-2 shadow-sm focus:border-primary focus:ring-primary">
+                        </div>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Bloc 2 : Praticien & Créneau Horaire -->
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <h2 class="text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2 border-b border-gray-100 pb-3">
+                <span class="w-6 h-6 rounded-full bg-blue-100 text-primary flex items-center justify-center text-xs">2</span>
+                Praticien & Horaire
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Choix Praticien -->
+                <div>
+                    <label for="select-praticien" class="block text-xs font-bold text-gray-700 mb-1">Médecin / Praticien</label>
+                    <select id="select-praticien" name="praticien_id" class="w-full rounded-xl border-gray-300 py-2.5 text-sm shadow-sm focus:border-primary focus:ring-primary">
+                        <option value="">-- Tout médecin disponible --</option>
+                        <% praticiens.forEach(p => { %>
+                            <option value="<%= p.id %>" <%= rdv.praticien_id === p.id ? 'selected' : '' %>>
+                                Dr. <%= p.nom %> <%= p.prenom %> (<%= p.specialite || 'Généraliste' %>)
+                            </option>
+                        <% }); %>
+                    </select>
+                </div>
+
+                <!-- Durée estimée -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Durée prévue de consultation</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <% [15, 30, 45, 60].forEach(d => { %>
+                            <button type="button" @click="duree = <%= d %>; document.getElementById('input-duree').value = <%= d %>" 
+                                    :class="duree == <%= d %> ? 'bg-primary text-white border-primary shadow-sm font-bold' : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'"
+                                    class="py-2 text-xs rounded-xl border text-center transition">
+                                <%= d %> min
+                            </button>
+                        <% }); %>
+                    </div>
+                    <input type="hidden" id="input-duree" name="duree_minutes" value="<%= rdv.duree_minutes || 30 %>">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <!-- Date -->
+                <div>
+                    <label for="input-date" class="block text-xs font-bold text-gray-700 mb-1">Date du rendez-vous *</label>
+                    <input type="date" id="input-date" name="date" required value="<%= rdv.date %>" 
+                           class="w-full rounded-xl border-gray-300 py-2.5 text-sm font-semibold shadow-sm focus:border-primary focus:ring-primary">
+                </div>
+
+                <!-- Heure -->
+                <div>
+                    <label for="input-heure" class="block text-xs font-bold text-gray-700 mb-1">Heure de passage *</label>
+                    <input type="time" id="input-heure" name="heure" required value="<%= rdv.heure %>" 
+                           class="w-full rounded-xl border-gray-300 py-2.5 text-sm font-semibold shadow-sm focus:border-primary focus:ring-primary font-mono">
+                </div>
+            </div>
+
+            <!-- Raccourcis Créneaux Horaires -->
+            <div>
+                <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Créneaux fréquents</label>
+                <div class="flex flex-wrap gap-1.5">
+                    <% ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'].forEach(h => { %>
+                        <button type="button" @click="setHeure('<%= h %>')" 
+                                :class="selectedHeure === '<%= h %>' ? 'bg-primary text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                                class="px-2.5 py-1 text-xs font-mono rounded-lg transition">
+                            <%= h %>
+                        </button>
+                    <% }); %>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bloc 3 : Motif Médical & Statut -->
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <h2 class="text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2 border-b border-gray-100 pb-3">
+                <span class="w-6 h-6 rounded-full bg-blue-100 text-primary flex items-center justify-center text-xs">3</span>
+                Motif & Statut
+            </h2>
+
+            <!-- Champ Motif avec suggestions en 1 clic -->
+            <div class="space-y-2">
+                <label for="input-motif" class="block text-xs font-bold text-gray-700">Motif de consultation *</label>
+                <input type="text" id="input-motif" name="motif" required value="<%= rdv.motif %>" placeholder="Ex: Consultation générale, Suivi pansement..." 
+                       class="w-full rounded-xl border-gray-300 py-2.5 text-sm shadow-sm focus:border-primary focus:ring-primary">
+                
+                <div class="flex flex-wrap gap-1.5 pt-1">
+                    <% motifsCourants.forEach(m => { %>
+                        <button type="button" @click="setMotif('<%= m %>')" 
+                                class="px-2 py-0.5 text-[11px] font-semibold bg-gray-100 text-gray-700 hover:bg-primary-light hover:text-white rounded-md transition">
+                            <%= m %>
+                        </button>
+                    <% }); %>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <!-- Statut initial -->
+                <div>
+                    <label for="select-statut" class="block text-xs font-bold text-gray-700 mb-1">Statut du rendez-vous</label>
+                    <select id="select-statut" name="statut" class="w-full rounded-xl border-gray-300 py-2.5 text-sm shadow-sm focus:border-primary focus:ring-primary">
+                        <option value="programme" <%= rdv.statut === 'programme' ? 'selected' : '' %>>Programmé</option>
+                        <option value="confirme" <%= rdv.statut === 'confirme' ? 'selected' : '' %>>Confirmé</option>
+                        <option value="en_attente" <%= rdv.statut === 'en_attente' ? 'selected' : '' %>>En salle d'attente</option>
+                        <option value="termine" <%= rdv.statut === 'termine' ? 'selected' : '' %>>Terminé</option>
+                        <option value="absent" <%= rdv.statut === 'absent' ? 'selected' : '' %>>Absent</option>
+                        <option value="annule" <%= rdv.statut === 'annule' ? 'selected' : '' %>>Annulé</option>
+                    </select>
+                </div>
+
+                <!-- Notes internes -->
+                <div>
+                    <label for="input-notes" class="block text-xs font-bold text-gray-700 mb-1">Consignes / Notes d'accueil (optionnel)</label>
+                    <input type="text" id="input-notes" name="notes" value="<%= rdv.notes %>" placeholder="Ex: À jeun, apporter bilan sanguin..." 
+                           class="w-full rounded-xl border-gray-300 py-2.5 text-sm shadow-sm focus:border-primary focus:ring-primary">
+                </div>
+            </div>
+
+            <!-- Option Forcer en cas de conflit -->
+            <div class="pt-2">
+                <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-600">
+                    <input type="checkbox" name="forcer_conflit" value="1" class="rounded border-gray-300 text-primary focus:ring-primary">
+                    <span>Autoriser la planification même si un autre rendez-vous chevauche ce créneau</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Boutons d'Action -->
+        <div class="flex items-center justify-end gap-3 pt-4">
+            <a href="/rendez-vous" class="px-5 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition shadow-sm">
+                Annuler
+            </a>
+            <button type="submit" class="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-dark transition shadow-md flex items-center gap-2">
+                <i class="fas fa-check"></i>
+                <%= isEdit ? 'Enregistrer les modifications' : 'Confirmer le Rendez-vous' %>
+            </button>
+        </div>
+    </form>
+</div>

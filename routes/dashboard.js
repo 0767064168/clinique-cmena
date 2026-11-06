@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/supabase');
+const { getAllRendezVous } = require('../utils/rendezVousStorage');
 
 router.get('/', async (req, res) => {
     try {
@@ -63,6 +64,8 @@ router.get('/', async (req, res) => {
                 seuil: Number(p.stock_minimum || 0)
             }));
 
+        const rdvsAujourdhui = await getAllRendezVous({ date: today }).catch(() => []);
+
         const recentProducts = (stockProduits || [])
             .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
             .slice(0, 5);
@@ -103,7 +106,8 @@ router.get('/', async (req, res) => {
             stockAlerts,
             recentProducts: recentProducts || [],
             recentPatients: recentPatients || [],
-            recentFactures: recentFactures || []
+            recentFactures: recentFactures || [],
+            rdvsAujourdhui: rdvsAujourdhui || []
         });
     } catch (error) {
         console.error('Dashboard Error:', error);
