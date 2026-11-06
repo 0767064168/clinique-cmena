@@ -51,6 +51,7 @@ const caisseRoutes = require('./routes/caisse');
 const authRoutes = require('./routes/auth');
 const rendezVousRoutes = require('./routes/rendezVous');
 const rechercheRoutes = require('./routes/recherche');
+const inventairesRoutes = require('./routes/inventaires');
 const { requireAuth, requireAdmin, requireRole } = require('./middleware/auth');
 
 // Initialisation de l'application Express
@@ -302,6 +303,7 @@ app.use('/factures', requireAuth, requireRole(['admin', 'comptable']), facturesR
 app.use('/paiements', requireAuth, requireRole(['admin', 'comptable']), paiementsRoutes);
 app.use('/caisse', requireAuth, requireRole(['admin', 'comptable']), caisseRoutes);
 app.use('/assurances', requireAuth, requireRole(['admin', 'comptable']), assurancesRoutes);
+app.use('/pharmacie/inventaires', requireAuth, requireRole(['admin', 'pharmacien', 'medecin']), inventairesRoutes);
 app.use('/pharmacie', requireAuth, requireRole(['admin', 'pharmacien', 'medecin']), pharmacieRoutes);
 app.use('/rapports', requireAuth, requireRole(['admin', 'medecin', 'comptable']), rapportsRoutes);
 app.use('/audit', requireAuth, requireAdmin, auditRoutes);

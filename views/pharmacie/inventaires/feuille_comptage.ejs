@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feuille de Comptage - <%= inv.numero_inventaire %></title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 12mm 10mm 15mm 10mm;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 10px;
+            color: #1a1a1a;
+            background: white;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .page-header {
+            text-align: center;
+            border-bottom: 2px solid #1e293b;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        .page-header .republic {
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #475569;
+        }
+        .page-header .unit {
+            font-size: 14px;
+            font-weight: 900;
+            color: #0f172a;
+            margin: 2px 0;
+            letter-spacing: 0.5px;
+        }
+        .page-header .sub {
+            font-size: 10px;
+            font-weight: 600;
+            color: #334155;
+        }
+        .page-header .doc-title {
+            font-size: 13px;
+            font-weight: 900;
+            color: #0f172a;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: #f1f5f9;
+            display: inline-block;
+            padding: 4px 20px;
+            border-radius: 4px;
+        }
+        .meta-block {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 10px;
+        }
+        .meta-block .meta-item {
+            display: flex;
+            gap: 4px;
+        }
+        .meta-block .meta-label {
+            font-weight: 700;
+            color: #475569;
+        }
+        .meta-block .meta-value {
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .instructions {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 4px;
+            padding: 6px 10px;
+            margin-bottom: 8px;
+            font-size: 9px;
+            color: #92400e;
+        }
+        .instructions strong {
+            display: block;
+            margin-bottom: 2px;
+            font-size: 9.5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        table th, table td {
+            border: 1px solid #94a3b8;
+            padding: 3px 5px;
+            text-align: center;
+            font-size: 9px;
+        }
+        table th {
+            background: #1e293b;
+            color: white;
+            font-weight: 700;
+            font-size: 8.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            padding: 5px 4px;
+        }
+        table td.left { text-align: left; }
+        table td.designation {
+            text-align: left;
+            font-weight: 600;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        table tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        table td.write-zone {
+            background: #fefce8;
+            min-width: 55px;
+        }
+        table td.notes-zone {
+            background: #f0fdf4;
+            min-width: 60px;
+        }
+        .footer-block {
+            margin-top: 15px;
+            page-break-inside: avoid;
+        }
+        .signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .sig-box {
+            width: 30%;
+            text-align: center;
+            font-size: 9px;
+        }
+        .sig-box .sig-title {
+            font-weight: 700;
+            color: #1e293b;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 2px;
+            margin-bottom: 40px;
+        }
+        .sig-box .sig-line {
+            border-top: 1px dotted #94a3b8;
+            padding-top: 3px;
+            color: #64748b;
+            font-size: 8px;
+        }
+        .page-number {
+            text-align: center;
+            font-size: 8px;
+            color: #94a3b8;
+            margin-top: 10px;
+        }
+        @media print {
+            body { background: white; }
+            .no-print { display: none !important; }
+        }
+        .btn-print {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            padding: 10px 24px;
+            background: #1e293b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .btn-print:hover { background: #334155; }
+    </style>
+</head>
+<body>
+    <button class="btn-print no-print" onclick="window.print()">🖨️ Imprimer</button>
+
+    <!-- En-tête officiel GSPM -->
+    <div class="page-header">
+        <div class="republic">République de Côte d'Ivoire — Union – Discipline – Travail</div>
+        <div class="unit">GROUPEMENT DE SAPEURS POMPIERS MILITAIRES</div>
+        <div class="sub">3<sup>e</sup> Compagnie d'Incendie et de Secours — Bouaké</div>
+        <div class="sub">Centre de Santé d'Affectation (CSA)</div>
+        <div class="doc-title">📋 Feuille de Comptage Physique — Inventaire Pharmacie</div>
+    </div>
+
+    <!-- Informations de l'inventaire -->
+    <div class="meta-block">
+        <div class="meta-item">
+            <span class="meta-label">N° Inventaire :</span>
+            <span class="meta-value"><%= inv.numero_inventaire %></span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Date :</span>
+            <span class="meta-value"><%= inv.date_inventaire %></span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Responsable :</span>
+            <span class="meta-value"><%= inv.responsable_nom %></span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Catégorie :</span>
+            <span class="meta-value"><%= inv.categorie_cible === 'toutes' ? 'Toutes catégories' : inv.categorie_cible %></span>
+        </div>
+    </div>
+
+    <% if (inv.titre) { %>
+    <div class="meta-block">
+        <div class="meta-item">
+            <span class="meta-label">Titre :</span>
+            <span class="meta-value"><%= inv.titre %></span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Total Articles :</span>
+            <span class="meta-value"><%= (inv.lignes || []).length %> références</span>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- Instructions -->
+    <div class="instructions">
+        <strong>📌 Instructions de comptage :</strong>
+        1. Pour chaque article, compter physiquement les unités présentes en rayon et noter dans la colonne « Stock Réel ».
+        2. Vérifier les dates de péremption réelles et les inscrire dans « Péremption Réelle ».
+        3. La colonne « Écart » sera calculée automatiquement lors de la saisie informatique (Stock Réel – Stock Théorique).
+        4. Utiliser la colonne « Notes » pour toute observation (casse, détérioration, emplacement incorrect, etc.).
+    </div>
+
+    <!-- Tableau de comptage -->
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 30px;">N°</th>
+                <th style="width: 70px;">Code</th>
+                <th style="width: 180px;">Désignation</th>
+                <th style="width: 65px;">Emplacement</th>
+                <th style="width: 50px;">Unité</th>
+                <th style="width: 60px;">Stock Théorique</th>
+                <th style="width: 65px;">Stock Réel</th>
+                <th style="width: 75px;">Péremption Réelle</th>
+                <th>Notes / Observations</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% (inv.lignes || []).forEach((l, idx) => { %>
+            <tr>
+                <td><%= idx + 1 %></td>
+                <td class="left" style="font-family: monospace; font-size: 8px;"><%= l.code || '-' %></td>
+                <td class="designation"><%= l.designation %></td>
+                <td style="font-size: 8px;"><%= l.emplacement || '-' %></td>
+                <td><%= l.unite || 'Unité' %></td>
+                <td style="font-weight: 700;"><%= l.stock_theorique %></td>
+                <td class="write-zone"></td>
+                <td class="write-zone"></td>
+                <td class="notes-zone"></td>
+            </tr>
+            <% }); %>
+            <% if (!(inv.lignes && inv.lignes.length)) { %>
+            <tr>
+                <td colspan="9" style="padding: 20px; color: #94a3b8; font-style: italic;">Aucun article chargé pour cet inventaire</td>
+            </tr>
+            <% } %>
+        </tbody>
+    </table>
+
+    <!-- Pied de page : Récapitulatif et signatures -->
+    <div class="footer-block">
+        <div class="meta-block">
+            <div class="meta-item">
+                <span class="meta-label">Total articles à compter :</span>
+                <span class="meta-value"><%= (inv.lignes || []).length %></span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Heure début comptage :</span>
+                <span class="meta-value">____:____</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Heure fin comptage :</span>
+                <span class="meta-value">____:____</span>
+            </div>
+        </div>
+
+        <div class="signatures">
+            <div class="sig-box">
+                <div class="sig-title">Compteur 1</div>
+                <div class="sig-line">Nom, Grade & Signature</div>
+            </div>
+            <div class="sig-box">
+                <div class="sig-title">Compteur 2</div>
+                <div class="sig-line">Nom, Grade & Signature</div>
+            </div>
+            <div class="sig-box">
+                <div class="sig-title">Responsable Pharmacie</div>
+                <div class="sig-line">Nom, Grade & Signature</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-number">
+        Document généré le <%= new Date().toLocaleDateString('fr-FR') %> — CSA GSPM 3<sup>e</sup> Cie Bouaké — Confidentiel
+    </div>
+</body>
+</html>

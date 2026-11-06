@@ -16,6 +16,12 @@
             <p class="text-xs sm:text-sm text-gray-500 mt-0.5">Bilan des encaissements, sorties de caisse et PV journalier</p>
         </div>
         <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                        <a href="/caisse/cloture?date=<%= dateSelected %>" class="flex-1 sm:flex-none text-center bg-slate-900 hover:bg-black text-white font-bold py-2 px-3.5 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition">
+                <i class="fas fa-lock"></i> Clôturer Caisse (Z)
+            </a>
+            <a href="/caisse/historique" class="flex-1 sm:flex-none text-center bg-white hover:bg-gray-50 text-gray-700 font-bold py-2 px-3 rounded-lg text-xs sm:text-sm border border-gray-300 shadow-sm inline-flex items-center justify-center gap-1.5 transition">
+                <i class="fas fa-history"></i> Historique Z
+            </a>
             <button type="button" @click="openDepenseModal = true" class="flex-1 sm:flex-none text-center bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3.5 rounded-lg text-xs sm:text-sm shadow-sm inline-flex items-center justify-center gap-1.5 transition cursor-pointer">
                 <i class="fas fa-minus-circle"></i> Sortie de Caisse
             </button>
@@ -33,6 +39,37 @@
             </a>
         </div>
     </div>
+
+    
+    <!-- Bannière Journée Clôturée -->
+    <% if (typeof clotureActuelle !== 'undefined' && clotureActuelle) { %>
+    <div class="mb-6 rounded-2xl border-2 border-emerald-500 bg-emerald-50 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <span class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg shadow shrink-0">
+                <i class="fas fa-check-double"></i>
+            </span>
+            <div>
+                <span class="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-200/80 px-2 py-0.5 rounded-full">
+                    Journée Clôturée
+                </span>
+                <p class="text-sm font-bold text-emerald-950 mt-0.5">
+                    Rapport Z N° <%= clotureActuelle.numero_cloture %> validé par <%= clotureActuelle.caissier_nom %>
+                </p>
+                <p class="text-xs text-emerald-700">
+                    Comptage physique : <%= Number(clotureActuelle.solde_especes_physique || 0).toLocaleString('fr-FR') %> FCFA • Écart : <%= Number(clotureActuelle.ecart_caisse || 0).toLocaleString('fr-FR') %> FCFA
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/caisse/clotures/<%= clotureActuelle.id %>/print" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-black text-white text-xs font-bold shadow-sm transition inline-flex items-center gap-1">
+                <i class="fas fa-print"></i> PV A4
+            </a>
+            <a href="/caisse/ticket?date=<%= dateSelected %>" target="_blank" class="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition inline-flex items-center gap-1">
+                <i class="fas fa-receipt"></i> Ticket 80mm
+            </a>
+        </div>
+    </div>
+    <% } %>
 
     <!-- Sélecteur de date -->
     <form action="/caisse" method="GET" class="bg-white p-4 rounded-xl shadow-sm mb-6 border border-gray-100">

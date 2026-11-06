@@ -1,0 +1,64 @@
+<div class="max-w-2xl mx-auto space-y-6">
+    <!-- En-tête -->
+    <div class="flex items-center gap-3 pb-4 border-b border-gray-200">
+        <a href="/pharmacie/inventaires" class="p-2 text-gray-500 hover:text-gray-700 bg-white rounded-lg border border-gray-300 shadow-sm transition">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Lancer une Session d'Inventaire</h1>
+            <p class="text-xs sm:text-sm text-gray-500">
+                Génération de la photographie des stocks théoriques pour le comptage physique
+            </p>
+        </div>
+    </div>
+
+    <!-- Formulaire -->
+    <form method="POST" action="/pharmacie/inventaires" class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
+        
+        <div>
+            <label for="input-titre" class="block text-xs font-bold text-gray-700 mb-1">
+                Titre de l'inventaire *
+            </label>
+            <input type="text" id="input-titre" name="titre" required 
+                   placeholder="Ex: Inventaire Mensuel de Novembre 2026"
+                   value="Inventaire Pharmacie — <%= todayStr %>"
+                   class="w-full rounded-xl border-gray-300 py-2.5 text-sm font-semibold shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+        </div>
+
+        <div>
+            <label for="select-cat" class="block text-xs font-bold text-gray-700 mb-1">
+                Périmètre des produits à inventorier *
+            </label>
+            <select id="select-cat" name="categorie_cible" 
+                    class="w-full rounded-xl border-gray-300 py-2.5 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                <option value="toutes">Tous les produits du catalogue (Inventaire Général)</option>
+                <option value="medicament">Médicaments uniquement</option>
+                <option value="consommable">Consommables médicaux (seringues, compresses, gants...)</option>
+                <option value="dispositif_medical">Dispositifs médicaux</option>
+                <option value="materiel">Matériel médical</option>
+            </select>
+            <p class="text-[11px] text-gray-400 mt-1">
+                L'application fige automatiquement le stock informatique actuel de chaque produit sélectionné.
+            </p>
+        </div>
+
+        <div>
+            <label for="input-notes" class="block text-xs font-bold text-gray-700 mb-1">
+                Consignes ou notes pour l'équipe de comptage
+            </label>
+            <textarea id="input-notes" name="notes" rows="3" 
+                      placeholder="Ex: Comptage en binôme dans la réserve centrale et le dispensaire..." 
+                      class="w-full rounded-xl border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500"></textarea>
+        </div>
+
+        <!-- Boutons -->
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+            <a href="/pharmacie/inventaires" class="px-4 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition shadow-sm">
+                Annuler
+            </a>
+            <button type="submit" class="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-md inline-flex items-center gap-2">
+                <i class="fas fa-play"></i> Initialiser le Comptage
+            </button>
+        </div>
+    </form>
+</div>

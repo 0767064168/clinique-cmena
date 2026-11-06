@@ -1,0 +1,325 @@
+<div class="max-w-5xl mx-auto space-y-6" x-data="{
+    soldeTheorique: <%= soldeNetEspeces %>,
+    b10000: <%= (clotureActuelle && clotureActuelle.billetage) ? (clotureActuelle.billetage['10000'] || 0) : 0 %>,
+    b5000: <%= (clotureActuelle && clotureActuelle.billetage) ? (clotureActuelle.billetage['5000'] || 0) : 0 %>,
+    b2000: <%= (clotureActuelle && clotureActuelle.billetage) ? (clotureActuelle.billetage['2000'] || 0) : 0 %>,
+    b1000: <%= (clotureActuelle && clotureActuelle.billetage) ? (clotureActuelle.billetage['1000'] || 0) : 0 %>,
+    b500: <%= (clotureActuelle && clotureActuelle.billetage) ? (clotureActuelle.billetage['500'] || 0) : 0 %>,
+    pieces: <%= (clotureActuelle && clotureActuelle.billetage) ? (clotureActuelle.billetage['pieces'] || 0) : 0 %>,
+    saisieDirecte: <%= (clotureActuelle) ? clotureActuelle.solde_especes_physique : soldeNetEspeces %>,
+    modeComptage: 'billetage', // 'billetage' ou 'direct'
+
+    get totalBilletage() {
+        return (Number(this.b10000 || 0) * 10000) +
+               (Number(this.b5000 || 0) * 5000) +
+               (Number(this.b2000 || 0) * 2000) +
+               (Number(this.b1000 || 0) * 1000) +
+               (Number(this.b500 || 0) * 500) +
+               Number(this.pieces || 0);
+    },
+
+    get montantReel() {
+        return this.modeComptage === 'billetage' ? this.totalBilletage : Number(this.saisieDirecte || 0);
+    },
+
+    get ecart() {
+        return this.montantReel - this.soldeTheorique;
+    }
+}">
+    <!-- En-tête -->
+    <div class="sm:flex sm:items-center sm:justify-between pb-4 border-b border-gray-200">
+        <div class="flex items-center gap-3">
+            <a href="/caisse?date=<%= dateSelected %>" class="p-2 text-gray-500 hover:text-gray-700 bg-white rounded-lg border border-gray-300 shadow-sm transition">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    <span class="p-2 bg-slate-900 text-white rounded-lg text-sm font-mono">Z</span>
+                    Clôture de Caisse Formelle (Arrêté Journalier)
+                </h1>
+                <p class="text-xs sm:text-sm text-gray-500 mt-0.5">
+                    Journée du <strong><%= new Date(dateSelected).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %></strong>
+                </p>
+            </div>
+        </div>
+        <div class="mt-3 sm:mt-0 flex items-center gap-2">
+            <a href="/caisse/historique" class="px-3.5 py-2 rounded-lg border border-gray-300 bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 transition shadow-sm inline-flex items-center gap-1.5">
+                <i class="fas fa-history text-gray-500"></i> Historique des Clôtures
+            </a>
+        </div>
+    </div>
+
+    <!-- Si déjà clôturée -->
+    <% if (clotureActuelle) { %>
+    <div class="rounded-2xl border-2 border-emerald-500 bg-emerald-50/80 p-5 shadow-sm">
+        <div class="flex items-start justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-200/80 px-2 py-0.5 rounded-full">
+                        Journée Clôturée & Archivée
+                    </span>
+                    <h2 class="text-base font-bold text-emerald-950 mt-1">
+                        Procès-Verbal Z N° <%= clotureActuelle.numero_cloture %>
+                    </h2>
+                    <p class="text-xs text-emerald-800 mt-0.5">
+                        Arrêté validé le <%= new Date(clotureActuelle.date_heure).toLocaleString('fr-FR') %> par <strong><%= clotureActuelle.caissier_nom %></strong>.
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="/caisse/ticket?date=<%= dateSelected %>" target="_blank" class="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition inline-flex items-center gap-1">
+                    <i class="fas fa-receipt"></i> Ticket 80mm
+                </a>
+                <a href="/caisse/clotures/<%= clotureActuelle.id %>/print" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-black text-white text-xs font-bold shadow-sm transition inline-flex items-center gap-1">
+                    <i class="fas fa-print"></i> PV Officiel A4
+                </a>
+            </div>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- Récapitulatif Théorique de la Journée -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <span class="text-[10px] font-bold uppercase text-gray-500 block">Total Encaissé</span>
+            <span class="text-lg font-black text-gray-900"><%= totalJour.toLocaleString('fr-FR') %> FCFA</span>
+            <span class="text-[10px] text-gray-400 block mt-0.5"><%= nbTotal %> paiements reçus</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <span class="text-[10px] font-bold uppercase text-gray-500 block">Espèces Encaissées</span>
+            <span class="text-lg font-black text-blue-700"><%= totalEspeces.toLocaleString('fr-FR') %> FCFA</span>
+            <span class="text-[10px] text-gray-400 block mt-0.5"><%= nbEspeces %> transaction(s)</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-red-500">
+            <span class="text-[10px] font-bold uppercase text-gray-500 block">Total Dépenses Sorties</span>
+            <span class="text-lg font-black text-red-600"><%= totalDepenses.toLocaleString('fr-FR') %> FCFA</span>
+            <span class="text-[10px] text-gray-400 block mt-0.5"><%= depenses.length %> sortie(s) validée(s)</span>
+        </div>
+
+        <div class="bg-slate-900 text-white p-4 rounded-xl shadow-md border border-slate-800">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block">Solde Espèces Théorique</span>
+            <span class="text-xl font-black text-emerald-400"><%= soldeNetEspeces.toLocaleString('fr-FR') %> FCFA</span>
+            <span class="text-[10px] text-slate-400 block mt-0.5">Espèces - Décaissements</span>
+        </div>
+    </div>
+
+    <!-- Formulaire de Clôture & Billetage -->
+    <form method="POST" action="/caisse/cloture" class="space-y-6" onsubmit="return confirm('Attention : La clôture Z valide et archive les totaux de la journée. Confirmer la clôture de caisse ?');">
+        <input type="hidden" name="date_cloture" value="<%= dateSelected %>">
+        <input type="hidden" name="total_encaissements" value="<%= totalJour %>">
+        <input type="hidden" name="total_especes_theorique" value="<%= totalEspeces %>">
+        <input type="hidden" name="total_mobile_money" value="<%= totalMobileMoney %>">
+        <input type="hidden" name="total_autres" value="<%= totalAutres %>">
+        <input type="hidden" name="nb_transactions" value="<%= nbTotal %>">
+        <input type="hidden" name="total_depenses" value="<%= totalDepenses %>">
+        <input type="hidden" name="nb_depenses" value="<%= depenses.length %>">
+        <input type="hidden" name="solde_net_theorique" value="<%= soldeNetEspeces %>">
+        <input type="hidden" name="solde_especes_physique" :value="montantReel">
+        <input type="hidden" name="ecart_caisse" :value="ecart">
+
+        <!-- Bloc Billetage Physique -->
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3 flex-wrap gap-2">
+                <div>
+                    <h2 class="text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-blue-100 text-primary flex items-center justify-center text-xs">1</span>
+                        Comptage Physique des Espèces (Billetage)
+                    </h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Comptez les coupures présentes dans le tiroir-caisse</p>
+                </div>
+                <div class="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50 text-xs font-semibold">
+                    <button type="button" @click="modeComptage = 'billetage'" 
+                            :class="modeComptage === 'billetage' ? 'bg-white text-primary shadow-sm font-bold' : 'text-gray-500'"
+                            class="px-3 py-1 rounded-md transition">
+                        Grille Billetage (Recommandé)
+                    </button>
+                    <button type="button" @click="modeComptage = 'direct'" 
+                            :class="modeComptage === 'direct' ? 'bg-white text-primary shadow-sm font-bold' : 'text-gray-500'"
+                            class="px-3 py-1 rounded-md transition">
+                        Saisie Montant Global
+                    </button>
+                </div>
+            </div>
+
+            <!-- Grille Billetage -->
+            <div x-show="modeComptage === 'billetage'" class="space-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    
+                    <!-- 10 000 FCFA -->
+                    <div class="p-3 bg-slate-50 rounded-xl border border-gray-200 flex items-center justify-between gap-2">
+                        <div>
+                            <span class="text-xs font-black text-gray-900 font-mono">10 000 FCFA</span>
+                            <span class="text-[10px] text-gray-500 block">Billet violet</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-400 font-bold">×</span>
+                            <input type="number" min="0" x-model.number="b10000" name="billet_10000" 
+                                   class="w-20 rounded-lg border-gray-300 py-1.5 text-center text-sm font-mono font-bold focus:ring-primary focus:border-primary">
+                            <span class="text-xs font-mono font-bold text-gray-700 w-24 text-right" x-text="((b10000 || 0) * 10000).toLocaleString('fr-FR') + ' F'"></span>
+                        </div>
+                    </div>
+
+                    <!-- 5 000 FCFA -->
+                    <div class="p-3 bg-slate-50 rounded-xl border border-gray-200 flex items-center justify-between gap-2">
+                        <div>
+                            <span class="text-xs font-black text-gray-900 font-mono">5 000 FCFA</span>
+                            <span class="text-[10px] text-gray-500 block">Billet vert</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-400 font-bold">×</span>
+                            <input type="number" min="0" x-model.number="b5000" name="billet_5000" 
+                                   class="w-20 rounded-lg border-gray-300 py-1.5 text-center text-sm font-mono font-bold focus:ring-primary focus:border-primary">
+                            <span class="text-xs font-mono font-bold text-gray-700 w-24 text-right" x-text="((b5000 || 0) * 5000).toLocaleString('fr-FR') + ' F'"></span>
+                        </div>
+                    </div>
+
+                    <!-- 2 000 FCFA -->
+                    <div class="p-3 bg-slate-50 rounded-xl border border-gray-200 flex items-center justify-between gap-2">
+                        <div>
+                            <span class="text-xs font-black text-gray-900 font-mono">2 000 FCFA</span>
+                            <span class="text-[10px] text-gray-500 block">Billet bleu</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-400 font-bold">×</span>
+                            <input type="number" min="0" x-model.number="b2000" name="billet_2000" 
+                                   class="w-20 rounded-lg border-gray-300 py-1.5 text-center text-sm font-mono font-bold focus:ring-primary focus:border-primary">
+                            <span class="text-xs font-mono font-bold text-gray-700 w-24 text-right" x-text="((b2000 || 0) * 2000).toLocaleString('fr-FR') + ' F'"></span>
+                        </div>
+                    </div>
+
+                    <!-- 1 000 FCFA -->
+                    <div class="p-3 bg-slate-50 rounded-xl border border-gray-200 flex items-center justify-between gap-2">
+                        <div>
+                            <span class="text-xs font-black text-gray-900 font-mono">1 000 FCFA</span>
+                            <span class="text-[10px] text-gray-500 block">Billet rouge</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-400 font-bold">×</span>
+                            <input type="number" min="0" x-model.number="b1000" name="billet_1000" 
+                                   class="w-20 rounded-lg border-gray-300 py-1.5 text-center text-sm font-mono font-bold focus:ring-primary focus:border-primary">
+                            <span class="text-xs font-mono font-bold text-gray-700 w-24 text-right" x-text="((b1000 || 0) * 1000).toLocaleString('fr-FR') + ' F'"></span>
+                        </div>
+                    </div>
+
+                    <!-- 500 FCFA -->
+                    <div class="p-3 bg-slate-50 rounded-xl border border-gray-200 flex items-center justify-between gap-2">
+                        <div>
+                            <span class="text-xs font-black text-gray-900 font-mono">500 FCFA</span>
+                            <span class="text-[10px] text-gray-500 block">Billet marron</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-400 font-bold">×</span>
+                            <input type="number" min="0" x-model.number="b500" name="billet_500" 
+                                   class="w-20 rounded-lg border-gray-300 py-1.5 text-center text-sm font-mono font-bold focus:ring-primary focus:border-primary">
+                            <span class="text-xs font-mono font-bold text-gray-700 w-24 text-right" x-text="((b500 || 0) * 500).toLocaleString('fr-FR') + ' F'"></span>
+                        </div>
+                    </div>
+
+                    <!-- Pièces de monnaie -->
+                    <div class="p-3 bg-slate-50 rounded-xl border border-gray-200 flex items-center justify-between gap-2">
+                        <div>
+                            <span class="text-xs font-black text-gray-900">Total Pièces</span>
+                            <span class="text-[10px] text-gray-500 block">500, 200, 100, 50, 25 F</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-400 font-bold">=</span>
+                            <input type="number" min="0" step="5" x-model.number="pieces" name="pieces_total" placeholder="0" 
+                                   class="w-28 rounded-lg border-gray-300 py-1.5 text-right pr-2 text-sm font-mono font-bold focus:ring-primary focus:border-primary">
+                            <span class="text-xs text-gray-500 font-mono">F</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mode Saisie Directe -->
+            <div x-show="modeComptage === 'direct'" class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <label class="block text-xs font-bold text-gray-700 mb-1">Montant total des espèces comptées dans le tiroir (FCFA) *</label>
+                <input type="number" min="0" x-model.number="saisieDirecte" 
+                       class="w-full sm:w-80 rounded-xl border-gray-300 py-2.5 text-lg font-mono font-black focus:ring-primary focus:border-primary">
+            </div>
+
+            <!-- Résultat du Comptage & Écart en Direct -->
+            <div class="p-4 rounded-xl border transition-all mt-4" 
+                 :class="ecart === 0 ? 'bg-emerald-50 border-emerald-300' : (ecart > 0 ? 'bg-amber-50 border-amber-300' : 'bg-red-50 border-red-300')">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider block"
+                              :class="ecart === 0 ? 'text-emerald-800' : (ecart > 0 ? 'text-amber-800' : 'text-red-800')">
+                            Espèces Physiques Comptées
+                        </span>
+                        <div class="text-2xl font-black font-mono text-gray-900 mt-0.5">
+                            <span x-text="montantReel.toLocaleString('fr-FR')"></span> FCFA
+                        </div>
+                    </div>
+
+                    <!-- Badge Écart -->
+                    <div class="text-right">
+                        <template x-if="ecart === 0">
+                            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold shadow-sm">
+                                <i class="fas fa-check-circle"></i> Caisse Conforme (Aucun Écart)
+                            </div>
+                        </template>
+                        <template x-if="ecart > 0">
+                            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-bold shadow-sm">
+                                <i class="fas fa-plus-circle"></i> Surplus de Caisse : +<span x-text="ecart.toLocaleString('fr-FR')"></span> FCFA
+                            </div>
+                        </template>
+                        <template x-if="ecart < 0">
+                            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold shadow-sm">
+                                <i class="fas fa-exclamation-triangle"></i> Déficit / Manquant : <span x-text="ecart.toLocaleString('fr-FR')"></span> FCFA
+                            </div>
+                        </template>
+                        <p class="text-[11px] text-gray-500 mt-1">
+                            Théorique attendu : <%= soldeNetEspeces.toLocaleString('fr-FR') %> FCFA
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bloc 2 : Paramètres de fin de journée & Observations -->
+        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+            <h2 class="text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2 border-b border-gray-100 pb-3">
+                <span class="w-6 h-6 rounded-full bg-blue-100 text-primary flex items-center justify-center text-xs">2</span>
+                Fond de Caisse & Observations
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="input-fond" class="block text-xs font-bold text-gray-700 mb-1">
+                        Fond de Caisse reporté pour le lendemain (FCFA)
+                    </label>
+                    <input type="number" id="input-fond" name="fond_caisse_suivant" min="0" step="500" value="0" 
+                           class="w-full rounded-xl border-gray-300 py-2.5 text-sm font-mono font-bold focus:ring-primary focus:border-primary">
+                    <p class="text-[11px] text-gray-400 mt-1">Montant en petites coupures laissé dans le tiroir.</p>
+                </div>
+
+                <div>
+                    <label for="input-obs" class="block text-xs font-bold text-gray-700 mb-1">
+                        Observations du Caissier / Justification d'écart
+                    </label>
+                    <input type="text" id="input-obs" name="observations" 
+                           placeholder="Ex: Caisse équilibrée, ou justification de l'écart..." 
+                           class="w-full rounded-xl border-gray-300 py-2.5 text-sm focus:ring-primary focus:border-primary">
+                </div>
+            </div>
+        </div>
+
+        <!-- Boutons d'Action -->
+        <div class="flex items-center justify-between pt-2">
+            <a href="/caisse?date=<%= dateSelected %>" class="px-5 py-2.5 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition shadow-sm">
+                Retour à la Caisse
+            </a>
+
+            <button type="submit" class="px-6 py-3 rounded-xl text-sm font-black text-white bg-slate-900 hover:bg-black transition shadow-lg inline-flex items-center gap-2">
+                <i class="fas fa-lock"></i>
+                Valider & Enregistrer la Clôture Z
+            </button>
+        </div>
+    </form>
+</div>

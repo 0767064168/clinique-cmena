@@ -3,6 +3,8 @@ const router = express.Router();
 const ExcelJS = require('exceljs');
 const { supabase } = require('../config/supabase');
 const { getDepensesByDate, getDepenseById, addDepense, deleteDepense } = require('../utils/depenses');
+const { getClotureByDate, getClotureById, getAllClotures, createCloture } = require('../utils/cloturesStorage');
+const { logAudit } = require('../utils/audit');
 
 // GET /caisse — Bilan de caisse du jour (ou date sélectionnée)
 router.get('/', async (req, res) => {
@@ -53,8 +55,9 @@ router.get('/', async (req, res) => {
         const nbTotal = listePaiements.length;
 
         // Dépenses / Décaissements du jour
-        const depenses = getDepensesByDate(dateStr);
+        const depenses = await getDepensesByDate(dateStr);
         const totalDepenses = depenses.reduce((acc, d) => acc + (parseFloat(d.montant) || 0), 0);
+        const clotureActuelle = await getClotureByDate(dateStr);
         const soldeNetEspeces = totalEspeces - totalDepenses;
 
         // Factures créées le jour
@@ -82,6 +85,7 @@ router.get('/', async (req, res) => {
             depenses,
             totalDepenses,
             soldeNetEspeces,
+            clotureActuelle,
             totalEspeces,
             totalMobileMoney,
             totalAutres,
@@ -135,7 +139,14 @@ router.post('/depenses', async (req, res) => {
 router.post('/depenses/:id/delete', async (req, res) => {
     try {
         const { date } = req.body;
-        deleteDepense(req.params.id);
+        await deleteDepense(req.params.id);
+        await logAudit({
+            req,
+            action: 'CAISSE_DECAISSEMENT_ANNULE',
+            entite: 'depenses_caisse',
+            entite_id: req.params.id,
+            description: `Annulation de la sortie de caisse ID ${req.params.id}`
+        });
         req.flash('success', 'Sortie de caisse supprimée');
         res.redirect(`/caisse?date=${date || ''}`);
     } catch (error) {
@@ -178,7 +189,7 @@ router.get('/print', async (req, res) => {
         const totalJour = totalEspeces + totalMobileMoney + totalAutres;
 
         // Dépenses
-        const depenses = getDepensesByDate(dateStr);
+        const depenses = await getDepensesByDate(dateStr);
         const totalDepenses = depenses.reduce((acc, d) => acc + (parseFloat(d.montant) || 0), 0);
         const soldeNetEspeces = totalEspeces - totalDepenses;
 
@@ -239,7 +250,7 @@ router.get('/ticket', async (req, res) => {
 
         const totalJour = totalEspeces + totalMobileMoney + totalAutres;
 
-        const depenses = getDepensesByDate(dateStr);
+        const depenses = await getDepensesByDate(dateStr);
         const totalDepenses = depenses.reduce((acc, d) => acc + (parseFloat(d.montant) || 0), 0);
         const soldeNetEspeces = totalEspeces - totalDepenses;
 
@@ -286,7 +297,7 @@ router.get('/export/excel', async (req, res) => {
         if (errPaiements) throw errPaiements;
 
         // Récupération des dépenses
-        const depenses = getDepensesByDate(dateStr) || [];
+        const depenses = await getDepensesByDate(dateStr) || [];
 
         // Totaux par mode de paiement
         let totalEspeces = 0;
@@ -692,7 +703,7 @@ router.get('/export', async (req, res) => {
             .lte('date_paiement', dateFin)
             .order('date_paiement', { ascending: true });
 
-        const depenses = getDepensesByDate(dateStr);
+        const depenses = await getDepensesByDate(dateStr);
 
         let totalEspeces = 0;
         let totalMobileMoney = 0;
@@ -782,6 +793,186 @@ router.get('/depenses/:id/print', (req, res) => {
         console.error('Erreur impression bon de sortie:', error);
         req.flash('error', 'Erreur lors de la génération du bon de sortie');
         res.redirect('/caisse');
+    }
+});
+
+
+// GET /caisse/cloture — Formulaire de clôture Z formelle
+router.get('/cloture', async (req, res) => {
+    try {
+        const dateStr = req.query.date || new Date().toISOString().split('T')[0];
+        const dateDebut = `${dateStr}T00:00:00`;
+        const dateFin = `${dateStr}T23:59:59`;
+
+        // Paiements du jour
+        const { data: paiements, error: errPaiements } = await supabase
+            .from('paiements')
+            .select('*, factures(numero_facture, patients(nom, prenom))')
+            .gte('date_paiement', dateDebut)
+            .lte('date_paiement', dateFin)
+            .order('date_paiement', { ascending: true });
+
+        if (errPaiements) throw errPaiements;
+
+        const listePaiements = (paiements || []).map(p => ({
+            ...p,
+            facture_numero: p.factures ? p.factures.numero_facture : '-',
+            patient_nom: p.factures && p.factures.patients ? `${p.factures.patients.nom} ${p.factures.patients.prenom}` : '-'
+        }));
+
+        let totalEspeces = 0, totalMobileMoney = 0, totalAutres = 0;
+        let nbEspeces = 0, nbMobileMoney = 0, nbAutres = 0;
+
+        listePaiements.forEach(p => {
+            const montant = parseFloat(p.montant) || 0;
+            if (p.mode_paiement === 'especes') { totalEspeces += montant; nbEspeces++; }
+            else if (p.mode_paiement === 'mobile_money') { totalMobileMoney += montant; nbMobileMoney++; }
+            else { totalAutres += montant; nbAutres++; }
+        });
+
+        const totalJour = totalEspeces + totalMobileMoney + totalAutres;
+        const depenses = await getDepensesByDate(dateStr);
+        const totalDepenses = depenses.reduce((acc, d) => acc + (parseFloat(d.montant) || 0), 0);
+        const soldeNetEspeces = totalEspeces - totalDepenses;
+
+        const clotureActuelle = await getClotureByDate(dateStr);
+
+        res.render('caisse/cloture', {
+            title: 'Clôture Z de Caisse',
+            dateSelected: dateStr,
+            paiements: listePaiements,
+            depenses,
+            totalDepenses,
+            soldeNetEspeces,
+            totalEspeces,
+            totalMobileMoney,
+            totalAutres,
+            totalJour,
+            nbEspeces,
+            nbMobileMoney,
+            nbAutres,
+            nbTotal: listePaiements.length,
+            clotureActuelle
+        });
+    } catch (error) {
+        console.error('Erreur chargement écran clôture:', error);
+        req.flash('error', 'Erreur lors du chargement de la clôture de caisse');
+        res.redirect('/caisse');
+    }
+});
+
+// POST /caisse/cloture — Enregistrer la clôture Z formelle
+router.post('/cloture', async (req, res) => {
+    try {
+        const {
+            date_cloture,
+            total_encaissements,
+            total_especes_theorique,
+            total_mobile_money,
+            total_autres,
+            nb_transactions,
+            total_depenses,
+            nb_depenses,
+            solde_net_theorique,
+            solde_especes_physique,
+            ecart_caisse,
+            fond_caisse_suivant,
+            observations,
+            billet_10000,
+            billet_5000,
+            billet_2000,
+            billet_1000,
+            billet_500,
+            pieces_total
+        } = req.body;
+
+        const user = req.session && req.session.user ? req.session.user : null;
+        const caissier_nom = user ? `${user.prenom} ${user.nom}` : 'Caissier';
+        const caissier_id = user ? user.id : null;
+
+        const billetage = {
+            '10000': parseInt(billet_10000, 10) || 0,
+            '5000': parseInt(billet_5000, 10) || 0,
+            '2000': parseInt(billet_2000, 10) || 0,
+            '1000': parseInt(billet_1000, 10) || 0,
+            '500': parseInt(billet_500, 10) || 0,
+            'pieces': parseFloat(pieces_total) || 0
+        };
+
+        const cloture = await createCloture({
+            date_cloture: date_cloture || new Date().toISOString().split('T')[0],
+            caissier_id,
+            caissier_nom,
+            total_encaissements,
+            total_especes_theorique,
+            total_mobile_money,
+            total_autres,
+            nb_transactions,
+            total_depenses,
+            nb_depenses,
+            solde_net_theorique,
+            solde_especes_physique,
+            ecart_caisse,
+            fond_caisse_suivant,
+            billetage,
+            observations
+        });
+
+        await logAudit({
+            req,
+            action: 'CAISSE_CLOTURE_Z',
+            entite: 'clotures_caisse',
+            entite_id: cloture.id,
+            description: `Clôture formelle Z N° ${cloture.numero_cloture} validée pour la journée du ${date_cloture} (Écart constaté: ${ecart_caisse} FCFA)`,
+            details: { numero_cloture: cloture.numero_cloture, date_cloture, ecart_caisse, solde_especes_physique }
+        });
+
+        req.flash('success', `La journée du ${date_cloture} a été clôturée avec succès (Rapport Z N° ${cloture.numero_cloture}) !`);
+        res.redirect(`/caisse/clotures/${cloture.id}/print`);
+    } catch (error) {
+        console.error('Erreur validation clôture caisse:', error);
+        req.flash('error', 'Erreur lors de la clôture de caisse: ' + error.message);
+        res.redirect('/caisse');
+    }
+});
+
+// GET /caisse/historique — Liste des arrêtés et clôtures Z archivés
+router.get('/historique', async (req, res) => {
+    try {
+        const { dateDebut, dateFin } = req.query;
+        const clotures = await getAllClotures({ dateDebut, dateFin });
+
+        res.render('caisse/historique', {
+            title: 'Historique des Clôtures Z',
+            clotures: clotures || [],
+            dateDebut: dateDebut || '',
+            dateFin: dateFin || ''
+        });
+    } catch (error) {
+        console.error('Erreur chargement historique clôtures:', error);
+        req.flash('error', 'Erreur chargement historique: ' + error.message);
+        res.redirect('/caisse');
+    }
+});
+
+// GET /caisse/clotures/:id/print — Procès-Verbal de clôture officiel A4
+router.get('/clotures/:id/print', async (req, res) => {
+    try {
+        const cloture = await getClotureById(req.params.id);
+        if (!cloture) {
+            req.flash('error', 'Clôture introuvable');
+            return res.redirect('/caisse/historique');
+        }
+
+        res.render('caisse/cloture_print', {
+            layout: false,
+            title: `PV Clôture Z - ${cloture.numero_cloture}`,
+            cloture
+        });
+    } catch (error) {
+        console.error('Erreur impression clôture:', error);
+        req.flash('error', 'Erreur lors de la génération du PV');
+        res.redirect('/caisse/historique');
     }
 });
 

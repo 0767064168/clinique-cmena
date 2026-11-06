@@ -1,0 +1,204 @@
+<div class="space-y-6">
+    <!-- En-tête -->
+    <div class="sm:flex sm:items-center sm:justify-between pb-4 border-b border-gray-200">
+        <div class="flex items-center gap-3">
+            <a href="/pharmacie/inventaires" class="p-2 text-gray-500 hover:text-gray-700 bg-white rounded-lg border border-gray-300 shadow-sm transition">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-xl sm:text-2xl font-bold text-gray-900">
+                        Bilan de l'Inventaire <%= inv.numero_inventaire %>
+                    </h1>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider <%= inv.statut === 'valide' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' %>">
+                        <%= inv.statut === 'valide' ? 'Validé & Régularisé' : 'En cours de comptage' %>
+                    </span>
+                </div>
+                <p class="text-xs sm:text-sm text-gray-500 mt-0.5">
+                    <%= inv.titre %> • Réalisé par <strong><%= inv.responsable_nom %></strong> le <%= new Date(inv.date_inventaire).toLocaleDateString('fr-FR') %>
+                </p>
+            </div>
+        </div>
+
+        <!-- Boutons d'Action -->
+        <div class="mt-4 sm:mt-0 flex flex-wrap items-center gap-2">
+            <% if (inv.statut !== 'valide') { %>
+                <a href="/pharmacie/inventaires/<%= inv.id %>/saisie" 
+                   class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-bold shadow-sm transition inline-flex items-center gap-1.5">
+                    <i class="fas fa-edit"></i> Saisir les Comptages
+                </a>
+            <% } %>
+
+            <a href="/pharmacie/inventaires/<%= inv.id %>/feuille-comptage" target="_blank" 
+               class="px-3.5 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-semibold shadow-sm transition inline-flex items-center gap-1.5">
+                <i class="fas fa-print text-gray-500"></i> Fiche Papier A4
+            </a>
+
+            <a href="/pharmacie/inventaires/<%= inv.id %>/export/excel" 
+               class="px-3.5 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold shadow-sm transition inline-flex items-center gap-1.5">
+                <i class="fas fa-file-excel"></i> Exporter Excel (.xlsx)
+            </a>
+
+            <% if (inv.statut !== 'valide') { %>
+                <form method="POST" action="/pharmacie/inventaires/<%= inv.id %>/valider" class="inline" 
+                      onsubmit="return confirm('ATTENTION : La validation de cet inventaire va ajuster définitivement le stock actuel de chaque produit dans le catalogue et enregistrer les écritures d\'entrées/sorties de régularisation dans le journal des mouvements. Confirmer la régularisation ?');">
+                    <button type="submit" class="px-4 py-2 rounded-lg bg-slate-900 hover:bg-black text-white text-xs sm:text-sm font-black shadow-md transition inline-flex items-center gap-1.5 cursor-pointer">
+                        <i class="fas fa-check-double text-emerald-400"></i> Valider & Régulariser
+                    </button>
+                </form>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Si Validé, Bannière de succès -->
+    <% if (inv.statut === 'valide') { %>
+    <div class="rounded-2xl border-2 border-emerald-500 bg-emerald-50/80 p-5 shadow-sm flex items-center justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-3">
+            <span class="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow">
+                <i class="fas fa-clipboard-check"></i>
+            </span>
+            <div>
+                <span class="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-200/80 px-2 py-0.5 rounded-full">
+                    Stocks Régularisés
+                </span>
+                <h2 class="text-base font-bold text-emerald-950 mt-1">
+                    Inventaire clôturé et synchronisé avec le stock informatique
+                </h2>
+                <p class="text-xs text-emerald-800 mt-0.5">
+                    Validé le <%= new Date(inv.date_validation || inv.updated_at).toLocaleString('fr-FR') %> par <strong><%= inv.valide_par_nom || 'Responsable Pharmacie' %></strong>.
+                </p>
+            </div>
+        </div>
+        <a href="/pharmacie" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition inline-flex items-center gap-1.5">
+            <i class="fas fa-boxes"></i> Consulter le catalogue à jour
+        </a>
+    </div>
+    <% } %>
+
+    <!-- Cartes Métriques du Bilan -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <span class="text-[10px] font-bold uppercase text-gray-500 block">Comptage Réalisé</span>
+            <span class="text-xl font-black text-gray-900 font-mono"><%= stats.nbComptes %> / <%= stats.totalArticles %></span>
+            <span class="text-[10px] text-gray-400 block mt-0.5">
+                <%= stats.totalArticles > 0 ? Math.round((stats.nbComptes / stats.totalArticles) * 100) : 0 %>% des articles contrôlés
+            </span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-green-500">
+            <span class="text-[10px] font-bold uppercase text-green-700 block">Articles Conformes</span>
+            <span class="text-xl font-black text-green-700 font-mono"><%= stats.nbConformes %></span>
+            <span class="text-[10px] text-gray-400 block mt-0.5">Stock théorique = réel</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-red-500">
+            <span class="text-[10px] font-bold uppercase text-red-700 block">Pertes / Déficits Constatés</span>
+            <span class="text-xl font-black text-red-600 font-mono"><%= stats.nbManquants %> article(s)</span>
+            <span class="text-[10px] text-red-700 font-semibold block mt-0.5">
+                - <%= stats.totalPerteValeur.toLocaleString('fr-FR') %> FCFA
+            </span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-teal-500">
+            <span class="text-[10px] font-bold uppercase text-teal-700 block">Surplus Constatés</span>
+            <span class="text-xl font-black text-teal-700 font-mono"><%= stats.nbSurplus %> article(s)</span>
+            <span class="text-[10px] text-teal-700 font-semibold block mt-0.5">
+                + <%= stats.totalSurplusValeur.toLocaleString('fr-FR') %> FCFA
+            </span>
+        </div>
+    </div>
+
+    <!-- Tableau détaillé des Lignes d'Inventaire -->
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+            <h3 class="text-xs font-black uppercase tracking-wider text-gray-700">
+                Détail des Articles & Écarts de Stock
+            </h3>
+            <span class="text-xs text-gray-500">
+                <%= (inv.lignes || []).length %> références
+            </span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
+                <thead class="bg-white text-gray-500 uppercase tracking-wider text-[11px] font-semibold border-b border-gray-100">
+                    <tr>
+                        <th class="px-4 py-3 text-left">Code</th>
+                        <th class="px-4 py-3 text-left">Désignation</th>
+                        <th class="px-4 py-3 text-left">Emplacement</th>
+                        <th class="px-4 py-3 text-right">Prix Vente</th>
+                        <th class="px-4 py-3 text-center">Théorique</th>
+                        <th class="px-4 py-3 text-center">Réel Compté</th>
+                        <th class="px-4 py-3 text-center">Écart</th>
+                        <th class="px-4 py-3 text-right">Valeur Écart</th>
+                        <th class="px-4 py-3 text-center">Statut</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 bg-white">
+                    <% (inv.lignes || []).forEach(l => { 
+                        const hasCount = l.stock_physique !== null && l.stock_physique !== undefined;
+                        const ecartVal = hasCount ? Number(l.ecart) : null;
+                    %>
+                        <tr class="hover:bg-slate-50 transition <%= ecartVal !== null && ecartVal !== 0 ? (ecartVal > 0 ? 'bg-teal-50/20' : 'bg-red-50/20') : '' %>">
+                            <td class="px-4 py-3 font-mono text-gray-500 whitespace-nowrap"><%= l.code || '-' %></td>
+                            <td class="px-4 py-3">
+                                <span class="font-bold text-gray-900 block"><%= l.designation %></span>
+                                <span class="text-[10px] text-gray-400"><%= l.forme || l.categorie || '' %></span>
+                            </td>
+                            <td class="px-4 py-3 text-gray-600 whitespace-nowrap"><%= l.emplacement || '-' %></td>
+                            <td class="px-4 py-3 text-right font-mono font-semibold text-gray-700 whitespace-nowrap">
+                                <%= Number(l.prix_vente || 0).toLocaleString('fr-FR') %> F
+                            </td>
+                            <td class="px-4 py-3 text-center font-mono font-bold text-gray-700 bg-gray-50/70 whitespace-nowrap">
+                                <%= l.stock_theorique %>
+                            </td>
+                            <td class="px-4 py-3 text-center font-mono font-bold whitespace-nowrap">
+                                <% if (hasCount) { %>
+                                    <span class="text-gray-900 font-black"><%= l.stock_physique %></span>
+                                <% } else { %>
+                                    <span class="text-gray-400 italic text-xs">Non compté</span>
+                                <% } %>
+                            </td>
+                            <td class="px-4 py-3 text-center font-mono font-black whitespace-nowrap">
+                                <% if (ecartVal === null) { %>
+                                    <span class="text-gray-400">-</span>
+                                <% } else if (ecartVal === 0) { %>
+                                    <span class="text-green-600">0</span>
+                                <% } else if (ecartVal > 0) { %>
+                                    <span class="text-teal-600">+<%= ecartVal %></span>
+                                <% } else { %>
+                                    <span class="text-red-600"><%= ecartVal %></span>
+                                <% } %>
+                            </td>
+                            <td class="px-4 py-3 text-right font-mono font-bold whitespace-nowrap <%= ecartVal < 0 ? 'text-red-600' : (ecartVal > 0 ? 'text-teal-600' : 'text-gray-400') %>">
+                                <% if (ecartVal !== null) { %>
+                                    <%= Number(l.valeur_ecart || 0).toLocaleString('fr-FR') %> F
+                                <% } else { %>
+                                    -
+                                <% } %>
+                            </td>
+                            <td class="px-4 py-3 text-center whitespace-nowrap">
+                                <% if (!hasCount) { %>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-600">
+                                        En attente
+                                    </span>
+                                <% } else if (ecartVal === 0) { %>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-800">
+                                        Conforme
+                                    </span>
+                                <% } else if (ecartVal > 0) { %>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-teal-100 text-teal-800">
+                                        Surplus
+                                    </span>
+                                <% } else { %>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-red-100 text-red-800">
+                                        Manquant
+                                    </span>
+                                <% } %>
+                            </td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

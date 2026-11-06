@@ -651,3 +651,94 @@ CREATE INDEX IF NOT EXISTS idx_rendez_vous_statut ON rendez_vous(statut);
 
 ALTER TABLE rendez_vous ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all for authenticated users" ON rendez_vous FOR ALL USING (true);
+
+
+-- 15. depenses_caisse (Décaissements et sorties de caisse)
+CREATE TABLE IF NOT EXISTS depenses_caisse (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    date DATE NOT NULL DEFAULT CURRENT_DATE,
+    heure VARCHAR(10),
+    motif VARCHAR(255) NOT NULL,
+    montant DECIMAL(12,2) NOT NULL CHECK (montant > 0),
+    beneficiaire VARCHAR(255) DEFAULT '-',
+    categorie VARCHAR(100) DEFAULT 'autre',
+    justificatif_ref VARCHAR(100),
+    utilisateur_id UUID REFERENCES utilisateurs(id) ON DELETE SET NULL,
+    utilisateur_nom VARCHAR(255) DEFAULT 'Caissier',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_depenses_caisse_date ON depenses_caisse(date);
+
+-- 16. clotures_caisse (Arrêtés de caisse journaliers formels & archivés)
+CREATE TABLE IF NOT EXISTS clotures_caisse (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    numero_cloture VARCHAR(50) UNIQUE NOT NULL,
+    date_cloture DATE NOT NULL,
+    date_heure TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    caissier_id UUID REFERENCES utilisateurs(id) ON DELETE SET NULL,
+    caissier_nom VARCHAR(255) NOT NULL,
+    total_encaissements DECIMAL(12,2) DEFAULT 0,
+    total_especes_theorique DECIMAL(12,2) DEFAULT 0,
+    total_mobile_money DECIMAL(12,2) DEFAULT 0,
+    total_autres DECIMAL(12,2) DEFAULT 0,
+    nb_transactions INTEGER DEFAULT 0,
+    total_depenses DECIMAL(12,2) DEFAULT 0,
+    nb_depenses INTEGER DEFAULT 0,
+    solde_net_theorique DECIMAL(12,2) DEFAULT 0,
+    solde_especes_physique DECIMAL(12,2) NOT NULL,
+    ecart_caisse DECIMAL(12,2) DEFAULT 0,
+    fond_caisse_suivant DECIMAL(12,2) DEFAULT 0,
+    billetage JSONB DEFAULT '{}'::jsonb,
+    statut VARCHAR(50) DEFAULT 'cloturee' CHECK (statut IN ('cloturee', 'validee', 'reouverte')),
+    observations TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_clotures_caisse_date ON clotures_caisse(date_cloture);
+
+-- 17. inventaires_pharmacie & inventaire_lignes (Inventaires physiques & régularisations de stock)
+CREATE TABLE IF NOT EXISTS inventaires_pharmacie (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    numero_inventaire VARCHAR(50) UNIQUE NOT NULL,
+    date_inventaire DATE NOT NULL DEFAULT CURRENT_DATE,
+    titre VARCHAR(255) NOT NULL,
+    categorie_cible VARCHAR(100) DEFAULT 'toutes',
+    responsable_id UUID REFERENCES utilisateurs(id) ON DELETE SET NULL,
+    responsable_nom VARCHAR(255) NOT NULL,
+    statut VARCHAR(50) DEFAULT 'en_cours' CHECK (statut IN ('en_cours', 'valide', 'annule')),
+    total_articles INTEGER DEFAULT 0,
+    articles_comptes INTEGER DEFAULT 0,
+    articles_avec_ecart INTEGER DEFAULT 0,
+    valeur_theorique DECIMAL(12,2) DEFAULT 0,
+    valeur_physique DECIMAL(12,2) DEFAULT 0,
+    valeur_ecart DECIMAL(12,2) DEFAULT 0,
+    date_validation TIMESTAMP WITH TIME ZONE,
+    valide_par_nom VARCHAR(255),
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_inventaires_numero ON inventaires_pharmacie(numero_inventaire);
+
+CREATE TABLE IF NOT EXISTS inventaire_lignes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    inventaire_id UUID NOT NULL REFERENCES inventaires_pharmacie(id) ON DELETE CASCADE,
+    produit_id UUID NOT NULL REFERENCES produits_pharmacie(id) ON DELETE CASCADE,
+    designation VARCHAR(255) NOT NULL,
+    code VARCHAR(50),
+    categorie VARCHAR(100),
+    forme VARCHAR(100),
+    emplacement VARCHAR(100),
+    prix_achat DECIMAL(12,2) DEFAULT 0,
+    prix_vente DECIMAL(12,2) NOT NULL DEFAULT 0,
+    stock_theorique INTEGER NOT NULL DEFAULT 0,
+    stock_physique INTEGER,
+    ecart INTEGER,
+    valeur_ecart DECIMAL(12,2) DEFAULT 0,
+    date_peremption_theorique DATE,
+    date_peremption_reelle DATE,
+    notes TEXT,
+    statut VARCHAR(50) DEFAULT 'en_attente' CHECK (statut IN ('en_attente', 'conforme', 'surplus', 'manquant')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_inv_lignes_inventaire ON inventaire_lignes(inventaire_id);

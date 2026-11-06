@@ -1,0 +1,141 @@
+<div class="space-y-6">
+    <!-- En-tête -->
+    <div class="sm:flex sm:items-center sm:justify-between pb-4 border-b border-gray-200">
+        <div class="flex items-center gap-3">
+            <a href="/pharmacie" class="p-2 text-gray-500 hover:text-gray-700 bg-white rounded-lg border border-gray-300 shadow-sm transition">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    <span class="p-2 bg-emerald-600 text-white rounded-lg text-sm">
+                        <i class="fas fa-clipboard-check"></i>
+                    </span>
+                    Inventaires Physiques & Gestion des Écarts
+                </h1>
+                <p class="text-xs sm:text-sm text-gray-500 mt-0.5">
+                    Sessions de comptage périodique en rayon, détection des pertes et régularisation automatique du stock
+                </p>
+            </div>
+        </div>
+        <div class="mt-4 sm:mt-0 flex items-center gap-2">
+            <a href="/pharmacie/inventaires/nouveau" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-sm transition inline-flex items-center gap-1.5">
+                <i class="fas fa-plus"></i> Lancer un Inventaire
+            </a>
+        </div>
+    </div>
+
+    <!-- Cartes Résumées -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <span class="text-[10px] font-bold uppercase text-gray-500 block">Total Inventaires</span>
+            <span class="text-2xl font-black text-gray-900"><%= stats.total %></span>
+            <span class="text-[10px] text-gray-400 block mt-0.5">Historique des sessions</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-amber-500">
+            <span class="text-[10px] font-bold uppercase text-amber-700 block">En Cours de Comptage</span>
+            <span class="text-2xl font-black text-amber-700"><%= stats.enCours %></span>
+            <span class="text-[10px] text-gray-400 block mt-0.5">À finaliser et valider</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-emerald-500">
+            <span class="text-[10px] font-bold uppercase text-emerald-700 block">Validés & Régularisés</span>
+            <span class="text-2xl font-black text-emerald-700"><%= stats.valides %></span>
+            <span class="text-[10px] text-gray-400 block mt-0.5">Stocks ajustés en base</span>
+        </div>
+
+        <div class="bg-slate-900 text-white p-4 rounded-xl shadow-md border border-slate-800">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block">Impact Écarts Financiers</span>
+            <span class="text-xl font-black <%= stats.totalEcartsFinanciers < 0 ? 'text-red-400' : 'text-emerald-400' %>">
+                <%= Number(stats.totalEcartsFinanciers || 0).toLocaleString('fr-FR') %> FCFA
+            </span>
+            <span class="text-[10px] text-slate-400 block mt-0.5">Cumul des pertes / surplus validés</span>
+        </div>
+    </div>
+
+    <!-- Tableau des Inventaires -->
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
+                <thead class="bg-gray-50 text-gray-500 uppercase tracking-wider text-[11px] font-semibold">
+                    <tr>
+                        <th class="px-4 py-3 text-left">N° Inventaire</th>
+                        <th class="px-4 py-3 text-left">Titre & Périmètre</th>
+                        <th class="px-4 py-3 text-left">Responsable</th>
+                        <th class="px-4 py-3 text-center">Avancement</th>
+                        <th class="px-4 py-3 text-center">Écarts</th>
+                        <th class="px-4 py-3 text-center">Statut</th>
+                        <th class="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 bg-white">
+                    <% if (!inventaires || inventaires.length === 0) { %>
+                        <tr>
+                            <td colspan="7" class="px-4 py-12 text-center text-gray-400 italic">
+                                <i class="fas fa-boxes text-3xl mb-2 text-gray-300 block"></i>
+                                Aucun inventaire n'a encore été créé. Cliquez sur « Lancer un Inventaire » pour débuter le comptage.
+                            </td>
+                        </tr>
+                    <% } else { %>
+                        <% inventaires.forEach(inv => { 
+                            const estValide = inv.statut === 'valide';
+                            const tauxAvancement = inv.total_articles > 0 ? Math.round(((inv.articles_comptes || 0) / inv.total_articles) * 100) : 0;
+                        %>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <div class="font-bold font-mono text-gray-900"><%= inv.numero_inventaire %></div>
+                                    <div class="text-[11px] text-gray-500"><%= new Date(inv.date_inventaire).toLocaleDateString('fr-FR') %></div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <a href="/pharmacie/inventaires/<%= inv.id %>" class="font-bold text-gray-900 hover:text-emerald-700 transition block">
+                                        <%= inv.titre %>
+                                    </a>
+                                    <span class="text-[10px] text-gray-400 capitalize">
+                                        Périmètre : <%= inv.categorie_cible === 'toutes' ? 'Catalogue général complet' : inv.categorie_cible %>
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-gray-700">
+                                    <i class="fas fa-user-check text-gray-400 mr-1"></i><%= inv.responsable_nom %>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center">
+                                    <div class="inline-flex items-center gap-2">
+                                        <div class="w-16 bg-gray-200 rounded-full h-2 overflow-hidden">
+                                            <div class="h-2 rounded-full <%= estValide ? 'bg-emerald-500' : 'bg-amber-500' %>" style="width: <%= tauxAvancement %>%"></div>
+                                        </div>
+                                        <span class="text-xs font-mono font-bold text-gray-700"><%= inv.articles_comptes || 0 %> / <%= inv.total_articles %></span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center">
+                                    <% if ((inv.articles_avec_ecart || 0) > 0) { %>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                                            <%= inv.articles_avec_ecart %> écart(s)
+                                        </span>
+                                    <% } else { %>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">
+                                            Conforme
+                                        </span>
+                                    <% } %>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-center">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider <%= estValide ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' %>">
+                                        <%= estValide ? 'Validé' : 'En cours' %>
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-right space-x-1">
+                                    <% if (!estValide) { %>
+                                        <a href="/pharmacie/inventaires/<%= inv.id %>/saisie" class="px-2.5 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold transition">
+                                            <i class="fas fa-edit mr-1"></i> Saisir
+                                        </a>
+                                    <% } %>
+                                    <a href="/pharmacie/inventaires/<%= inv.id %>" class="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition">
+                                        <i class="fas fa-chart-pie mr-1"></i> Bilan
+                                    </a>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

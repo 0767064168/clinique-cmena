@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PV de Clôture Z - <%= cloture.numero_cloture %></title>
+    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="/css/tailwind.min.css">
+    <style>
+        @media print {
+            body { font-size: 11pt; }
+            .no-print { display: none !important; }
+            @page { margin: 12mm 15mm; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 sm:p-8 font-sans text-gray-900">
+    <!-- Barre flottante pour impression -->
+    <div class="max-w-3xl mx-auto mb-4 flex justify-between items-center no-print">
+        <a href="/caisse/historique" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 shadow-sm">
+            <i class="fas fa-arrow-left"></i> Retour à l'historique
+        </a>
+        <button onclick="window.print()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 hover:bg-black text-white text-xs font-bold shadow-md">
+            <i class="fas fa-print"></i> Imprimer le Procès-Verbal A4
+        </button>
+    </div>
+
+    <!-- Feuille A4 Officielle -->
+    <div class="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-200 print:shadow-none print:border-none print:p-0">
+        
+        <!-- En-tête Militaire & Clinique -->
+        <div class="border-b-2 border-gray-900 pb-4 mb-6">
+            <div class="flex justify-between items-start">
+                <div class="text-left">
+                    <p class="text-[10px] uppercase font-bold text-gray-500 tracking-wider">RÉPUBLIQUE DE CÔTE D'IVOIRE</p>
+                    <p class="text-[9px] uppercase font-semibold text-gray-500">Union - Discipline - Travail</p>
+                    <p class="text-[10px] uppercase font-bold text-gray-800 mt-1">MINISTÈRE DE LA DÉFENSE</p>
+                    <p class="text-xs font-black uppercase text-red-700">GROUPEMENT DE SAPEURS-POMPIERS MILITAIRES</p>
+                    <p class="text-[11px] font-bold text-gray-700">3e Compagnie — Bouaké</p>
+                </div>
+                <div class="text-center">
+                    <img src="/images/logo_gspm.jpg" alt="Logo GSPM" class="h-14 w-14 object-contain mx-auto mb-1">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-gray-600">CSA GSPM BOUAKÉ</p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-block px-3 py-1 bg-slate-900 text-white text-xs font-black rounded font-mono">
+                        RAPPORT Z
+                    </span>
+                    <p class="text-xs font-bold font-mono text-gray-800 mt-1">N° <%= cloture.numero_cloture %></p>
+                    <p class="text-[11px] text-gray-500">Date : <%= new Date(cloture.date_cloture).toLocaleDateString('fr-FR') %></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Titre du document -->
+        <div class="text-center mb-6">
+            <h1 class="text-xl font-black uppercase tracking-wide text-gray-900 underline underline-offset-4">
+                Procès-Verbal d'Arrêté et de Clôture de Caisse Journalière
+            </h1>
+            <p class="text-xs text-gray-500 mt-1">
+                Clôture arrêtée le <%= new Date(cloture.date_heure).toLocaleString('fr-FR') %> par l'agent caissier <strong><%= cloture.caissier_nom %></strong>
+            </p>
+        </div>
+
+        <!-- Tableau Récapitulatif Comptable -->
+        <div class="mb-6">
+            <h2 class="text-xs font-black uppercase tracking-wider text-gray-700 bg-gray-100 p-2 rounded mb-2">
+                1. Situation Financière Globale de la Journée
+            </h2>
+            <table class="w-full text-xs border border-gray-300">
+                <tr class="border-b border-gray-200">
+                    <td class="p-2.5 font-bold text-gray-700 bg-gray-50 w-1/2">Total des Encaissements Réalisés (<%= cloture.nb_transactions %> actes/reçus)</td>
+                    <td class="p-2.5 font-mono font-bold text-right text-gray-900"><%= Number(cloture.total_encaissements || 0).toLocaleString('fr-FR') %> FCFA</td>
+                </tr>
+                <tr class="border-b border-gray-200">
+                    <td class="p-2 pl-6 text-gray-600">• Dont Règlement en Espèces</td>
+                    <td class="p-2 font-mono text-right text-gray-800"><%= Number(cloture.total_especes_theorique || 0).toLocaleString('fr-FR') %> FCFA</td>
+                </tr>
+                <tr class="border-b border-gray-200">
+                    <td class="p-2 pl-6 text-gray-600">• Dont Règlement Mobile Money (Wave / Orange / MTN)</td>
+                    <td class="p-2 font-mono text-right text-gray-800"><%= Number(cloture.total_mobile_money || 0).toLocaleString('fr-FR') %> FCFA</td>
+                </tr>
+                <tr class="border-b border-gray-200">
+                    <td class="p-2 pl-6 text-gray-600">• Dont Autres règlements (Chèques, Virements)</td>
+                    <td class="p-2 font-mono text-right text-gray-800"><%= Number(cloture.total_autres || 0).toLocaleString('fr-FR') %> FCFA</td>
+                </tr>
+                <tr class="border-b border-gray-200">
+                    <td class="p-2.5 font-bold text-red-700 bg-red-50/50">Total Décaissements / Dépenses Justifiées (<%= cloture.nb_depenses %> sorties)</td>
+                    <td class="p-2.5 font-mono font-bold text-right text-red-600">- <%= Number(cloture.total_depenses || 0).toLocaleString('fr-FR') %> FCFA</td>
+                </tr>
+                <tr class="bg-gray-100 font-bold border-t-2 border-gray-900">
+                    <td class="p-2.5 text-gray-900 uppercase">Solde Net Théorique en Espèces Attendu</td>
+                    <td class="p-2.5 font-mono text-right text-base text-gray-900"><%= Number(cloture.solde_net_theorique || 0).toLocaleString('fr-FR') %> FCFA</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Billetage & Comptage Physique -->
+        <div class="mb-6">
+            <h2 class="text-xs font-black uppercase tracking-wider text-gray-700 bg-gray-100 p-2 rounded mb-2">
+                2. Décompte Physique des Espèces (Billetage)
+            </h2>
+            <% const b = cloture.billetage || {}; %>
+            <table class="w-full text-xs border border-gray-300">
+                <thead class="bg-gray-50 text-gray-600 font-bold border-b border-gray-300">
+                    <tr>
+                        <th class="p-2 text-left">Coupure</th>
+                        <th class="p-2 text-center">Quantité</th>
+                        <th class="p-2 text-right">Sous-Total</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    <tr>
+                        <td class="p-2 font-bold">Billets de 10 000 FCFA</td>
+                        <td class="p-2 text-center font-mono"><%= b['10000'] || 0 %></td>
+                        <td class="p-2 text-right font-mono"><%= ((b['10000'] || 0) * 10000).toLocaleString('fr-FR') %> F</td>
+                    </tr>
+                    <tr>
+                        <td class="p-2 font-bold">Billets de 5 000 FCFA</td>
+                        <td class="p-2 text-center font-mono"><%= b['5000'] || 0 %></td>
+                        <td class="p-2 text-right font-mono"><%= ((b['5000'] || 0) * 5000).toLocaleString('fr-FR') %> F</td>
+                    </tr>
+                    <tr>
+                        <td class="p-2 font-bold">Billets de 2 000 FCFA</td>
+                        <td class="p-2 text-center font-mono"><%= b['2000'] || 0 %></td>
+                        <td class="p-2 text-right font-mono"><%= ((b['2000'] || 0) * 2000).toLocaleString('fr-FR') %> F</td>
+                    </tr>
+                    <tr>
+                        <td class="p-2 font-bold">Billets de 1 000 FCFA</td>
+                        <td class="p-2 text-center font-mono"><%= b['1000'] || 0 %></td>
+                        <td class="p-2 text-right font-mono"><%= ((b['1000'] || 0) * 1000).toLocaleString('fr-FR') %> F</td>
+                    </tr>
+                    <tr>
+                        <td class="p-2 font-bold">Billets de 500 FCFA</td>
+                        <td class="p-2 text-center font-mono"><%= b['500'] || 0 %></td>
+                        <td class="p-2 text-right font-mono"><%= ((b['500'] || 0) * 500).toLocaleString('fr-FR') %> F</td>
+                    </tr>
+                    <tr>
+                        <td class="p-2 font-bold" colspan="2">Monnaie Métallique (Pièces de 500, 200, 100, 50, 25 F)</td>
+                        <td class="p-2 text-right font-mono"><%= Number(b['pieces'] || 0).toLocaleString('fr-FR') %> F</td>
+                    </tr>
+                    <tr class="bg-slate-900 text-white font-bold">
+                        <td class="p-2.5 uppercase" colspan="2">Total Espèces Réellement Comptées en Caisse</td>
+                        <td class="p-2.5 text-right font-mono text-base"><%= Number(cloture.solde_especes_physique || 0).toLocaleString('fr-FR') %> FCFA</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Constat d'Écart & Observations -->
+        <div class="mb-8 p-3 rounded-lg border <%= cloture.ecart_caisse == 0 ? 'bg-emerald-50 border-emerald-300' : (cloture.ecart_caisse > 0 ? 'bg-amber-50 border-amber-300' : 'bg-red-50 border-red-300') %>">
+            <div class="flex justify-between items-center text-xs font-bold">
+                <span class="uppercase">Écart de Caisse Constaté :</span>
+                <span class="font-mono text-sm <%= cloture.ecart_caisse == 0 ? 'text-emerald-800' : (cloture.ecart_caisse > 0 ? 'text-amber-800' : 'text-red-800') %>">
+                    <% if (cloture.ecart_caisse == 0) { %>
+                        0 FCFA (PARFAITEMENT CONFORME)
+                    <% } else if (cloture.ecart_caisse > 0) { %>
+                        +<%= Number(cloture.ecart_caisse).toLocaleString('fr-FR') %> FCFA (SURPLUS DE CAISSE)
+                    <% } else { %>
+                        <%= Number(cloture.ecart_caisse).toLocaleString('fr-FR') %> FCFA (DÉFICIT / MANQUANT)
+                    <% } %>
+                </span>
+            </div>
+            <% if (cloture.observations) { %>
+                <p class="text-[11px] text-gray-700 italic mt-1.5 border-t border-gray-200/60 pt-1">
+                    <strong>Observations :</strong> <%= cloture.observations %>
+                </p>
+            <% } %>
+            <% if (cloture.fond_caisse_suivant > 0) { %>
+                <p class="text-[11px] text-gray-600 mt-1">
+                    Fond de caisse reporté pour le lendemain : <strong><%= Number(cloture.fond_caisse_suivant).toLocaleString('fr-FR') %> FCFA</strong>
+                </p>
+            <% } %>
+        </div>
+
+        <!-- Cadre de Signatures & Visas -->
+        <div class="grid grid-cols-3 gap-4 text-center text-xs pt-4 border-t border-gray-300">
+            <div>
+                <p class="font-bold text-gray-800">Le Caissier</p>
+                <p class="text-[10px] text-gray-500 mb-12">(Nom & Visa)</p>
+                <p class="font-semibold text-gray-900 border-t border-gray-300 pt-1"><%= cloture.caissier_nom %></p>
+            </div>
+            <div>
+                <p class="font-bold text-gray-800">Le Comptable / Trésorier</p>
+                <p class="text-[10px] text-gray-500 mb-12">(Contrôle & Visa)</p>
+                <div class="border-t border-gray-300 pt-1"></div>
+            </div>
+            <div>
+                <p class="font-bold text-gray-800">Le Chef de Centre / Cdt Cie</p>
+                <p class="text-[10px] text-gray-500 mb-12">(Approbation & Cachet)</p>
+                <div class="border-t border-gray-300 pt-1"></div>
+            </div>
+        </div>
+
+        <div class="text-[9px] text-center text-gray-400 mt-8">
+            Document officiel généré par le Système de Gestion Médicale CMENA • CSA 3e Compagnie GSPM Bouaké
+        </div>
+    </div>
+</body>
+</html>
