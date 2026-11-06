@@ -1,79 +1,4 @@
-<div class="space-y-6" x-data="{
-    lignes: <%- JSON.stringify(inv.lignes || []) %>,
-    search: '',
-    filtreEcart: 'tous', // 'tous', 'avec_ecart', 'non_comptes', 'conformes'
-    sauvegardeEnCours: false,
-
-    get lignesFiltrees() {
-        return this.lignes.filter(l => {
-            const matchSearch = !this.search || 
-                (l.designation && l.designation.toLowerCase().includes(this.search.toLowerCase())) ||
-                (l.code && l.code.toLowerCase().includes(this.search.toLowerCase())) ||
-                (l.emplacement && l.emplacement.toLowerCase().includes(this.search.toLowerCase()));
-
-            if (!matchSearch) return false;
-
-            if (this.filtreEcart === 'non_comptes') {
-                return l.stock_physique === null || l.stock_physique === undefined || l.stock_physique === '';
-            }
-            if (this.filtreEcart === 'avec_ecart') {
-                const ec = this.calculerEcart(l);
-                return ec !== null && ec !== 0;
-            }
-            if (this.filtreEcart === 'conformes') {
-                const ec = this.calculerEcart(l);
-                return ec === 0;
-            }
-            return true;
-        });
-    },
-
-    calculerEcart(ligne) {
-        if (ligne.stock_physique === null || ligne.stock_physique === undefined || ligne.stock_physique === '') return null;
-        return Number(ligne.stock_physique) - Number(ligne.stock_theorique || 0);
-    },
-
-    copierTheorique() {
-        if (!confirm('Voulez-vous pré-remplir le stock physique avec le stock théorique pour tous les articles non encore comptés ? Vous pourrez ensuite ajuster uniquement ceux ayant un écart.')) return;
-        this.lignes.forEach(l => {
-            if (l.stock_physique === null || l.stock_physique === undefined || l.stock_physique === '') {
-                l.stock_physique = l.stock_theorique;
-            }
-        });
-    },
-
-    async sauvegarder() {
-        this.sauvegardeEnCours = true;
-        try {
-            const comptages = this.lignes.map(l => ({
-                ligne_id: l.id,
-                produit_id: l.produit_id,
-                stock_physique: (l.stock_physique !== '' && l.stock_physique !== null && l.stock_physique !== undefined) ? Number(l.stock_physique) : null,
-                date_peremption_reelle: l.date_peremption_reelle,
-                notes: l.notes || ''
-            }));
-
-            const res = await fetch('/pharmacie/inventaires/<%= inv.id %>/saisie', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ comptages })
-            });
-
-            if (!res.ok) throw new Error('Erreur réseau lors de la sauvegarde');
-            
-            // Notification visuelle
-            alert('Comptages enregistrés avec succès !');
-            window.location.href = '/pharmacie/inventaires/<%= inv.id %>';
-        } catch (err) {
-            alert('Erreur : ' + err.message);
-        } finally {
-            this.sauvegardeEnCours = false;
-        }
-    }
-}">
+<div class="space-y-6" x-data="inventaireSaisie">
     <!-- En-tête -->
     <div class="sm:flex sm:items-center sm:justify-between pb-4 border-b border-gray-200">
         <div class="flex items-center gap-3">
@@ -88,7 +13,7 @@
                     Saisie de Comptage Physique — <%= inv.numero_inventaire %>
                 </h1>
                 <p class="text-xs sm:text-sm text-gray-500 mt-0.5">
-                    <%= inv.titre %> • <strong x-text="lignes.length"></strong> articles répertoriés
+                    <%= inv.titre || 'Inventaire Pharmacie' %> — <%= inv.date_inventaire %> &bull; <strong x-text="lignes.length"></strong> articles répertoriés
                 </p>
             </div>
         </div>
@@ -160,7 +85,7 @@
                 <tbody class="divide-y divide-gray-100 bg-white">
                     <template x-for="(l, idx) in lignesFiltrees" :key="l.id || l.produit_id">
                         <tr class="hover:bg-slate-50 transition"
-                            :class="calculerEcart(l) !== null && calculerEcart(l) !== 0 ? (calculerEcart(l) > 0 ? 'bg-teal-50/40' : 'bg-red-50/40') : ''">
+                            :class="ecartClass(l)">
                             
                             <!-- Produit -->
                             <td class="px-4 py-2.5">
@@ -212,7 +137,7 @@
 
                             <!-- Impact Financier -->
                             <td class="px-4 py-2.5 text-right font-mono font-bold whitespace-nowrap"
-                                :class="calculerEcart(l) < 0 ? 'text-red-600' : (calculerEcart(l) > 0 ? 'text-teal-600' : 'text-gray-400')">
+                                :class="impactClass(l)">
                                 <template x-if="calculerEcart(l) !== null">
                                     <span x-text="(calculerEcart(l) * Number(l.prix_vente || 0)).toLocaleString('fr-FR') + ' F'"></span>
                                 </template>
@@ -230,8 +155,8 @@
     <!-- Barre d'Action Flottante en Bas -->
     <div class="sticky bottom-4 bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-slate-800 flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center gap-4 text-xs font-medium">
-            <span>Articles comptés : <strong class="text-emerald-400" x-text="lignes.filter(l => l.stock_physique !== null && l.stock_physique !== '').length + ' / ' + lignes.length"></strong></span>
-            <span>Écarts détectés : <strong class="text-amber-400" x-text="lignes.filter(l => calculerEcart(l) !== null && calculerEcart(l) !== 0).length"></strong></span>
+            <span>Articles comptés : <strong class="text-emerald-400" x-text="comptesText"></strong></span>
+            <span>Écarts détectés : <strong class="text-amber-400" x-text="nbEcarts"></strong></span>
         </div>
         <div class="flex items-center gap-2">
             <a href="/pharmacie/inventaires/<%= inv.id %>" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition">
@@ -245,3 +170,109 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('inventaireSaisie', () => ({
+        lignes: <%- JSON.stringify(inv.lignes || []) %>,
+        search: '',
+        filtreEcart: 'tous',
+        sauvegardeEnCours: false,
+
+        get lignesFiltrees() {
+            return this.lignes.filter(l => {
+                const matchSearch = !this.search || 
+                    (l.designation && l.designation.toLowerCase().includes(this.search.toLowerCase())) ||
+                    (l.code && l.code.toLowerCase().includes(this.search.toLowerCase())) ||
+                    (l.emplacement && l.emplacement.toLowerCase().includes(this.search.toLowerCase()));
+
+                if (!matchSearch) return false;
+
+                if (this.filtreEcart === 'non_comptes') {
+                    return l.stock_physique === null || l.stock_physique === undefined || l.stock_physique === '';
+                }
+                if (this.filtreEcart === 'avec_ecart') {
+                    const ec = this.calculerEcart(l);
+                    return ec !== null && ec !== 0;
+                }
+                if (this.filtreEcart === 'conformes') {
+                    const ec = this.calculerEcart(l);
+                    return ec === 0;
+                }
+                return true;
+            });
+        },
+
+        get comptesText() {
+            const n = this.lignes.filter(l => l.stock_physique !== null && l.stock_physique !== '' && l.stock_physique !== undefined).length;
+            return n + ' / ' + this.lignes.length;
+        },
+
+        get nbEcarts() {
+            return this.lignes.filter(l => {
+                const ec = this.calculerEcart(l);
+                return ec !== null && ec !== 0;
+            }).length;
+        },
+
+        calculerEcart(ligne) {
+            if (ligne.stock_physique === null || ligne.stock_physique === undefined || ligne.stock_physique === '') return null;
+            return Number(ligne.stock_physique) - Number(ligne.stock_theorique || 0);
+        },
+
+        ecartClass(l) {
+            const ec = this.calculerEcart(l);
+            if (ec === null || ec === 0) return '';
+            return ec > 0 ? 'bg-teal-50/40' : 'bg-red-50/40';
+        },
+
+        impactClass(l) {
+            const ec = this.calculerEcart(l);
+            if (ec === null) return 'text-gray-400';
+            if (ec < 0) return 'text-red-600';
+            if (ec > 0) return 'text-teal-600';
+            return 'text-gray-400';
+        },
+
+        copierTheorique() {
+            if (!confirm('Voulez-vous pré-remplir le stock physique avec le stock théorique pour tous les articles non encore comptés ? Vous pourrez ensuite ajuster uniquement ceux ayant un écart.')) return;
+            this.lignes.forEach(l => {
+                if (l.stock_physique === null || l.stock_physique === undefined || l.stock_physique === '') {
+                    l.stock_physique = l.stock_theorique;
+                }
+            });
+        },
+
+        async sauvegarder() {
+            this.sauvegardeEnCours = true;
+            try {
+                const comptages = this.lignes.map(l => ({
+                    ligne_id: l.id,
+                    produit_id: l.produit_id,
+                    stock_physique: (l.stock_physique !== '' && l.stock_physique !== null && l.stock_physique !== undefined) ? Number(l.stock_physique) : null,
+                    date_peremption_reelle: l.date_peremption_reelle,
+                    notes: l.notes || ''
+                }));
+
+                const res = await fetch('/pharmacie/inventaires/<%= inv.id %>/saisie', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ comptages })
+                });
+
+                if (!res.ok) throw new Error('Erreur réseau lors de la sauvegarde');
+                
+                alert('Comptages enregistrés avec succès !');
+                window.location.href = '/pharmacie/inventaires/<%= inv.id %>';
+            } catch (err) {
+                alert('Erreur : ' + err.message);
+            } finally {
+                this.sauvegardeEnCours = false;
+            }
+        }
+    }));
+});
+</script>
